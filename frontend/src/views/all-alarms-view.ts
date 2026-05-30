@@ -5,14 +5,17 @@ import { fetchAlarms, fetchChannels, deleteAlarm, shelveAlarm, unshelveAlarm } f
 import { STATE_LABELS, PRIORITY_LABELS, type HomeAssistant, type AlarmWithState, type AlarmChannel } from "../types";
 import "../components/severity-badge";
 import "../components/alarm-detail-dialog";
+import "../components/shelve-dialog";
 
 @customElement("all-alarms-view")
 export class AllAlarmsView extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
+  @property() priorityFilter = "";
   @state() private _alarms: AlarmWithState[] = [];
   @state() private _channels: AlarmChannel[] = [];
   @state() private _loading = true;
   @state() private _detailAlarm?: AlarmWithState;
+  @state() private _shelveTarget?: AlarmWithState;
 
   // Column filters
   @state() private _filterPriority = "";
@@ -65,8 +68,9 @@ export class AllAlarmsView extends LitElement {
   }
 
   private get _filtered(): AlarmWithState[] {
+    const pf = this.priorityFilter || this._filterPriority;
     return this._alarms.filter((a) => {
-      if (this._filterPriority && String(a.priority) !== this._filterPriority) return false;
+      if (pf && String(a.priority) !== pf) return false;
       if (this._filterName && !a.name.toLowerCase().includes(this._filterName.toLowerCase())) return false;
       if (this._filterState && a.runtime.state !== this._filterState) return false;
       if (this._filterEntity && !a.source_entity_id.toLowerCase().includes(this._filterEntity.toLowerCase())) return false;
@@ -100,14 +104,8 @@ export class AllAlarmsView extends LitElement {
     });
   }
 
-  private async _shelve(alarmId: string) {
-    if (!this.hass) return;
-    const input = prompt("Shelve duration in minutes:", "15");
-    if (input === null) return;
-    const duration = parseInt(input, 10);
-    if (isNaN(duration) || duration < 1) return;
-    await shelveAlarm(this.hass, alarmId, duration);
-    this._load();
+  private _shelve(alarm: AlarmWithState) {
+    this._shelveTarget = alarm;
   }
 
   private async _unshelve(alarmId: string) {
@@ -191,7 +189,7 @@ export class AllAlarmsView extends LitElement {
                   ${alarm.runtime.state === "shelved"
                     ? html`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" @click=${() => this._unshelve(alarm.id)}>Unshelve</button>`
                     : alarm.runtime.state !== "disabled" && alarm.runtime.state !== "normal"
-                      ? html`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" @click=${() => this._shelve(alarm.id)}>Shelve</button>`
+                      ? html`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" @click=${(e: Event) => { e.stopPropagation(); this._shelve(alarm); }}>Shelve</button>`
                       : ""}
                   ${alarm.channel_id ? html`<button class="btn btn-small" style="background: #607D8B; color: white;" @click=${() => this._testNotification(alarm)} title="Test notification">Test</button>` : ""}
                   <button class="btn btn-small btn-primary" @click=${() => this._edit(alarm.id)}>Edit</button>
@@ -207,6 +205,17 @@ export class AllAlarmsView extends LitElement {
         .open=${!!this._detailAlarm}
         @close=${() => this._detailAlarm = undefined}
       ></alarm-detail-dialog>
+      <shelve-dialog
+        .open=${!!this._shelveTarget}
+        .alarmId=${this._shelveTarget?.id ?? ""}
+        .alarmName=${this._shelveTarget?.name ?? ""}
+        @dialog-closed=${() => this._shelveTarget = undefined}
+        @shelve-confirm=${async (e: CustomEvent) => {
+          await shelveAlarm(this.hass!, e.detail.alarmId, e.detail.minutes);
+          this._shelveTarget = undefined;
+          this._load();
+        }}
+      ></shelve-dialog>
     `;
   }
 }

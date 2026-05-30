@@ -3,6 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import { sharedStyles } from "../styles/shared-styles";
 import { fetchChannels, createChannel, updateChannel, deleteChannel } from "../data/websocket";
 import { PRIORITY_LABELS, type HomeAssistant, type AlarmChannel, type AlarmPriority } from "../types";
+import "../components/notify-target-picker";
 
 @customElement("channels-view")
 export class ChannelsView extends LitElement {
@@ -11,7 +12,7 @@ export class ChannelsView extends LitElement {
   @state() private _loading = true;
   @state() private _editing: AlarmChannel | null = null;
   @state() private _formName = "";
-  @state() private _formTargets = "";
+  @state() private _formTargets: string[] = [];
   @state() private _formMinPriority: AlarmPriority = 0;
   @state() private _formPersistent = true;
   @state() private _formMobile = true;
@@ -59,7 +60,7 @@ export class ChannelsView extends LitElement {
   private _startCreate() {
     this._editing = {} as AlarmChannel;
     this._formName = "";
-    this._formTargets = "";
+    this._formTargets = [];
     this._formMinPriority = 0;
     this._formPersistent = true;
     this._formMobile = true;
@@ -69,7 +70,7 @@ export class ChannelsView extends LitElement {
   private _startEdit(channel: AlarmChannel) {
     this._editing = channel;
     this._formName = channel.name;
-    this._formTargets = channel.notification_targets.join(", ");
+    this._formTargets = [...channel.notification_targets];
     this._formMinPriority = channel.min_priority;
     this._formPersistent = channel.persistent_notification;
     this._formMobile = channel.mobile_push;
@@ -78,10 +79,9 @@ export class ChannelsView extends LitElement {
 
   private async _save() {
     if (!this.hass || !this._formName.trim()) return;
-    const targets = this._formTargets.split(",").map((t) => t.trim()).filter(Boolean);
     const data = {
       name: this._formName.trim(),
-      notification_targets: targets,
+      notification_targets: this._formTargets,
       min_priority: this._formMinPriority,
       persistent_notification: this._formPersistent,
       mobile_push: this._formMobile,
@@ -160,8 +160,11 @@ export class ChannelsView extends LitElement {
             <input type="text" .value=${this._formName} @input=${(e: Event) => (this._formName = (e.target as HTMLInputElement).value)} />
           </div>
           <div class="form-group">
-            <label>Notification Targets (comma-separated)</label>
-            <input type="text" .value=${this._formTargets} @input=${(e: Event) => (this._formTargets = (e.target as HTMLInputElement).value)} placeholder="notify.mobile_app_phone1, notify.mobile_app_phone2" />
+            <label>Notification Targets</label>
+            <notify-target-picker
+              .value=${this._formTargets}
+              @value-changed=${(e: CustomEvent) => this._formTargets = e.detail.value}
+            ></notify-target-picker>
           </div>
         </div>
         <div class="form-group">
