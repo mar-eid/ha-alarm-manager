@@ -1,275 +1,436 @@
 /**
- * SCADA Alarm Card - Lovelace dashboard card.
+ * SCADA Alarm Card — compact Lovelace monitoring card (redesigned).
+ * Drop-in replacement for your current frontend/src/alarm-card.ts.
+ *
+ *   • Header with bell icon, title, active/unacked summary, count pill
+ *   • Severity bar (proportion of active by priority)
+ *   • Optional interactive AREA filter (config: selectable_area: true) plus the
+ *     static config filters filter_area / filter_priority / filter_channel
+ *   • List of active alarms with inline ACK / Shelve
+ *
+ * Place at: frontend/src/alarm-card.ts (replaces the current file).
+ * Keep your alarm-card-editor.ts; add the new config keys to it as needed.
+ *
+ * YAML:
+ *   type: custom:scada-alarm-card
+ *   title: Alarm Center
+ *   max_items: 6
+ *   selectable_area: true          # show the area dropdown on the card
+ *   filter_area: Server Room       # or pin it
+ *   show_ack_button: true
+ *   show_shelve_button: true
+ *   default_shelve_minutes: 15
  */
 
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css, nothing, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { sharedStyles, getPriorityColor, getStateColor } from "./styles/shared-styles";
-import { fetchAlarms, acknowledgeAlarm, shelveAlarm, subscribeAlarmChanges } from "./data/websocket";
-import { PRIORITY_LABELS, STATE_LABELS, type HomeAssistant, type AlarmWithState, type AlarmPriority } from "./types";
+import {
+  mdiBellRing,
+  mdiAlert,
+  mdiAlertDecagram,
+  mdiCheckCircleOutline,
+  mdiCheck,
+  mdiBellSleep,
+  mdiFilterVariant,
+  mdiClose,
+  mdiMenuDown,
+} from "@mdi/js";
+import { sharedStyles, getPriorityColor } from "./styles/shared-styles";
+import { fetchAlarms, subscribeAlarmChanges, acknowledgeAlarm, shelveAlarm } from "./data/websocket";
+import { type HomeAssistant, type AlarmWithState } from "./types";
 
-interface CardConfig {
+interface AlarmCardConfig {
   type: string;
   title?: string;
-  show_count?: boolean;
-  show_list?: boolean;
   max_items?: number;
+  filter_area?: string;
+  filter_priority?: number | string;
   filter_channel?: string;
-  filter_priority?: number[];
+  selectable_area?: boolean;
   show_ack_button?: boolean;
   show_shelve_button?: boolean;
+  default_shelve_minutes?: number;
+}
+
+const ACTIVE_STATES = [
+  "active_unacknowledged",
+  "active_acknowledged",
+  "returned_to_normal_unacknowledged",
+];
+const UNACKED_STATES = ["active_unacknowledged", "returned_to_normal_unacknowledged"];
+const ORDER = [3, 2, 1, 0];
+
+function timeAgo(iso: string | null): string {
+  if (!iso) return "—";
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
 }
 
 @customElement("scada-alarm-card")
 export class ScadaAlarmCard extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
-  @state() private _config: CardConfig = { type: "custom:scada-alarm-card" };
+  @state() private _config!: AlarmCardConfig;
   @state() private _alarms: AlarmWithState[] = [];
-  @state() private _loading = true;
+  @state() private _areaFilter = "";
   private _unsub?: () => void;
 
   static styles = [
     sharedStyles,
     css`
-      :host { display: block; }
-      ha-card { overflow: hidden; }
-
-      .severity-bar {
-        height: 4px;
-        transition: background-color 0.3s;
+      ha-card {
+        overflow: hidden;
       }
-
-      .card-header {
+      .head {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 16px;
+        gap: 10px;
+        padding: 14px 16px 12px;
       }
-
-      .header-title { font-size: 1.1em; font-weight: 500; }
-
-      .badges { display: flex; gap: 8px; }
-      .count-badge {
-        display: inline-flex; align-items: center; gap: 4px;
-        padding: 3px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600;
+      .head .ic {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        --mdc-icon-size: 20px;
       }
-
-      .alarm-list { padding: 0 16px 8px; }
-      .alarm-item {
-        display: flex; align-items: center; gap: 8px;
-        padding: 8px 0;
-        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      .head .t {
+        flex: 1;
+        min-width: 0;
       }
-      .alarm-item:last-child { border-bottom: none; }
-
-      .alarm-priority-dot {
-        width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+      .head .name {
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--primary-text-color, #212121);
       }
-      .alarm-info { flex: 1; min-width: 0; }
-      .alarm-name { font-weight: 500; font-size: 0.9em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      .alarm-meta { font-size: 0.75em; color: var(--secondary-text-color); }
-      .alarm-actions { display: flex; gap: 4px; flex-shrink: 0; }
-
-      .footer {
-        padding: 8px 16px 12px;
+      .head .sub {
+        font-size: 12.5px;
+        color: var(--secondary-text-color, #727272);
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 11px;
+        border-radius: 9999px;
+        font-size: 13px;
+        font-weight: 700;
+        --mdc-icon-size: 14px;
+      }
+      .bar {
+        display: flex;
+        height: 6px;
+        margin: 0 16px 12px;
+        border-radius: 9999px;
+        overflow: hidden;
+        background: var(--secondary-background-color, #f0f0f0);
+      }
+      .filter {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 16px 12px;
+        --mdc-icon-size: 16px;
+        color: var(--secondary-text-color, #727272);
+      }
+      .filter .wrap {
+        position: relative;
+        flex: 1;
+      }
+      .filter select {
+        width: 100%;
+        height: 32px;
+        padding: 0 28px 0 10px;
+        border-radius: 9999px;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        background: var(--card-background-color, #fff);
+        color: var(--primary-text-color, #212121);
+        font: inherit;
+        font-size: 13px;
+        cursor: pointer;
+        appearance: none;
+      }
+      .filter .chev {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        --mdc-icon-size: 18px;
+      }
+      .clear {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 32px;
+        padding: 0 10px;
+        border: none;
+        border-radius: 9999px;
+        background: var(--secondary-background-color, #f0f0f0);
+        color: var(--secondary-text-color, #727272);
+        font: inherit;
+        font-size: 12.5px;
+        cursor: pointer;
+        --mdc-icon-size: 14px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        border-top: 1px solid var(--divider-color, #e0e0e0);
+      }
+      .dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex: none;
+      }
+      .row .info {
+        flex: 1;
+        min-width: 0;
+      }
+      .row .nm {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--primary-text-color, #212121);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .row .meta {
+        font-size: 12px;
+        color: var(--secondary-text-color, #727272);
+      }
+      .row .val {
+        font-size: 13.5px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      .btn {
+        height: 30px;
+        --mdc-icon-size: 16px;
+      }
+      .btn-shelve {
+        background: color-mix(in srgb, #9c27b0 14%, transparent);
+        color: #9c27b0;
+      }
+      .empty {
         text-align: center;
+        padding: 20px 16px 28px;
+        color: var(--secondary-text-color, #727272);
+        --mdc-icon-size: 40px;
       }
-      .footer a {
-        color: var(--primary-color); text-decoration: none; font-size: 0.85em; font-weight: 500;
+      .empty .lbl {
+        font-size: 14px;
+        font-weight: 500;
+        margin-top: 8px;
+        color: var(--primary-text-color, #212121);
       }
-
-      .empty-card {
-        padding: 24px 16px; text-align: center;
-        color: var(--secondary-text-color);
+      .more {
+        padding: 10px 16px;
+        border-top: 1px solid var(--divider-color, #e0e0e0);
+        text-align: center;
+        font-size: 13px;
+        color: var(--secondary-text-color, #727272);
       }
-      .empty-icon { font-size: 32px; margin-bottom: 8px; color: var(--alarm-normal); }
     `,
   ];
 
-  setConfig(config: CardConfig) {
+  setConfig(config: AlarmCardConfig) {
     this._config = {
-      title: "Alarms",
-      show_count: true,
-      show_list: true,
-      max_items: 10,
+      title: "Alarm Center",
+      max_items: 5,
       show_ack_button: true,
-      show_shelve_button: false,
+      show_shelve_button: true,
+      default_shelve_minutes: 15,
       ...config,
     };
+    this._areaFilter = config.filter_area ?? "";
   }
 
-  static getConfigElement() {
-    return document.createElement("scada-alarm-card-editor");
+  getCardSize() {
+    return 3;
   }
 
   static getStubConfig() {
-    return {
-      type: "custom:scada-alarm-card",
-      title: "SCADA Alarms",
-      show_count: true,
-      show_list: true,
-      max_items: 10,
-    };
+    return { type: "custom:scada-alarm-card", title: "Alarm Center", max_items: 6 };
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-    this._loadAlarms();
+  firstUpdated() {
+    this._load();
     this._subscribe();
   }
-
   disconnectedCallback() {
     super.disconnectedCallback();
     this._unsub?.();
   }
-
-  private async _loadAlarms() {
-    if (!this.hass) return;
-    try {
-      let all = await fetchAlarms(this.hass);
-      // Filter to active alarms
-      all = all.filter(
-        (a) =>
-          a.runtime.state === "active_unacknowledged" ||
-          a.runtime.state === "active_acknowledged" ||
-          a.runtime.state === "returned_to_normal_unacknowledged"
-      );
-
-      // Apply config filters
-      if (this._config.filter_channel) {
-        all = all.filter((a) => a.channel_id === this._config.filter_channel);
-      }
-      if (this._config.filter_priority?.length) {
-        all = all.filter((a) => this._config.filter_priority!.includes(a.priority));
-      }
-
-      this._alarms = all.sort((a, b) => b.priority - a.priority);
-    } finally {
-      this._loading = false;
-    }
+  updated(changed: PropertyValues) {
+    if (changed.has("hass") && !changed.get("hass")) this._load();
   }
 
+  private async _load() {
+    if (!this.hass) return;
+    this._alarms = await fetchAlarms(this.hass);
+  }
   private async _subscribe() {
     if (!this.hass) return;
-    this._unsub = await subscribeAlarmChanges(this.hass, () => {
-      this._loadAlarms();
-    });
+    this._unsub = await subscribeAlarmChanges(this.hass, () => this._load());
   }
 
-  private async _ack(e: Event, alarmId: string) {
-    e.stopPropagation();
-    if (!this.hass) return;
-    await acknowledgeAlarm(this.hass, alarmId);
-    this._loadAlarms();
+  private async _ack(id: string) {
+    if (this.hass) await acknowledgeAlarm(this.hass, id);
+    this._load();
+  }
+  private async _shelve(id: string) {
+    if (this.hass) await shelveAlarm(this.hass, id, this._config.default_shelve_minutes ?? 15);
+    this._load();
   }
 
-  private async _shelve(e: Event, alarmId: string) {
-    e.stopPropagation();
-    if (!this.hass) return;
-    const input = prompt("Shelve duration in minutes:", "15");
-    if (input === null) return;
-    const duration = parseInt(input, 10);
-    if (isNaN(duration) || duration < 1) return;
-    await shelveAlarm(this.hass, alarmId, duration);
-    this._loadAlarms();
-  }
-
-  private _getHighestSeverity(): AlarmPriority {
-    if (this._alarms.length === 0) return 0;
-    return Math.max(...this._alarms.map((a) => a.priority)) as AlarmPriority;
-  }
-
-  private _getUnackedCount(): number {
-    return this._alarms.filter(
-      (a) => a.runtime.state === "active_unacknowledged" || a.runtime.state === "returned_to_normal_unacknowledged"
-    ).length;
+  private get _active(): AlarmWithState[] {
+    const c = this._config;
+    return this._alarms
+      .filter((a) => ACTIVE_STATES.includes(a.runtime.state))
+      .filter((a) => !this._areaFilter || a.area === this._areaFilter)
+      .filter((a) => c.filter_priority == null || String(a.priority) === String(c.filter_priority))
+      .filter((a) => !c.filter_channel || a.channel_id === c.filter_channel)
+      .sort(
+        (a, b) =>
+          b.priority - a.priority ||
+          new Date(b.runtime.triggered_at ?? 0).getTime() -
+            new Date(a.runtime.triggered_at ?? 0).getTime()
+      );
   }
 
   render() {
-    const severityColor = this._alarms.length > 0 ? getPriorityColor(this._getHighestSeverity()) : "#4CAF50";
-    const unacked = this._getUnackedCount();
-    const maxItems = this._config.max_items ?? 10;
+    if (!this._config) return html``;
+    const c = this._config;
+    const active = this._active;
+    const total = active.length;
+    const crit = active.filter((a) => a.priority === 3).length;
+    const unacked = active.filter((a) => UNACKED_STATES.includes(a.runtime.state)).length;
+    const accent = crit > 0 ? "#f44336" : total ? "#ff9800" : "#4caf50";
+    const segs = ORDER.map((p) => ({ p, n: active.filter((a) => a.priority === p).length })).filter(
+      (s) => s.n > 0
+    );
+    const areaOptions = [
+      ...new Set(
+        this._alarms.filter((a) => ACTIVE_STATES.includes(a.runtime.state)).map((a) => a.area)
+      ),
+    ]
+      .filter(Boolean)
+      .sort();
+    const shown = active.slice(0, c.max_items);
 
     return html`
       <ha-card>
-        <div class="severity-bar" style="background: ${severityColor}"></div>
-
-        <div class="card-header">
-          <span class="header-title">${this._config.title ?? "Alarms"}</span>
-          ${this._config.show_count ? html`
-            <div class="badges">
-              <span class="count-badge" style="background: ${this._alarms.length > 0 ? severityColor + "22" : "#4CAF5022"}; color: ${this._alarms.length > 0 ? severityColor : "#4CAF50"}">
-                ${this._alarms.length} active
-              </span>
-              ${unacked > 0 ? html`
-                <span class="count-badge" style="background: #F4433622; color: #F44336;">
-                  ${unacked} unacked
-                </span>
-              ` : ""}
+        <div class="head">
+          <div class="ic" style=${`background:color-mix(in srgb, ${accent} 16%, transparent); color:${accent}`}>
+            <ha-svg-icon .path=${mdiBellRing}></ha-svg-icon>
+          </div>
+          <div class="t">
+            <div class="name">${c.title}</div>
+            <div class="sub">
+              ${this._areaFilter ? `${this._areaFilter} · ` : ""}
+              ${total === 0 ? "All systems normal" : `${total} active · ${unacked} unacknowledged`}
             </div>
-          ` : ""}
+          </div>
+          ${total > 0
+            ? html`<span
+                class="pill"
+                style=${`background:color-mix(in srgb, ${accent} 15%, transparent); color:${accent}`}
+              >
+                <ha-svg-icon .path=${crit > 0 ? mdiAlertDecagram : mdiAlert}></ha-svg-icon>${total}
+              </span>`
+            : nothing}
         </div>
 
-        ${this._config.show_list ? html`
-          ${this._alarms.length === 0 ? html`
-            <div class="empty-card">
-              <div class="empty-icon">&#x2714;</div>
-              <div>No active alarms</div>
-            </div>
-          ` : html`
-            <div class="alarm-list">
-              ${this._alarms.slice(0, maxItems).map((alarm) => {
-                const isUnacked = alarm.runtime.state === "active_unacknowledged" || alarm.runtime.state === "returned_to_normal_unacknowledged";
+        ${total > 0
+          ? html`<div class="bar">
+              ${segs.map(
+                (s) =>
+                  html`<span style=${`flex:${s.n}; background:${getPriorityColor(s.p)}`}></span>`
+              )}
+            </div>`
+          : nothing}
+
+        ${c.selectable_area && areaOptions.length > 0
+          ? html`<div class="filter">
+              <ha-svg-icon .path=${mdiFilterVariant}></ha-svg-icon>
+              <div class="wrap">
+                <select
+                  .value=${this._areaFilter}
+                  @change=${(e: Event) => (this._areaFilter = (e.target as HTMLSelectElement).value)}
+                >
+                  <option value="">All areas</option>
+                  ${areaOptions.map((a) => html`<option value=${a}>${a}</option>`)}
+                </select>
+                <ha-svg-icon class="chev" .path=${mdiMenuDown}></ha-svg-icon>
+              </div>
+              ${this._areaFilter
+                ? html`<button class="clear" @click=${() => (this._areaFilter = "")}>
+                    <ha-svg-icon .path=${mdiClose}></ha-svg-icon>Clear
+                  </button>`
+                : nothing}
+            </div>`
+          : nothing}
+
+        ${total === 0
+          ? html`<div class="empty">
+              <ha-svg-icon .path=${mdiCheckCircleOutline} style="color:#4caf50"></ha-svg-icon>
+              <div class="lbl">No active alarms</div>
+            </div>`
+          : html`
+              ${shown.map((a) => {
+                const isUnacked = UNACKED_STATES.includes(a.runtime.state);
+                const color = getPriorityColor(a.priority);
                 return html`
-                  <div class="alarm-item">
-                    <div class="alarm-priority-dot" style="background: ${getPriorityColor(alarm.priority)}"></div>
-                    <div class="alarm-info">
-                      <div class="alarm-name">${alarm.name}</div>
-                      <div class="alarm-meta">
-                        ${PRIORITY_LABELS[alarm.priority]} &middot;
-                        ${alarm.runtime.last_value ?? alarm.source_entity_id}
-                      </div>
+                  <div class="row">
+                    <span class="dot" style=${`background:${color}`}></span>
+                    <div class="info">
+                      <div class="nm">${a.name}</div>
+                      <div class="meta">${a.area} · ${timeAgo(a.runtime.triggered_at)}</div>
                     </div>
-                    <div class="alarm-actions">
-                      ${this._config.show_ack_button && isUnacked ? html`
-                        <button class="btn btn-primary btn-small" @click=${(e: Event) => this._ack(e, alarm.id)}>ACK</button>
-                      ` : ""}
-                      ${this._config.show_shelve_button ? html`
-                        <button class="btn btn-small" style="background: #9C27B0; color: white;" @click=${(e: Event) => this._shelve(e, alarm.id)}>Shelve</button>
-                      ` : ""}
-                    </div>
+                    <span class="val" style=${`color:${color}`}>${a.runtime.last_value ?? "—"}</span>
+                    ${c.show_ack_button !== false && isUnacked
+                      ? html`<button class="btn btn-primary" @click=${() => this._ack(a.id)}>ACK</button>`
+                      : c.show_shelve_button !== false
+                      ? html`<button class="btn btn-shelve" @click=${() => this._shelve(a.id)} title="Shelve">
+                          <ha-svg-icon .path=${mdiBellSleep}></ha-svg-icon>
+                        </button>`
+                      : nothing}
                   </div>
                 `;
               })}
-              ${this._alarms.length > maxItems ? html`
-                <div class="alarm-meta" style="text-align: center; padding: 8px;">
-                  +${this._alarms.length - maxItems} more
-                </div>
-              ` : ""}
-            </div>
-          `}
-        ` : ""}
-
-        <div class="footer">
-          <a href="/scada-alarm-manager">Open Alarm Center &rarr;</a>
-        </div>
+              ${total > (c.max_items ?? 5)
+                ? html`<div class="more">+ ${total - (c.max_items ?? 5)} more</div>`
+                : nothing}
+            `}
       </ha-card>
     `;
   }
 }
 
-// Register with HA card picker
-const customCards = (window as any).customCards || [];
-customCards.push({
+// Register in the card picker
+(window as any).customCards = (window as any).customCards || [];
+(window as any).customCards.push({
   type: "scada-alarm-card",
   name: "SCADA Alarm Card",
-  description: "Active alarm monitoring with quick actions",
-  preview: true,
+  description: "Compact monitoring card for the SCADA Alarm Manager.",
 });
-(window as any).customCards = customCards;
 
 declare global {
   interface HTMLElementTagNameMap {
     "scada-alarm-card": ScadaAlarmCard;
+    "ha-card": any;
+    "ha-svg-icon": any;
   }
 }
