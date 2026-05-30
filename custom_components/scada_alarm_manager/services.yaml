@@ -104,6 +104,34 @@ test_notification:
       selector:
         text:
 
+trigger:
+  name: Trigger Alarm
+  description: Externally trigger an alarm. Use for alarms with trigger_type "external" where HA automations/blueprints handle the trigger logic.
+  fields:
+    alarm_id:
+      name: Alarm ID
+      description: The ID of the alarm to trigger.
+      required: true
+      selector:
+        text:
+    message:
+      name: Message
+      description: Optional message to include in the notification (e.g., current value, context).
+      required: false
+      selector:
+        text:
+
+clear:
+  name: Clear Alarm
+  description: Externally clear an alarm. Use for alarms with trigger_type "external" to signal the condition has returned to normal.
+  fields:
+    alarm_id:
+      name: Alarm ID
+      description: The ID of the alarm to clear.
+      required: true
+      selector:
+        text:
+
 list_alarms:
   name: List Alarms
   description: List all alarm definitions with their current runtime state. Returns response data when called via REST API.

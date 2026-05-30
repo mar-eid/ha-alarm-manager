@@ -35,6 +35,7 @@ class TriggerType(StrEnum):
     ANALOG = "analog"
     DIGITAL = "digital"
     CUSTOM_STATE = "custom_state"
+    EXTERNAL = "external"
 
 
 class AlarmEventType(StrEnum):

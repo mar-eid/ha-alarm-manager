@@ -40,6 +40,10 @@ SERVICE_UPDATE_CHANNEL = "update_channel"
 SERVICE_DELETE_CHANNEL = "delete_channel"
 SERVICE_LIST_EVENTS = "list_events"
 
+# External trigger services
+SERVICE_TRIGGER = "trigger"
+SERVICE_CLEAR = "clear"
+
 SCHEMA_ACKNOWLEDGE = vol.Schema({vol.Required("alarm_id"): cv.string})
 
 SCHEMA_ACKNOWLEDGE_ALL = vol.Schema(
@@ -66,6 +70,15 @@ SCHEMA_RESET = vol.Schema({vol.Required("alarm_id"): cv.string})
 
 SCHEMA_TEST_NOTIFICATION = vol.Schema({vol.Required("channel_id"): cv.string})
 
+SCHEMA_TRIGGER = vol.Schema(
+    {
+        vol.Required("alarm_id"): cv.string,
+        vol.Optional("message"): cv.string,
+    }
+)
+
+SCHEMA_CLEAR = vol.Schema({vol.Required("alarm_id"): cv.string})
+
 # Schemas for CRUD services
 SCHEMA_LIST_ALARMS = vol.Schema({})
 
@@ -75,7 +88,7 @@ SCHEMA_CREATE_ALARM = vol.Schema(
     {
         vol.Required("name"): cv.string,
         vol.Required("source_entity_id"): cv.string,
-        vol.Required("trigger_type"): vol.In(["analog", "digital", "custom_state"]),
+        vol.Required("trigger_type"): vol.In(["analog", "digital", "custom_state", "external"]),
         vol.Required("trigger_config"): dict,
         vol.Optional("description", default=""): cv.string,
         vol.Optional("priority", default=1): vol.In([0, 1, 2, 3]),
@@ -98,7 +111,7 @@ SCHEMA_UPDATE_ALARM = vol.Schema(
         vol.Optional("name"): cv.string,
         vol.Optional("description"): cv.string,
         vol.Optional("source_entity_id"): cv.string,
-        vol.Optional("trigger_type"): vol.In(["analog", "digital", "custom_state"]),
+        vol.Optional("trigger_type"): vol.In(["analog", "digital", "custom_state", "external"]),
         vol.Optional("trigger_config"): dict,
         vol.Optional("priority"): vol.In([0, 1, 2, 3]),
         vol.Optional("area"): cv.string,
@@ -412,7 +425,24 @@ async def async_register_services(hass: HomeAssistant) -> None:
 
         return {"events": event_dicts}
 
+    async def handle_trigger(call: ServiceCall) -> None:
+        manager = _get_manager(hass)
+        await manager.async_trigger_external(
+            call.data["alarm_id"],
+            message=call.data.get("message"),
+            user=call.context.user_id,
+        )
+
+    async def handle_clear(call: ServiceCall) -> None:
+        manager = _get_manager(hass)
+        await manager.async_clear_external(
+            call.data["alarm_id"],
+            user=call.context.user_id,
+        )
+
     # --- Register action-only services ---
+    hass.services.async_register(DOMAIN, SERVICE_TRIGGER, handle_trigger, schema=SCHEMA_TRIGGER)
+    hass.services.async_register(DOMAIN, SERVICE_CLEAR, handle_clear, schema=SCHEMA_CLEAR)
     hass.services.async_register(DOMAIN, SERVICE_ACKNOWLEDGE, handle_acknowledge, schema=SCHEMA_ACKNOWLEDGE)
     hass.services.async_register(DOMAIN, SERVICE_ACKNOWLEDGE_ALL, handle_acknowledge_all, schema=SCHEMA_ACKNOWLEDGE_ALL)
     hass.services.async_register(DOMAIN, SERVICE_SHELVE, handle_shelve, schema=SCHEMA_SHELVE)
@@ -518,6 +548,8 @@ async def async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_DISABLE,
         SERVICE_RESET,
         SERVICE_TEST_NOTIFICATION,
+        SERVICE_TRIGGER,
+        SERVICE_CLEAR,
         SERVICE_LIST_ALARMS,
         SERVICE_GET_ALARM,
         SERVICE_CREATE_ALARM,

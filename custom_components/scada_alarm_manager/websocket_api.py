@@ -38,6 +38,8 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_alarm_shelve)
     websocket_api.async_register_command(hass, ws_alarm_unshelve)
     websocket_api.async_register_command(hass, ws_alarm_reset)
+    websocket_api.async_register_command(hass, ws_alarm_trigger)
+    websocket_api.async_register_command(hass, ws_alarm_clear)
     websocket_api.async_register_command(hass, ws_channel_list)
     websocket_api.async_register_command(hass, ws_channel_get)
     websocket_api.async_register_command(hass, ws_channel_create)
@@ -105,7 +107,7 @@ async def ws_alarm_get(
         vol.Required("type"): "scada_alarm_manager/alarm/create",
         vol.Required("name"): str,
         vol.Required("source_entity_id"): str,
-        vol.Required("trigger_type"): vol.In(["analog", "digital", "custom_state"]),
+        vol.Required("trigger_type"): vol.In(["analog", "digital", "custom_state", "external"]),
         vol.Required("trigger_config"): dict,
         vol.Optional("description", default=""): str,
         vol.Optional("priority", default=1): vol.In([0, 1, 2, 3]),
@@ -158,7 +160,7 @@ async def ws_alarm_create(
         vol.Optional("name"): str,
         vol.Optional("description"): str,
         vol.Optional("source_entity_id"): str,
-        vol.Optional("trigger_type"): vol.In(["analog", "digital", "custom_state"]),
+        vol.Optional("trigger_type"): vol.In(["analog", "digital", "custom_state", "external"]),
         vol.Optional("trigger_config"): dict,
         vol.Optional("priority"): vol.In([0, 1, 2, 3]),
         vol.Optional("area"): str,
@@ -328,6 +330,53 @@ async def ws_alarm_reset(
     """Reset a latched alarm."""
     manager = _get_manager(hass)
     await manager.async_reset(
+        msg["alarm_id"],
+        user=connection.user.id if connection.user else None,
+    )
+    connection.send_result(msg["id"], {"success": True})
+
+
+# --- External Trigger/Clear ---
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "scada_alarm_manager/alarm/trigger",
+        vol.Required("alarm_id"): str,
+        vol.Optional("message"): str,
+    }
+)
+@websocket_api.async_response
+async def ws_alarm_trigger(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Externally trigger an alarm."""
+    manager = _get_manager(hass)
+    await manager.async_trigger_external(
+        msg["alarm_id"],
+        message=msg.get("message"),
+        user=connection.user.id if connection.user else None,
+    )
+    connection.send_result(msg["id"], {"success": True})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "scada_alarm_manager/alarm/clear",
+        vol.Required("alarm_id"): str,
+    }
+)
+@websocket_api.async_response
+async def ws_alarm_clear(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Externally clear an alarm."""
+    manager = _get_manager(hass)
+    await manager.async_clear_external(
         msg["alarm_id"],
         user=connection.user.id if connection.user else None,
     )

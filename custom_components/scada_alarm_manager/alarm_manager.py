@@ -17,6 +17,7 @@ from .const import (
     AlarmEventType,
     AlarmPriority,
     AlarmState,
+    TriggerType,
 )
 from .database import AlarmDatabase
 from .models import AlarmChannel, AlarmDefinition, AlarmEvent, AlarmRuntimeState
@@ -385,6 +386,33 @@ class AlarmManager:
         new_runtime, events = sm.reset(runtime, alarm, condition_active, user)
         await self._async_apply_transition(alarm_id, new_runtime, events)
 
+    # --- External trigger/clear ---
+
+    async def async_trigger_external(
+        self, alarm_id: str, message: str | None = None, user: str | None = None
+    ) -> None:
+        """Externally trigger an alarm (for external trigger type)."""
+        runtime = self._runtime_states.get(alarm_id)
+        alarm = self._alarms.get(alarm_id)
+        if runtime is None or alarm is None:
+            return
+
+        value = message or "externally triggered"
+        new_runtime, events = sm.condition_met(runtime, alarm, value)
+        await self._async_apply_transition(alarm_id, new_runtime, events)
+
+    async def async_clear_external(
+        self, alarm_id: str, user: str | None = None
+    ) -> None:
+        """Externally clear an alarm (for external trigger type)."""
+        runtime = self._runtime_states.get(alarm_id)
+        alarm = self._alarms.get(alarm_id)
+        if runtime is None or alarm is None:
+            return
+
+        new_runtime, events = sm.condition_cleared(runtime, alarm, None)
+        await self._async_apply_transition(alarm_id, new_runtime, events)
+
     # --- Summary accessors ---
 
     def get_active_count(self) -> int:
@@ -504,7 +532,7 @@ class AlarmManager:
         """Set up state change listeners for all watched entities."""
         entity_ids: set[str] = set()
         for alarm in self._alarms.values():
-            if alarm.enabled:
+            if alarm.enabled and alarm.trigger_type != TriggerType.EXTERNAL:
                 entity_ids.add(alarm.source_entity_id)
 
         if entity_ids:
@@ -536,7 +564,7 @@ class AlarmManager:
     async def _async_initial_evaluation(self) -> None:
         """Evaluate all alarms against current entity states on startup."""
         for alarm in self._alarms.values():
-            if alarm.enabled:
+            if alarm.enabled and alarm.trigger_type != TriggerType.EXTERNAL:
                 entity_state = self.hass.states.get(alarm.source_entity_id)
                 await self._async_evaluate_alarm(alarm, entity_state)
 

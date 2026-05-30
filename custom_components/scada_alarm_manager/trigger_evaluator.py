@@ -34,6 +34,9 @@ class TriggerEvaluator:
         if entity_state is None:
             return False
 
+        if alarm_def.trigger_type == TriggerType.EXTERNAL:
+            return False  # External alarms are triggered via service calls, not entity evaluation
+
         if alarm_def.trigger_type == TriggerType.ANALOG:
             return self._evaluate_analog(alarm_def, entity_state)
         if alarm_def.trigger_type == TriggerType.DIGITAL:

@@ -759,6 +759,7 @@ const dt=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
               <option value="analog">Analog (threshold)</option>
               <option value="digital">Digital (state match)</option>
               <option value="custom_state">Custom State (value list)</option>
+              <option value="external">External (triggered via service/automation)</option>
             </select>
           </div>
 

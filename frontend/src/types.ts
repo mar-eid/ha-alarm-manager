@@ -60,7 +60,7 @@ export const STATE_LABELS: Record<AlarmState, string> = {
   disabled: "Disabled",
 };
 
-export type TriggerType = "analog" | "digital" | "custom_state";
+export type TriggerType = "analog" | "digital" | "custom_state" | "external";
 
 export interface AlarmDefinition {
   id: string;

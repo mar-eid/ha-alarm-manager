@@ -250,6 +250,7 @@ export class CreateEditView extends LitElement {
               <option value="analog">Analog (threshold)</option>
               <option value="digital">Digital (state match)</option>
               <option value="custom_state">Custom State (value list)</option>
+              <option value="external">External (triggered via service/automation)</option>
             </select>
           </div>
 
