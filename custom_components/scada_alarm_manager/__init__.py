@@ -129,31 +129,44 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def _async_register_card_resource(hass: HomeAssistant) -> None:
     """Register the alarm card as a Lovelace resource if not already present."""
-    resources: ResourceStorageCollection = hass.data["lovelace"]["resources"]
-    # Wait for resources to load if they haven't yet
-    if not resources.loaded:
-        await resources.async_load()
-
-    # Check if already registered
-    for item in resources.async_items():
-        if item.get("url", "").startswith(CARD_URL):
+    try:
+        lovelace_data = hass.data.get("lovelace")
+        if not lovelace_data or "resources" not in lovelace_data:
+            _LOGGER.debug("Lovelace resources not available (YAML mode?), skipping card registration")
             return
 
-    await resources.async_create_item({"res_type": "module", "url": CARD_URL})
-    _LOGGER.info("Registered Lovelace resource: %s", CARD_URL)
+        resources: ResourceStorageCollection = lovelace_data["resources"]
+        if not resources.loaded:
+            await resources.async_load()
+
+        for item in resources.async_items():
+            if item.get("url", "").startswith(CARD_URL):
+                return
+
+        await resources.async_create_item({"res_type": "module", "url": CARD_URL})
+        _LOGGER.info("Registered Lovelace resource: %s", CARD_URL)
+    except Exception:
+        _LOGGER.warning("Could not auto-register card resource — add manually: %s", CARD_URL)
 
 
 async def _async_remove_card_resource(hass: HomeAssistant) -> None:
     """Remove the alarm card Lovelace resource."""
-    resources: ResourceStorageCollection = hass.data["lovelace"]["resources"]
-    if not resources.loaded:
-        await resources.async_load()
-
-    for item in resources.async_items():
-        if item.get("url", "").startswith(CARD_URL):
-            await resources.async_delete_item(item["id"])
-            _LOGGER.info("Removed Lovelace resource: %s", CARD_URL)
+    try:
+        lovelace_data = hass.data.get("lovelace")
+        if not lovelace_data or "resources" not in lovelace_data:
             return
+
+        resources: ResourceStorageCollection = lovelace_data["resources"]
+        if not resources.loaded:
+            await resources.async_load()
+
+        for item in resources.async_items():
+            if item.get("url", "").startswith(CARD_URL):
+                await resources.async_delete_item(item["id"])
+                _LOGGER.info("Removed Lovelace resource: %s", CARD_URL)
+                return
+    except Exception:
+        _LOGGER.warning("Could not remove card resource")
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
