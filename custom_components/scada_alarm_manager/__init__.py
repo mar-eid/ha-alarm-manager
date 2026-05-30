@@ -29,6 +29,7 @@ FRONTEND_URL_PATH = "scada-alarm-manager"
 PANEL_TITLE = "Alarm Center"
 PANEL_ICON = "mdi:alert-decagram"
 CARD_URL = f"/{DOMAIN}/frontend/alarm-card.js"
+CENTER_CARD_URL = f"/{DOMAIN}/frontend/alarm-center-card.js"
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -128,7 +129,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def _async_register_card_resource(hass: HomeAssistant) -> None:
-    """Register the alarm card as a Lovelace resource if not already present."""
+    """Register alarm card JS files as Lovelace resources if not already present."""
     try:
         lovelace_data = hass.data.get("lovelace")
         if not lovelace_data or "resources" not in lovelace_data:
@@ -139,14 +140,14 @@ async def _async_register_card_resource(hass: HomeAssistant) -> None:
         if not resources.loaded:
             await resources.async_load()
 
-        for item in resources.async_items():
-            if item.get("url", "").startswith(CARD_URL):
-                return
+        existing_urls = {item.get("url", "") for item in resources.async_items()}
 
-        await resources.async_create_item({"res_type": "module", "url": CARD_URL})
-        _LOGGER.info("Registered Lovelace resource: %s", CARD_URL)
+        for url in (CARD_URL, CENTER_CARD_URL):
+            if not any(u.startswith(url) for u in existing_urls):
+                await resources.async_create_item({"res_type": "module", "url": url})
+                _LOGGER.info("Registered Lovelace resource: %s", url)
     except Exception:
-        _LOGGER.warning("Could not auto-register card resource — add manually: %s", CARD_URL)
+        _LOGGER.warning("Could not auto-register card resources")
 
 
 async def _async_remove_card_resource(hass: HomeAssistant) -> None:

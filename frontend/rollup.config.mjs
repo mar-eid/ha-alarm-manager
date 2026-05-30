@@ -29,4 +29,13 @@ export default [
     },
     plugins: commonPlugins,
   },
+  {
+    input: "src/alarm-center-card.ts",
+    output: {
+      file: "../custom_components/scada_alarm_manager/frontend/alarm-center-card.js",
+      format: "es",
+      sourcemap: !production,
+    },
+    plugins: commonPlugins,
+  },
 ];

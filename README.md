@@ -1,6 +1,6 @@
 # SCADA Alarm Manager for Home Assistant
 
-**Version: 0.2.1**
+**Version: 0.3.0**
 
 An industrial-style alarm management system for Home Assistant, with GUI-configurable alarm rules, alarm channels, SCADA-like acknowledgement workflows, dashboard monitoring, and actionable mobile response.
 
