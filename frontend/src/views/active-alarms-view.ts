@@ -94,7 +94,11 @@ export class ActiveAlarmsView extends LitElement {
 
   private async _shelve(alarmId: string) {
     if (!this.hass) return;
-    await shelveAlarm(this.hass, alarmId, 15);
+    const input = prompt("Shelve duration in minutes:", "15");
+    if (input === null) return;
+    const duration = parseInt(input, 10);
+    if (isNaN(duration) || duration < 1) return;
+    await shelveAlarm(this.hass, alarmId, duration);
     this._loadAlarms();
   }
 

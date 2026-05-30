@@ -1,7 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { sharedStyles, getStateColor } from "../styles/shared-styles";
-import { fetchAlarms, fetchChannels, deleteAlarm } from "../data/websocket";
+import { fetchAlarms, fetchChannels, deleteAlarm, shelveAlarm, unshelveAlarm } from "../data/websocket";
 import { STATE_LABELS, PRIORITY_LABELS, type HomeAssistant, type AlarmWithState, type AlarmChannel } from "../types";
 import "../components/severity-badge";
 
@@ -97,6 +97,22 @@ export class AllAlarmsView extends LitElement {
     });
   }
 
+  private async _shelve(alarmId: string) {
+    if (!this.hass) return;
+    const input = prompt("Shelve duration in minutes:", "15");
+    if (input === null) return;
+    const duration = parseInt(input, 10);
+    if (isNaN(duration) || duration < 1) return;
+    await shelveAlarm(this.hass, alarmId, duration);
+    this._load();
+  }
+
+  private async _unshelve(alarmId: string) {
+    if (!this.hass) return;
+    await unshelveAlarm(this.hass, alarmId);
+    this._load();
+  }
+
   render() {
     if (this._loading) return html`<div class="empty-state">Loading...</div>`;
     const filtered = this._filtered;
@@ -157,13 +173,23 @@ export class AllAlarmsView extends LitElement {
             (alarm) => html`
               <tr>
                 <td><severity-badge .priority=${alarm.priority}></severity-badge></td>
-                <td><strong>${alarm.name}</strong></td>
+                <td>
+                  <strong>${alarm.name}</strong>
+                  ${alarm.runtime.state === "shelved" && alarm.runtime.shelved_until
+                    ? html`<br><span style="font-size: 0.75em; color: var(--secondary-text-color);">Until ${new Date(alarm.runtime.shelved_until).toLocaleString()}</span>`
+                    : ""}
+                </td>
                 <td><span class="badge" style="background: ${getStateColor(alarm.runtime.state)}">${STATE_LABELS[alarm.runtime.state] ?? alarm.runtime.state}</span></td>
                 <td>${alarm.source_entity_id}</td>
                 <td>${alarm.trigger_type}</td>
                 <td>${this._getChannelName(alarm.channel_id)}</td>
                 <td>${alarm.enabled ? "Yes" : "No"}</td>
                 <td class="actions">
+                  ${alarm.runtime.state === "shelved"
+                    ? html`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" @click=${() => this._unshelve(alarm.id)}>Unshelve</button>`
+                    : alarm.runtime.state !== "disabled" && alarm.runtime.state !== "normal"
+                      ? html`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" @click=${() => this._shelve(alarm.id)}>Shelve</button>`
+                      : ""}
                   ${alarm.channel_id ? html`<button class="btn btn-small" style="background: #607D8B; color: white;" @click=${() => this._testNotification(alarm)} title="Test notification">Test</button>` : ""}
                   <button class="btn btn-small btn-primary" @click=${() => this._edit(alarm.id)}>Edit</button>
                   <button class="btn btn-small btn-danger" @click=${() => this._delete(alarm.id)}>Delete</button>
