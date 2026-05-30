@@ -4,6 +4,7 @@ import { sharedStyles, getStateColor } from "../styles/shared-styles";
 import { fetchAlarms, fetchChannels, deleteAlarm, shelveAlarm, unshelveAlarm } from "../data/websocket";
 import { STATE_LABELS, PRIORITY_LABELS, type HomeAssistant, type AlarmWithState, type AlarmChannel } from "../types";
 import "../components/severity-badge";
+import "../components/alarm-detail-dialog";
 
 @customElement("all-alarms-view")
 export class AllAlarmsView extends LitElement {
@@ -11,6 +12,7 @@ export class AllAlarmsView extends LitElement {
   @state() private _alarms: AlarmWithState[] = [];
   @state() private _channels: AlarmChannel[] = [];
   @state() private _loading = true;
+  @state() private _detailAlarm?: AlarmWithState;
 
   // Column filters
   @state() private _filterPriority = "";
@@ -33,6 +35,7 @@ export class AllAlarmsView extends LitElement {
         color: var(--primary-text-color, #333);
       }
       .test-ok { color: var(--alarm-normal, #4CAF50); font-size: 0.8em; }
+      tbody tr { cursor: pointer; }
     `,
   ];
 
@@ -171,7 +174,7 @@ export class AllAlarmsView extends LitElement {
         <tbody>
           ${filtered.map(
             (alarm) => html`
-              <tr>
+              <tr @click=${() => this._detailAlarm = alarm}>
                 <td><severity-badge .priority=${alarm.priority}></severity-badge></td>
                 <td>
                   <strong>${alarm.name}</strong>
@@ -199,6 +202,11 @@ export class AllAlarmsView extends LitElement {
           )}
         </tbody>
       </table>
+      <alarm-detail-dialog
+        .alarm=${this._detailAlarm}
+        .open=${!!this._detailAlarm}
+        @close=${() => this._detailAlarm = undefined}
+      ></alarm-detail-dialog>
     `;
   }
 }

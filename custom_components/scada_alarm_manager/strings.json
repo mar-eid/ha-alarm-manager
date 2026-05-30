@@ -16,9 +16,14 @@
       "init": {
         "title": "SCADA Alarm Manager Options",
         "data": {
-          "default_repeat_interval": "Default notification repeat interval (minutes)",
-          "default_escalation_delay": "Default escalation delay (minutes)",
-          "history_retention_days": "Alarm history retention (days)"
+          "default_shelve_duration": "Default shelve duration (minutes)",
+          "history_retention_days": "History retention (days)",
+          "scan_interval": "Scan interval (seconds)"
+        },
+        "data_description": {
+          "default_shelve_duration": "How long alarms are shelved by default (1\u201310080 minutes).",
+          "history_retention_days": "Number of days to retain alarm event history (1\u2013365 days).",
+          "scan_interval": "How often to check entity states for alarm conditions (10\u2013300 seconds)."
         }
       }
     }

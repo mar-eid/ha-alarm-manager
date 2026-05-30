@@ -4,6 +4,7 @@ import { sharedStyles, getPriorityColor, getStateColor } from "../styles/shared-
 import { fetchAlarms, acknowledgeAlarm, shelveAlarm, subscribeAlarmChanges } from "../data/websocket";
 import { STATE_LABELS, PRIORITY_LABELS, type HomeAssistant, type AlarmWithState } from "../types";
 import "../components/severity-badge";
+import "../components/alarm-detail-dialog";
 
 @customElement("active-alarms-view")
 export class ActiveAlarmsView extends LitElement {
@@ -11,6 +12,8 @@ export class ActiveAlarmsView extends LitElement {
   @state() private _alarms: AlarmWithState[] = [];
   @state() private _loading = true;
   private _unsub?: () => void;
+
+  @state() private _detailAlarm?: AlarmWithState;
 
   // Column filters
   @state() private _filterPriority = "";
@@ -31,6 +34,7 @@ export class ActiveAlarmsView extends LitElement {
       @keyframes flash { from { opacity: 1; } to { opacity: 0.5; } }
       .alarm-row-critical { border-left: 3px solid var(--alarm-critical); }
       .alarm-row-high { border-left: 3px solid var(--alarm-high); }
+      tbody tr { cursor: pointer; }
       .time-ago { font-size: 0.8em; color: var(--secondary-text-color); }
       .filter-row input, .filter-row select {
         width: 100%; padding: 4px 6px; font-size: 0.8em;
@@ -160,7 +164,7 @@ export class ActiveAlarmsView extends LitElement {
             const rowClass = alarm.priority >= 3 ? "alarm-row-critical" : alarm.priority >= 2 ? "alarm-row-high" : "";
             const isUnacked = alarm.runtime.state === "active_unacknowledged" || alarm.runtime.state === "returned_to_normal_unacknowledged";
             return html`
-              <tr class="${rowClass} ${alarm.priority >= 3 && isUnacked ? "flashing" : ""}">
+              <tr class="${rowClass} ${alarm.priority >= 3 && isUnacked ? "flashing" : ""}" @click=${() => this._detailAlarm = alarm}>
                 <td><severity-badge .priority=${alarm.priority}></severity-badge></td>
                 <td><strong>${alarm.name}</strong>${alarm.area ? html`<br><span class="time-ago">${alarm.area}</span>` : ""}</td>
                 <td><span class="badge" style="background: ${getStateColor(alarm.runtime.state)}">${STATE_LABELS[alarm.runtime.state] ?? alarm.runtime.state}</span></td>
@@ -176,6 +180,11 @@ export class ActiveAlarmsView extends LitElement {
           })}
         </tbody>
       </table>
+      <alarm-detail-dialog
+        .alarm=${this._detailAlarm}
+        .open=${!!this._detailAlarm}
+        @close=${() => this._detailAlarm = undefined}
+      ></alarm-detail-dialog>
     `;
   }
 }

@@ -2,20 +2,21 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
-
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 from homeassistant.core import callback
-from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
-    DEFAULT_ESCALATION_DELAY,
     DEFAULT_HISTORY_RETENTION_DAYS,
-    DEFAULT_REPEAT_INTERVAL,
+    DEFAULT_SCAN_INTERVAL,
+    DEFAULT_SHELVE_DURATION,
     DOMAIN,
 )
+
+if TYPE_CHECKING:
+    from homeassistant.data_entry_flow import FlowResult
 
 
 class ScadaAlarmManagerConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -24,9 +25,7 @@ class ScadaAlarmManagerConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
     MINOR_VERSION = 1
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle the initial step."""
         # Singleton: only one instance allowed
         await self.async_set_unique_id(DOMAIN)
@@ -51,11 +50,10 @@ class ScadaAlarmManagerOptionsFlow(OptionsFlow):
     """Handle options flow for SCADA Alarm Manager."""
 
     def __init__(self, config_entry: ConfigEntry) -> None:
+        """Initialize options flow."""
         self._config_entry = config_entry
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Manage options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
@@ -66,26 +64,26 @@ class ScadaAlarmManagerOptionsFlow(OptionsFlow):
             data_schema=vol.Schema(
                 {
                     vol.Optional(
-                        "default_repeat_interval",
+                        "default_shelve_duration",
                         default=options.get(
-                            "default_repeat_interval",
-                            DEFAULT_REPEAT_INTERVAL // 60,
+                            "default_shelve_duration",
+                            DEFAULT_SHELVE_DURATION,
                         ),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=1440)),
-                    vol.Optional(
-                        "default_escalation_delay",
-                        default=options.get(
-                            "default_escalation_delay",
-                            DEFAULT_ESCALATION_DELAY // 60,
-                        ),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=1440)),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=10080)),
                     vol.Optional(
                         "history_retention_days",
                         default=options.get(
                             "history_retention_days",
                             DEFAULT_HISTORY_RETENTION_DAYS,
                         ),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=3650)),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=1, max=365)),
+                    vol.Optional(
+                        "scan_interval",
+                        default=options.get(
+                            "scan_interval",
+                            DEFAULT_SCAN_INTERVAL,
+                        ),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=10, max=300)),
                 }
             ),
         )
