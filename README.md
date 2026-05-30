@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/logo.svg" alt="SCADA Alarm Manager" width="160">
+  <img src="https://raw.githubusercontent.com/mar-eid/ha-alarm-manager/master/images/logo.svg" alt="SCADA Alarm Manager" width="160">
 </p>
 
 <h1 align="center">SCADA Alarm Manager</h1>
@@ -7,7 +7,7 @@
 <p align="center">
   Industrial-style alarm management for Home Assistant
   <br>
-  <strong>v0.5.0</strong>
+  <strong>v0.5.3</strong>
 </p>
 
 <p align="center">
