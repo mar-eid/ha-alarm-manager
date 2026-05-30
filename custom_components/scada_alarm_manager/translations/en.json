@@ -1,0 +1,26 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "SCADA Alarm Manager",
+        "description": "Set up the SCADA Alarm Manager integration. This provides industrial-style alarm management with configurable alarm rules, channels, and notifications.",
+        "data": {}
+      }
+    },
+    "abort": {
+      "already_configured": "SCADA Alarm Manager is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "SCADA Alarm Manager Options",
+        "data": {
+          "default_repeat_interval": "Default notification repeat interval (minutes)",
+          "default_escalation_delay": "Default escalation delay (minutes)",
+          "history_retention_days": "Alarm history retention (days)"
+        }
+      }
+    }
+  }
+}

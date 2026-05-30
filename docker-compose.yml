@@ -1,0 +1,15 @@
+services:
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: ha-alarm-dev
+    restart: unless-stopped
+    ports:
+      - "8123:8123"
+    volumes:
+      - ha-config:/config
+      - ./custom_components/scada_alarm_manager:/config/custom_components/scada_alarm_manager:ro
+    environment:
+      - TZ=Europe/Oslo
+
+volumes:
+  ha-config:

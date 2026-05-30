@@ -1,0 +1,105 @@
+acknowledge:
+  name: Acknowledge Alarm
+  description: Acknowledge a single alarm.
+  fields:
+    alarm_id:
+      name: Alarm ID
+      description: The ID of the alarm to acknowledge.
+      required: true
+      selector:
+        text:
+
+acknowledge_all:
+  name: Acknowledge All Alarms
+  description: Acknowledge all active alarms, optionally filtered by channel or priority.
+  fields:
+    channel:
+      name: Channel
+      description: Only acknowledge alarms in this channel.
+      required: false
+      selector:
+        text:
+    priority:
+      name: Priority
+      description: "Only acknowledge alarms with this priority (0=Info, 1=Warning, 2=High, 3=Critical)."
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 3
+          mode: slider
+
+shelve:
+  name: Shelve Alarm
+  description: Temporarily suppress an alarm for a specified duration.
+  fields:
+    alarm_id:
+      name: Alarm ID
+      description: The ID of the alarm to shelve.
+      required: true
+      selector:
+        text:
+    duration:
+      name: Duration
+      description: Duration in minutes to shelve the alarm.
+      required: true
+      selector:
+        number:
+          min: 1
+          max: 10080
+          unit_of_measurement: min
+
+unshelve:
+  name: Unshelve Alarm
+  description: Remove shelve from an alarm, restoring its previous state.
+  fields:
+    alarm_id:
+      name: Alarm ID
+      description: The ID of the alarm to unshelve.
+      required: true
+      selector:
+        text:
+
+enable:
+  name: Enable Alarm
+  description: Enable a disabled alarm and re-evaluate its trigger.
+  fields:
+    alarm_id:
+      name: Alarm ID
+      description: The ID of the alarm to enable.
+      required: true
+      selector:
+        text:
+
+disable:
+  name: Disable Alarm
+  description: Disable an alarm, stopping all trigger evaluation and notifications.
+  fields:
+    alarm_id:
+      name: Alarm ID
+      description: The ID of the alarm to disable.
+      required: true
+      selector:
+        text:
+
+reset:
+  name: Reset Alarm
+  description: Reset a latched alarm. Only effective if the trigger condition has cleared.
+  fields:
+    alarm_id:
+      name: Alarm ID
+      description: The ID of the alarm to reset.
+      required: true
+      selector:
+        text:
+
+test_notification:
+  name: Test Notification
+  description: Send a test notification through an alarm channel.
+  fields:
+    channel_id:
+      name: Channel ID
+      description: The ID of the channel to send the test notification through.
+      required: true
+      selector:
+        text:

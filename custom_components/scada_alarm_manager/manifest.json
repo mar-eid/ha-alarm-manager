@@ -1,0 +1,13 @@
+{
+  "domain": "scada_alarm_manager",
+  "name": "SCADA Alarm Manager",
+  "version": "0.1.0",
+  "codeowners": [],
+  "config_flow": true,
+  "documentation": "https://github.com/placeholder/ha-scada-alarm-manager",
+  "issue_tracker": "https://github.com/placeholder/ha-scada-alarm-manager/issues",
+  "requirements": ["aiosqlite>=0.20.0"],
+  "iot_class": "local_push",
+  "integration_type": "service",
+  "homeassistant": "2026.1.0"
+}
