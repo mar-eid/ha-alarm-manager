@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 
-from homeassistant.components.frontend import async_register_built_in_panel
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.components.lovelace.resources import ResourceStorageCollection
 from homeassistant.config_entries import ConfigEntry
@@ -25,9 +24,6 @@ from .websocket_api import async_register_websocket_commands
 
 _LOGGER = logging.getLogger(__name__)
 
-FRONTEND_URL_PATH = "scada-alarm-manager"
-PANEL_TITLE = "Alarm Center"
-PANEL_ICON = "mdi:alert-decagram"
 CARD_URL = f"/{DOMAIN}/frontend/alarm-card.js"
 CENTER_CARD_URL = f"/{DOMAIN}/frontend/alarm-center-card.js"
 
@@ -79,22 +75,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                 cache_headers=False,
             )
         ]
-    )
-
-    # Register sidebar panel
-    async_register_built_in_panel(
-        hass,
-        component_name="custom",
-        sidebar_title=PANEL_TITLE,
-        sidebar_icon=PANEL_ICON,
-        frontend_url_path=FRONTEND_URL_PATH,
-        config={
-            "_panel_custom": {
-                "name": "scada-alarm-center-panel",
-                "module_url": f"/{DOMAIN}/frontend/alarm-center-panel.js",
-            }
-        },
-        require_admin=False,
     )
 
     # Auto-register Lovelace card resource (idempotent)
@@ -203,8 +183,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Unregister services
         await async_unregister_services(hass)
 
-        # Remove panel and card resource
-        hass.components.frontend.async_remove_panel(FRONTEND_URL_PATH)
+        # Remove card resources
         await _async_remove_card_resource(hass)
 
         # Clean up
