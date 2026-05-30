@@ -12,6 +12,12 @@ export class ActiveAlarmsView extends LitElement {
   @state() private _loading = true;
   private _unsub?: () => void;
 
+  // Column filters
+  @state() private _filterPriority = "";
+  @state() private _filterName = "";
+  @state() private _filterState = "";
+  @state() private _filterSource = "";
+
   static styles = [
     sharedStyles,
     css`
@@ -26,6 +32,12 @@ export class ActiveAlarmsView extends LitElement {
       .alarm-row-critical { border-left: 3px solid var(--alarm-critical); }
       .alarm-row-high { border-left: 3px solid var(--alarm-high); }
       .time-ago { font-size: 0.8em; color: var(--secondary-text-color); }
+      .filter-row input, .filter-row select {
+        width: 100%; padding: 4px 6px; font-size: 0.8em;
+        border: 1px solid var(--divider-color, #ccc); border-radius: 4px;
+        background: var(--card-background-color, white);
+        color: var(--primary-text-color, #333);
+      }
     `,
   ];
 
@@ -62,6 +74,18 @@ export class ActiveAlarmsView extends LitElement {
     });
   }
 
+  private get _filtered(): AlarmWithState[] {
+    return this._alarms
+      .filter((a) => {
+        if (this._filterPriority && String(a.priority) !== this._filterPriority) return false;
+        if (this._filterName && !a.name.toLowerCase().includes(this._filterName.toLowerCase())) return false;
+        if (this._filterState && a.runtime.state !== this._filterState) return false;
+        if (this._filterSource && !a.source_entity_id.toLowerCase().includes(this._filterSource.toLowerCase())) return false;
+        return true;
+      })
+      .sort((a, b) => b.priority - a.priority);
+  }
+
   private async _ack(alarmId: string) {
     if (!this.hass) return;
     await acknowledgeAlarm(this.hass, alarmId);
@@ -86,11 +110,15 @@ export class ActiveAlarmsView extends LitElement {
       `;
     }
 
+    const filtered = this._filtered;
+    const activeStates = ["active_unacknowledged", "active_acknowledged", "returned_to_normal_unacknowledged"] as const;
+
     return html`
       <div class="header-actions">
         <span class="count-badge" style="background: ${getPriorityColor(3)}22; color: ${getPriorityColor(3)}">
           ${this._alarms.length} active
         </span>
+        ${filtered.length !== this._alarms.length ? html`<span style="font-size: 0.85em; color: var(--secondary-text-color);">(showing ${filtered.length})</span>` : ""}
       </div>
       <table>
         <thead>
@@ -103,28 +131,45 @@ export class ActiveAlarmsView extends LitElement {
             <th>Triggered</th>
             <th>Actions</th>
           </tr>
+          <tr class="filter-row">
+            <th>
+              <select @change=${(e: Event) => this._filterPriority = (e.target as HTMLSelectElement).value}>
+                <option value="">All</option>
+                ${([0, 1, 2, 3] as const).map((p) => html`<option value=${p}>${PRIORITY_LABELS[p]}</option>`)}
+              </select>
+            </th>
+            <th><input type="text" placeholder="Filter..." .value=${this._filterName} @input=${(e: Event) => this._filterName = (e.target as HTMLInputElement).value} /></th>
+            <th>
+              <select @change=${(e: Event) => this._filterState = (e.target as HTMLSelectElement).value}>
+                <option value="">All</option>
+                ${activeStates.map((s) => html`<option value=${s}>${STATE_LABELS[s]}</option>`)}
+              </select>
+            </th>
+            <th><input type="text" placeholder="Filter..." .value=${this._filterSource} @input=${(e: Event) => this._filterSource = (e.target as HTMLInputElement).value} /></th>
+            <th></th>
+            <th></th>
+            <th></th>
+          </tr>
         </thead>
         <tbody>
-          ${this._alarms
-            .sort((a, b) => b.priority - a.priority)
-            .map((alarm) => {
-              const rowClass = alarm.priority >= 3 ? "alarm-row-critical" : alarm.priority >= 2 ? "alarm-row-high" : "";
-              const isUnacked = alarm.runtime.state === "active_unacknowledged" || alarm.runtime.state === "returned_to_normal_unacknowledged";
-              return html`
-                <tr class="${rowClass} ${alarm.priority >= 3 && isUnacked ? "flashing" : ""}">
-                  <td><severity-badge .priority=${alarm.priority}></severity-badge></td>
-                  <td><strong>${alarm.name}</strong>${alarm.area ? html`<br><span class="time-ago">${alarm.area}</span>` : ""}</td>
-                  <td><span class="badge" style="background: ${getStateColor(alarm.runtime.state)}">${STATE_LABELS[alarm.runtime.state] ?? alarm.runtime.state}</span></td>
-                  <td>${alarm.source_entity_id}</td>
-                  <td>${alarm.runtime.last_value ?? "-"}</td>
-                  <td class="time-ago">${alarm.runtime.triggered_at ? new Date(alarm.runtime.triggered_at).toLocaleString() : "-"}</td>
-                  <td class="actions">
-                    ${isUnacked ? html`<button class="btn btn-primary btn-small" @click=${() => this._ack(alarm.id)}>ACK</button>` : ""}
-                    <button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" @click=${() => this._shelve(alarm.id)}>Shelve</button>
-                  </td>
-                </tr>
-              `;
-            })}
+          ${filtered.map((alarm) => {
+            const rowClass = alarm.priority >= 3 ? "alarm-row-critical" : alarm.priority >= 2 ? "alarm-row-high" : "";
+            const isUnacked = alarm.runtime.state === "active_unacknowledged" || alarm.runtime.state === "returned_to_normal_unacknowledged";
+            return html`
+              <tr class="${rowClass} ${alarm.priority >= 3 && isUnacked ? "flashing" : ""}">
+                <td><severity-badge .priority=${alarm.priority}></severity-badge></td>
+                <td><strong>${alarm.name}</strong>${alarm.area ? html`<br><span class="time-ago">${alarm.area}</span>` : ""}</td>
+                <td><span class="badge" style="background: ${getStateColor(alarm.runtime.state)}">${STATE_LABELS[alarm.runtime.state] ?? alarm.runtime.state}</span></td>
+                <td>${alarm.source_entity_id}</td>
+                <td>${alarm.runtime.last_value ?? "-"}</td>
+                <td class="time-ago">${alarm.runtime.triggered_at ? new Date(alarm.runtime.triggered_at).toLocaleString() : "-"}</td>
+                <td class="actions">
+                  ${isUnacked ? html`<button class="btn btn-primary btn-small" @click=${() => this._ack(alarm.id)}>ACK</button>` : ""}
+                  <button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" @click=${() => this._shelve(alarm.id)}>Shelve</button>
+                </td>
+              </tr>
+            `;
+          })}
         </tbody>
       </table>
     `;

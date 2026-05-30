@@ -9,9 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Full REST/Service API: 11 new CRUD services with `response_data` for remote access (MCP servers, external tools)
+  - Alarm CRUD: `list_alarms`, `get_alarm`, `create_alarm`, `update_alarm`, `delete_alarm`
+  - Channel CRUD: `list_channels`, `get_channel`, `create_channel`, `update_channel`, `delete_channel`
+  - Event history: `list_events` with filtering and pagination
+- HA-native entity picker (`ha-entity-picker`) and area picker (`ha-area-picker`) in alarm create/edit form
+- Column filtering on all table views (Active Alarms, All Alarms, History, Channels)
+- Test notification button on All Alarms table for alarms with assigned channels
 - Auto-register Lovelace card resource so `scada-alarm-card` appears in the card picker without manual setup
 - Clean up card resource on integration unload
-
 - Initial project scaffolding
 - SCADA alarm state machine (Normal, Active Unacked, Active Acked, RTN Unacked, Shelved, Disabled)
 - Alarm definitions with analog, digital, and custom state triggers

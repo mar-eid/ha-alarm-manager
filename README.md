@@ -1,6 +1,6 @@
 # SCADA Alarm Manager for Home Assistant
 
-**Version: 0.1.2**
+**Version: 0.2.0**
 
 An industrial-style alarm management system for Home Assistant, with GUI-configurable alarm rules, alarm channels, SCADA-like acknowledgement workflows, dashboard monitoring, and actionable mobile response.
 
@@ -9,8 +9,9 @@ An industrial-style alarm management system for Home Assistant, with GUI-configu
 - **SCADA-style alarm lifecycle**: Normal, Active (Unacknowledged/Acknowledged), Returned to Normal, Shelved, Disabled
 - **Three trigger types**: Analog thresholds, digital state changes, custom state/template conditions
 - **Alarm channels**: Route notifications to the right people based on alarm category and priority
-- **Alarm Center panel**: Full-screen sidebar panel for alarm management with 6 tabs
-- **Lovelace card**: Compact dashboard card showing active alarms, counts, and quick actions
+- **Alarm Center panel**: Full-screen sidebar panel with 6 tabs, column filtering, and HA-native entity/area pickers
+- **Lovelace card**: Compact dashboard card showing active alarms, counts, and quick actions (auto-registered)
+- **Full REST/Service API**: All CRUD operations available as HA services with response data — enables MCP servers and external integrations
 - **Actionable notifications**: Acknowledge, shelve, or open alarms directly from mobile push notifications
 - **Alarm history**: Full event log with filtering and pagination via SQLite
 - **HA integration**: Each alarm is a binary sensor entity with full Recorder/History support
@@ -36,9 +37,10 @@ An industrial-style alarm management system for Home Assistant, with GUI-configu
 
 1. After installation, the **Alarm Center** appears in the sidebar
 2. Create alarm channels (e.g., "Safety", "HVAC", "Security") to define notification routing
-3. Create alarms by selecting a source entity, trigger condition, priority, and channel
+3. Create alarms by selecting a source entity (with autocomplete), trigger condition, priority, and channel
 4. Alarms automatically evaluate and transition through the SCADA state machine
 5. Use the Lovelace card on dashboards for at-a-glance monitoring
+6. Test notifications from the **All Alarms** tab to verify channel routing
 
 ## Alarm Priorities
 
@@ -51,6 +53,8 @@ An industrial-style alarm management system for Home Assistant, with GUI-configu
 
 ## Services
 
+### Action Services
+
 | Service | Description |
 |---------|-------------|
 | `scada_alarm_manager.acknowledge` | Acknowledge a single alarm |
@@ -61,6 +65,24 @@ An industrial-style alarm management system for Home Assistant, with GUI-configu
 | `scada_alarm_manager.disable` | Disable an alarm |
 | `scada_alarm_manager.reset` | Reset a latched alarm |
 | `scada_alarm_manager.test_notification` | Send a test notification through a channel |
+
+### CRUD Services (with response data)
+
+| Service | Description |
+|---------|-------------|
+| `scada_alarm_manager.list_alarms` | List all alarm definitions with runtime state |
+| `scada_alarm_manager.get_alarm` | Get a single alarm by ID |
+| `scada_alarm_manager.create_alarm` | Create a new alarm definition |
+| `scada_alarm_manager.update_alarm` | Update an existing alarm definition |
+| `scada_alarm_manager.delete_alarm` | Delete an alarm definition |
+| `scada_alarm_manager.list_channels` | List all alarm channels |
+| `scada_alarm_manager.get_channel` | Get a single channel by ID |
+| `scada_alarm_manager.create_channel` | Create a new alarm channel |
+| `scada_alarm_manager.update_channel` | Update an existing alarm channel |
+| `scada_alarm_manager.delete_channel` | Delete an alarm channel |
+| `scada_alarm_manager.list_events` | Query alarm event history with filters |
+
+These CRUD services return data via HA's `response_data` mechanism, making them accessible via the REST API for MCP servers and external tools.
 
 ## Requirements
 

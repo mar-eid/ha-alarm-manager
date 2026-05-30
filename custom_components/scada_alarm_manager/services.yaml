@@ -103,3 +103,465 @@ test_notification:
       required: true
       selector:
         text:
+
+list_alarms:
+  name: List Alarms
+  description: List all alarm definitions with their current runtime state. Returns response data when called via REST API.
+  fields: {}
+
+get_alarm:
+  name: Get Alarm
+  description: Get a single alarm definition with its current runtime state. Returns response data when called via REST API.
+  fields:
+    alarm_id:
+      name: Alarm ID
+      description: The ID of the alarm to retrieve.
+      required: true
+      selector:
+        text:
+
+create_alarm:
+  name: Create Alarm
+  description: Create a new alarm definition. Returns the created alarm with runtime state when called via REST API.
+  fields:
+    name:
+      name: Name
+      description: Human-readable name for the alarm.
+      required: true
+      selector:
+        text:
+    source_entity_id:
+      name: Source Entity
+      description: The entity ID to monitor for this alarm.
+      required: true
+      selector:
+        entity:
+    trigger_type:
+      name: Trigger Type
+      description: "Type of trigger evaluation: analog, digital, or custom_state."
+      required: true
+      selector:
+        select:
+          options:
+            - analog
+            - digital
+            - custom_state
+    trigger_config:
+      name: Trigger Configuration
+      description: Trigger-specific configuration as a dictionary (e.g. thresholds, comparison operators).
+      required: true
+      selector:
+        object:
+    description:
+      name: Description
+      description: Optional description of the alarm.
+      required: false
+      selector:
+        text:
+    priority:
+      name: Priority
+      description: "Alarm priority level (0=Info, 1=Warning, 2=High, 3=Critical). Default: 1 (Warning)."
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 3
+          mode: slider
+    area:
+      name: Area
+      description: Plant area or zone where this alarm applies.
+      required: false
+      selector:
+        text:
+    equipment:
+      name: Equipment
+      description: Equipment identifier associated with this alarm.
+      required: false
+      selector:
+        text:
+    tag:
+      name: Tag
+      description: Tag or signal reference for this alarm.
+      required: false
+      selector:
+        text:
+    channel_id:
+      name: Channel ID
+      description: Notification channel ID to route alarm notifications through.
+      required: false
+      selector:
+        text:
+    enabled:
+      name: Enabled
+      description: "Whether the alarm is enabled. Default: true."
+      required: false
+      selector:
+        boolean:
+    latching:
+      name: Latching
+      description: "Whether the alarm latches (requires manual reset). Default: false."
+      required: false
+      selector:
+        boolean:
+    ack_required:
+      name: Acknowledgment Required
+      description: "Whether the alarm requires acknowledgment. Default: true."
+      required: false
+      selector:
+        boolean:
+    auto_clear:
+      name: Auto Clear
+      description: "Whether the alarm automatically clears when condition returns to normal. Default: true."
+      required: false
+      selector:
+        boolean:
+    repeat_interval:
+      name: Repeat Interval
+      description: Interval in seconds to repeat notifications for active alarms. Leave empty to use channel default.
+      required: false
+      selector:
+        number:
+          min: 1
+          unit_of_measurement: s
+    escalation_delay:
+      name: Escalation Delay
+      description: Delay in seconds before escalating to the escalation target. Leave empty to disable.
+      required: false
+      selector:
+        number:
+          min: 1
+          unit_of_measurement: s
+
+update_alarm:
+  name: Update Alarm
+  description: Update an existing alarm definition. Only provided fields are changed. Returns the updated alarm when called via REST API.
+  fields:
+    alarm_id:
+      name: Alarm ID
+      description: The ID of the alarm to update.
+      required: true
+      selector:
+        text:
+    name:
+      name: Name
+      description: Updated name for the alarm.
+      required: false
+      selector:
+        text:
+    description:
+      name: Description
+      description: Updated description.
+      required: false
+      selector:
+        text:
+    source_entity_id:
+      name: Source Entity
+      description: Updated source entity ID.
+      required: false
+      selector:
+        entity:
+    trigger_type:
+      name: Trigger Type
+      description: "Updated trigger type: analog, digital, or custom_state."
+      required: false
+      selector:
+        select:
+          options:
+            - analog
+            - digital
+            - custom_state
+    trigger_config:
+      name: Trigger Configuration
+      description: Updated trigger configuration dictionary.
+      required: false
+      selector:
+        object:
+    priority:
+      name: Priority
+      description: "Updated priority (0=Info, 1=Warning, 2=High, 3=Critical)."
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 3
+          mode: slider
+    area:
+      name: Area
+      description: Updated area.
+      required: false
+      selector:
+        text:
+    equipment:
+      name: Equipment
+      description: Updated equipment identifier.
+      required: false
+      selector:
+        text:
+    tag:
+      name: Tag
+      description: Updated tag reference.
+      required: false
+      selector:
+        text:
+    channel_id:
+      name: Channel ID
+      description: Updated notification channel ID.
+      required: false
+      selector:
+        text:
+    enabled:
+      name: Enabled
+      description: Updated enabled state.
+      required: false
+      selector:
+        boolean:
+    latching:
+      name: Latching
+      description: Updated latching setting.
+      required: false
+      selector:
+        boolean:
+    ack_required:
+      name: Acknowledgment Required
+      description: Updated acknowledgment requirement.
+      required: false
+      selector:
+        boolean:
+    auto_clear:
+      name: Auto Clear
+      description: Updated auto-clear setting.
+      required: false
+      selector:
+        boolean:
+    repeat_interval:
+      name: Repeat Interval
+      description: Updated repeat interval in seconds.
+      required: false
+      selector:
+        number:
+          min: 1
+          unit_of_measurement: s
+    escalation_delay:
+      name: Escalation Delay
+      description: Updated escalation delay in seconds.
+      required: false
+      selector:
+        number:
+          min: 1
+          unit_of_measurement: s
+
+delete_alarm:
+  name: Delete Alarm
+  description: Delete an alarm definition and its runtime state. Returns success confirmation when called via REST API.
+  fields:
+    alarm_id:
+      name: Alarm ID
+      description: The ID of the alarm to delete.
+      required: true
+      selector:
+        text:
+
+list_channels:
+  name: List Channels
+  description: List all notification channels. Returns response data when called via REST API.
+  fields: {}
+
+get_channel:
+  name: Get Channel
+  description: Get a single notification channel by ID. Returns response data when called via REST API.
+  fields:
+    channel_id:
+      name: Channel ID
+      description: The ID of the channel to retrieve.
+      required: true
+      selector:
+        text:
+
+create_channel:
+  name: Create Channel
+  description: Create a new notification channel. Returns the created channel when called via REST API.
+  fields:
+    name:
+      name: Name
+      description: Human-readable name for the channel.
+      required: true
+      selector:
+        text:
+    notification_targets:
+      name: Notification Targets
+      description: List of HA notify service targets (e.g. mobile_app_phone).
+      required: false
+      selector:
+        object:
+    min_priority:
+      name: Minimum Priority
+      description: "Minimum alarm priority to trigger notifications (0=Info, 1=Warning, 2=High, 3=Critical). Default: 0."
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 3
+          mode: slider
+    persistent_notification:
+      name: Persistent Notification
+      description: "Whether to create persistent notifications in HA. Default: true."
+      required: false
+      selector:
+        boolean:
+    mobile_push:
+      name: Mobile Push
+      description: "Whether to send mobile push notifications. Default: true."
+      required: false
+      selector:
+        boolean:
+    critical_notification:
+      name: Critical Notification
+      description: "Whether to send as critical/high-priority push notification. Default: false."
+      required: false
+      selector:
+        boolean:
+    repeat_cadence:
+      name: Repeat Cadence
+      description: Interval in seconds to repeat notifications for active alarms on this channel.
+      required: false
+      selector:
+        number:
+          min: 1
+          unit_of_measurement: s
+    escalation_target:
+      name: Escalation Target
+      description: Notify service target for escalated alarm notifications.
+      required: false
+      selector:
+        text:
+
+update_channel:
+  name: Update Channel
+  description: Update an existing notification channel. Only provided fields are changed. Returns the updated channel when called via REST API.
+  fields:
+    channel_id:
+      name: Channel ID
+      description: The ID of the channel to update.
+      required: true
+      selector:
+        text:
+    name:
+      name: Name
+      description: Updated channel name.
+      required: false
+      selector:
+        text:
+    notification_targets:
+      name: Notification Targets
+      description: Updated list of notification targets.
+      required: false
+      selector:
+        object:
+    min_priority:
+      name: Minimum Priority
+      description: "Updated minimum priority (0=Info, 1=Warning, 2=High, 3=Critical)."
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 3
+          mode: slider
+    persistent_notification:
+      name: Persistent Notification
+      description: Updated persistent notification setting.
+      required: false
+      selector:
+        boolean:
+    mobile_push:
+      name: Mobile Push
+      description: Updated mobile push setting.
+      required: false
+      selector:
+        boolean:
+    critical_notification:
+      name: Critical Notification
+      description: Updated critical notification setting.
+      required: false
+      selector:
+        boolean:
+    repeat_cadence:
+      name: Repeat Cadence
+      description: Updated repeat cadence in seconds.
+      required: false
+      selector:
+        number:
+          min: 1
+          unit_of_measurement: s
+    escalation_target:
+      name: Escalation Target
+      description: Updated escalation target.
+      required: false
+      selector:
+        text:
+
+delete_channel:
+  name: Delete Channel
+  description: Delete a notification channel. Returns success confirmation when called via REST API.
+  fields:
+    channel_id:
+      name: Channel ID
+      description: The ID of the channel to delete.
+      required: true
+      selector:
+        text:
+
+list_events:
+  name: List Events
+  description: Query alarm event history with optional filters. Returns response data when called via REST API.
+  fields:
+    alarm_id:
+      name: Alarm ID
+      description: Filter events for a specific alarm.
+      required: false
+      selector:
+        text:
+    event_type:
+      name: Event Type
+      description: "Filter by event type (e.g. triggered, cleared, acknowledged, shelved, unshelved, enabled, disabled, reset, created, updated, deleted)."
+      required: false
+      selector:
+        select:
+          options:
+            - triggered
+            - cleared
+            - acknowledged
+            - shelved
+            - unshelved
+            - enabled
+            - disabled
+            - reset
+            - created
+            - updated
+            - deleted
+    start:
+      name: Start Time
+      description: Start of time range filter (ISO 8601 format).
+      required: false
+      selector:
+        text:
+    end:
+      name: End Time
+      description: End of time range filter (ISO 8601 format).
+      required: false
+      selector:
+        text:
+    limit:
+      name: Limit
+      description: "Maximum number of events to return (1-500). Default: 50."
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 500
+    offset:
+      name: Offset
+      description: "Number of events to skip for pagination. Default: 0."
+      required: false
+      selector:
+        number:
+          min: 0

@@ -4,6 +4,14 @@ import { sharedStyles } from "../styles/shared-styles";
 import { fetchAlarm, fetchChannels, createAlarm, updateAlarm } from "../data/websocket";
 import type { HomeAssistant, AlarmChannel, AlarmPriority, TriggerType } from "../types";
 
+// HA native components - available globally in HA frontend
+declare global {
+  interface HTMLElementTagNameMap {
+    "ha-entity-picker": any;
+    "ha-area-picker": any;
+  }
+}
+
 @customElement("create-edit-view")
 export class CreateEditView extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
@@ -198,10 +206,13 @@ export class CreateEditView extends LitElement {
         </div>
 
         <div class="form-row">
-          <div class="form-group">
-            <label>Source Entity ID *</label>
-            <input type="text" .value=${this._sourceEntityId} @input=${(e: Event) => (this._sourceEntityId = (e.target as HTMLInputElement).value)} placeholder="sensor.temperature_kitchen" />
-          </div>
+          <ha-entity-picker
+            .hass=${this.hass}
+            .value=${this._sourceEntityId}
+            @value-changed=${(e: CustomEvent) => this._sourceEntityId = e.detail.value}
+            allow-custom-entity
+            .label=${"Source Entity *"}
+          ></ha-entity-picker>
           <div class="form-group">
             <label>Channel</label>
             <select .value=${this._channelId ?? ""} @change=${(e: Event) => { const v = (e.target as HTMLSelectElement).value; this._channelId = v || null; }}>
@@ -214,10 +225,12 @@ export class CreateEditView extends LitElement {
         <div class="section">
           <h3>Location / Equipment</h3>
           <div class="form-row">
-            <div class="form-group">
-              <label>Area</label>
-              <input type="text" .value=${this._area} @input=${(e: Event) => (this._area = (e.target as HTMLInputElement).value)} placeholder="Kitchen" />
-            </div>
+            <ha-area-picker
+              .hass=${this.hass}
+              .value=${this._area}
+              @value-changed=${(e: CustomEvent) => this._area = e.detail.value || ""}
+              .label=${"Area"}
+            ></ha-area-picker>
             <div class="form-group">
               <label>Equipment</label>
               <input type="text" .value=${this._equipment} @input=${(e: Event) => (this._equipment = (e.target as HTMLInputElement).value)} placeholder="Oven" />

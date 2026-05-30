@@ -17,6 +17,9 @@ export class ChannelsView extends LitElement {
   @state() private _formMobile = true;
   @state() private _formCritical = false;
 
+  // Column filter
+  @state() private _filterName = "";
+
   static styles = [
     sharedStyles,
     css`
@@ -30,6 +33,12 @@ export class ChannelsView extends LitElement {
       .form-row > * { flex: 1; min-width: 200px; }
       .checkbox-group { display: flex; gap: 16px; align-items: center; margin: 8px 0; }
       .checkbox-group label { display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 0.9em; }
+      .filter-row input {
+        width: 100%; padding: 4px 6px; font-size: 0.8em;
+        border: 1px solid var(--divider-color, #ccc); border-radius: 4px;
+        background: var(--card-background-color, white);
+        color: var(--primary-text-color, #333);
+      }
     `,
   ];
 
@@ -114,9 +123,13 @@ export class ChannelsView extends LitElement {
             <th>Critical</th>
             <th>Actions</th>
           </tr>
+          <tr class="filter-row">
+            <th><input type="text" placeholder="Filter..." .value=${this._filterName} @input=${(e: Event) => this._filterName = (e.target as HTMLInputElement).value} /></th>
+            <th></th><th></th><th></th><th></th><th></th><th></th>
+          </tr>
         </thead>
         <tbody>
-          ${this._channels.map(
+          ${this._channels.filter((ch) => !this._filterName || ch.name.toLowerCase().includes(this._filterName.toLowerCase())).map(
             (ch) => html`
               <tr>
                 <td><strong>${ch.name}</strong></td>
@@ -148,7 +161,7 @@ export class ChannelsView extends LitElement {
           </div>
           <div class="form-group">
             <label>Notification Targets (comma-separated)</label>
-            <input type="text" .value=${this._formTargets} @input=${(e: Event) => (this._formTargets = (e.target as HTMLInputElement).value)} placeholder="mobile_app_phone1, mobile_app_phone2" />
+            <input type="text" .value=${this._formTargets} @input=${(e: Event) => (this._formTargets = (e.target as HTMLInputElement).value)} placeholder="notify.mobile_app_phone1, notify.mobile_app_phone2" />
           </div>
         </div>
         <div class="form-group">

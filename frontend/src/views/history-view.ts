@@ -12,6 +12,11 @@ export class HistoryView extends LitElement {
   @state() private _offset = 0;
   private _limit = 50;
 
+  // Column filters
+  @state() private _filterAlarm = "";
+  @state() private _filterEvent = "";
+  @state() private _filterUser = "";
+
   static styles = [
     sharedStyles,
     css`
@@ -21,6 +26,12 @@ export class HistoryView extends LitElement {
         display: inline-block; padding: 2px 6px; border-radius: 4px;
         font-size: 0.8em; font-weight: 500; text-transform: capitalize;
         background: var(--secondary-background-color, #f5f5f5);
+      }
+      .filter-row input, .filter-row select {
+        width: 100%; padding: 4px 6px; font-size: 0.8em;
+        border: 1px solid var(--divider-color, #ccc); border-radius: 4px;
+        background: var(--card-background-color, white);
+        color: var(--primary-text-color, #333);
       }
     `,
   ];
@@ -42,6 +53,15 @@ export class HistoryView extends LitElement {
     }
   }
 
+  private get _filtered(): AlarmEvent[] {
+    return this._events.filter((ev) => {
+      if (this._filterAlarm && !ev.alarm_name.toLowerCase().includes(this._filterAlarm.toLowerCase())) return false;
+      if (this._filterEvent && ev.event_type !== this._filterEvent) return false;
+      if (this._filterUser && !(ev.user ?? "").toLowerCase().includes(this._filterUser.toLowerCase())) return false;
+      return true;
+    });
+  }
+
   private _nextPage() {
     this._offset += this._limit;
     this._loading = true;
@@ -61,6 +81,9 @@ export class HistoryView extends LitElement {
       return html`<div class="empty-state">No alarm events recorded yet.</div>`;
     }
 
+    const eventTypes = [...new Set(this._events.map((e) => e.event_type))].sort();
+    const filtered = this._filtered;
+
     return html`
       <table>
         <thead>
@@ -72,9 +95,22 @@ export class HistoryView extends LitElement {
             <th>New State</th>
             <th>User</th>
           </tr>
+          <tr class="filter-row">
+            <th></th>
+            <th><input type="text" placeholder="Filter..." .value=${this._filterAlarm} @input=${(e: Event) => this._filterAlarm = (e.target as HTMLInputElement).value} /></th>
+            <th>
+              <select @change=${(e: Event) => this._filterEvent = (e.target as HTMLSelectElement).value}>
+                <option value="">All</option>
+                ${eventTypes.map((t) => html`<option value=${t}>${t}</option>`)}
+              </select>
+            </th>
+            <th></th>
+            <th></th>
+            <th><input type="text" placeholder="Filter..." .value=${this._filterUser} @input=${(e: Event) => this._filterUser = (e.target as HTMLInputElement).value} /></th>
+          </tr>
         </thead>
         <tbody>
-          ${this._events.map(
+          ${filtered.map(
             (event) => html`
               <tr>
                 <td>${new Date(event.timestamp).toLocaleString()}</td>

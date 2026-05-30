@@ -1,43 +1,87 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { sharedStyles, getStateColor } from "../styles/shared-styles";
-import { fetchAlarms, deleteAlarm } from "../data/websocket";
-import { STATE_LABELS, type HomeAssistant, type AlarmWithState } from "../types";
+import { fetchAlarms, fetchChannels, deleteAlarm } from "../data/websocket";
+import { STATE_LABELS, PRIORITY_LABELS, type HomeAssistant, type AlarmWithState, type AlarmChannel } from "../types";
 import "../components/severity-badge";
 
 @customElement("all-alarms-view")
 export class AllAlarmsView extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @state() private _alarms: AlarmWithState[] = [];
+  @state() private _channels: AlarmChannel[] = [];
   @state() private _loading = true;
+
+  // Column filters
+  @state() private _filterPriority = "";
+  @state() private _filterName = "";
+  @state() private _filterState = "";
+  @state() private _filterEntity = "";
+  @state() private _filterTrigger = "";
+  @state() private _filterChannel = "";
+  @state() private _filterEnabled = "";
 
   static styles = [
     sharedStyles,
     css`
       :host { display: block; padding: 16px; }
       .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-      .toggle { cursor: pointer; }
+      .filter-row input, .filter-row select {
+        width: 100%; padding: 4px 6px; font-size: 0.8em;
+        border: 1px solid var(--divider-color, #ccc); border-radius: 4px;
+        background: var(--card-background-color, white);
+        color: var(--primary-text-color, #333);
+      }
+      .test-ok { color: var(--alarm-normal, #4CAF50); font-size: 0.8em; }
     `,
   ];
 
   connectedCallback() {
     super.connectedCallback();
-    this._loadAlarms();
+    this._load();
   }
 
-  private async _loadAlarms() {
+  private async _load() {
     if (!this.hass) return;
     try {
-      this._alarms = await fetchAlarms(this.hass);
+      const [alarms, channels] = await Promise.all([
+        fetchAlarms(this.hass),
+        fetchChannels(this.hass),
+      ]);
+      this._alarms = alarms;
+      this._channels = channels;
     } finally {
       this._loading = false;
     }
   }
 
+  private _getChannelName(channelId: string | null): string {
+    if (!channelId) return "-";
+    const ch = this._channels.find((c) => c.id === channelId);
+    return ch ? ch.name : channelId;
+  }
+
+  private get _filtered(): AlarmWithState[] {
+    return this._alarms.filter((a) => {
+      if (this._filterPriority && String(a.priority) !== this._filterPriority) return false;
+      if (this._filterName && !a.name.toLowerCase().includes(this._filterName.toLowerCase())) return false;
+      if (this._filterState && a.runtime.state !== this._filterState) return false;
+      if (this._filterEntity && !a.source_entity_id.toLowerCase().includes(this._filterEntity.toLowerCase())) return false;
+      if (this._filterTrigger && a.trigger_type !== this._filterTrigger) return false;
+      if (this._filterChannel) {
+        const chName = this._getChannelName(a.channel_id);
+        if (!chName.toLowerCase().includes(this._filterChannel.toLowerCase())) return false;
+      }
+      if (this._filterEnabled === "yes" && !a.enabled) return false;
+      if (this._filterEnabled === "no" && a.enabled) return false;
+      return true;
+    });
+  }
+
   private async _delete(alarmId: string) {
     if (!this.hass || !confirm("Delete this alarm?")) return;
     await deleteAlarm(this.hass, alarmId);
-    this._loadAlarms();
+    this._load();
   }
 
   private _edit(alarmId: string) {
@@ -46,12 +90,20 @@ export class AllAlarmsView extends LitElement {
     );
   }
 
+  private async _testNotification(alarm: AlarmWithState) {
+    if (!this.hass || !alarm.channel_id) return;
+    await this.hass.callService("scada_alarm_manager", "test_notification", {
+      channel_id: alarm.channel_id,
+    });
+  }
+
   render() {
     if (this._loading) return html`<div class="empty-state">Loading...</div>`;
+    const filtered = this._filtered;
 
     return html`
       <div class="toolbar">
-        <span>${this._alarms.length} alarm${this._alarms.length !== 1 ? "s" : ""} configured</span>
+        <span>${filtered.length} of ${this._alarms.length} alarm${this._alarms.length !== 1 ? "s" : ""}</span>
         <button class="btn btn-primary" @click=${() => this._edit("")}>+ New Alarm</button>
       </div>
       <table>
@@ -66,9 +118,42 @@ export class AllAlarmsView extends LitElement {
             <th>Enabled</th>
             <th>Actions</th>
           </tr>
+          <tr class="filter-row">
+            <th>
+              <select @change=${(e: Event) => this._filterPriority = (e.target as HTMLSelectElement).value}>
+                <option value="">All</option>
+                ${([0, 1, 2, 3] as const).map((p) => html`<option value=${p}>${PRIORITY_LABELS[p]}</option>`)}
+              </select>
+            </th>
+            <th><input type="text" placeholder="Filter..." .value=${this._filterName} @input=${(e: Event) => this._filterName = (e.target as HTMLInputElement).value} /></th>
+            <th>
+              <select @change=${(e: Event) => this._filterState = (e.target as HTMLSelectElement).value}>
+                <option value="">All</option>
+                ${Object.entries(STATE_LABELS).map(([k, v]) => html`<option value=${k}>${v}</option>`)}
+              </select>
+            </th>
+            <th><input type="text" placeholder="Filter..." .value=${this._filterEntity} @input=${(e: Event) => this._filterEntity = (e.target as HTMLInputElement).value} /></th>
+            <th>
+              <select @change=${(e: Event) => this._filterTrigger = (e.target as HTMLSelectElement).value}>
+                <option value="">All</option>
+                <option value="analog">Analog</option>
+                <option value="digital">Digital</option>
+                <option value="custom_state">Custom</option>
+              </select>
+            </th>
+            <th><input type="text" placeholder="Filter..." .value=${this._filterChannel} @input=${(e: Event) => this._filterChannel = (e.target as HTMLInputElement).value} /></th>
+            <th>
+              <select @change=${(e: Event) => this._filterEnabled = (e.target as HTMLSelectElement).value}>
+                <option value="">All</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </th>
+            <th></th>
+          </tr>
         </thead>
         <tbody>
-          ${this._alarms.map(
+          ${filtered.map(
             (alarm) => html`
               <tr>
                 <td><severity-badge .priority=${alarm.priority}></severity-badge></td>
@@ -76,9 +161,10 @@ export class AllAlarmsView extends LitElement {
                 <td><span class="badge" style="background: ${getStateColor(alarm.runtime.state)}">${STATE_LABELS[alarm.runtime.state] ?? alarm.runtime.state}</span></td>
                 <td>${alarm.source_entity_id}</td>
                 <td>${alarm.trigger_type}</td>
-                <td>${alarm.channel_id ?? "-"}</td>
+                <td>${this._getChannelName(alarm.channel_id)}</td>
                 <td>${alarm.enabled ? "Yes" : "No"}</td>
                 <td class="actions">
+                  ${alarm.channel_id ? html`<button class="btn btn-small" style="background: #607D8B; color: white;" @click=${() => this._testNotification(alarm)} title="Test notification">Test</button>` : ""}
                   <button class="btn btn-small btn-primary" @click=${() => this._edit(alarm.id)}>Edit</button>
                   <button class="btn btn-small btn-danger" @click=${() => this._delete(alarm.id)}>Delete</button>
                 </td>
