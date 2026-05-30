@@ -34,10 +34,25 @@ class NotificationRouter:
         alarm: AlarmDefinition,
         runtime: AlarmRuntimeState,
     ) -> None:
-        """Send notifications for an alarm activation."""
+        """Send notifications for an alarm activation.
+
+        Priority-aware routing:
+        - INFO: No notifications (panel + history only)
+        - WARNING+: Persistent notification in HA UI
+        - HIGH+: Persistent + mobile push (if channel has targets)
+        - CRITICAL: Persistent + mobile push with critical alert (bypasses DND)
+
+        Channel config can further restrict (via min_priority) but cannot
+        lower the floor set by alarm priority.
+        """
+        # Info alarms never generate notifications — panel and history only
+        if alarm.priority == AlarmPriority.INFO:
+            _LOGGER.debug("Info alarm %s — no notification (panel only)", alarm.name)
+            return
+
         channel = self._get_channel(alarm)
 
-        # Check priority filter
+        # Check channel priority filter
         if channel and alarm.priority < channel.min_priority:
             _LOGGER.debug(
                 "Alarm %s priority %s below channel minimum %s, skipping",
@@ -51,12 +66,15 @@ class NotificationRouter:
         title = f"[{priority_label}] {alarm.name}"
         message = self._build_message(alarm, runtime)
 
-        # Persistent notification
-        if channel is None or channel.persistent_notification:
-            await self._async_send_persistent(alarm, title, message)
+        # Persistent notification: WARNING and above always get one
+        await self._async_send_persistent(alarm, title, message)
 
-        # Mobile push notifications
-        if channel and channel.mobile_push and channel.notification_targets:
+        # Mobile push: HIGH and above, if channel has targets
+        if (
+            alarm.priority >= AlarmPriority.HIGH
+            and channel
+            and channel.notification_targets
+        ):
             await self._async_send_mobile(alarm, channel, title, message)
 
         # Update last notification timestamp

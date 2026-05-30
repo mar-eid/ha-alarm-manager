@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HA-native entity picker (`ha-entity-picker`) and area picker (`ha-area-picker`) in alarm create/edit form
 - Column filtering on all table views (Active Alarms, All Alarms, History, Channels)
 - Test notification button on All Alarms table for alarms with assigned channels
+- Priority-aware notification routing: Info=panel only, Warning+=persistent, High+=mobile, Critical=critical alert
 - Auto-register Lovelace card resource so `scada-alarm-card` appears in the card picker without manual setup
 - Clean up card resource on integration unload
 - Initial project scaffolding
