@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-from homeassistant.core import HomeAssistant
 
 from custom_components.scada_alarm_manager.const import (
     DOMAIN,
@@ -26,13 +25,29 @@ from custom_components.scada_alarm_manager.websocket_api import (
     _alarm_with_state,
     _get_manager,
     async_register_websocket_commands,
+    ws_alarm_list,
+    ws_alarm_get,
+    ws_alarm_create,
+    ws_alarm_update,
+    ws_alarm_delete,
+    ws_alarm_acknowledge,
+    ws_alarm_acknowledge_all,
+    ws_alarm_shelve,
+    ws_alarm_unshelve,
+    ws_alarm_reset,
+    ws_channel_list,
+    ws_channel_get,
+    ws_channel_create,
+    ws_channel_update,
+    ws_channel_delete,
+    ws_event_list,
+    ws_subscribe,
 )
 
 
-@pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations):
-    """Enable custom integrations for testing."""
-    yield
+def _unwrap(func):
+    """Unwrap a websocket_api decorated handler to get the raw async function."""
+    return getattr(func, "__wrapped__", func)
 
 
 def _make_alarm(alarm_id: str = "alarm1") -> AlarmDefinition:
@@ -61,9 +76,20 @@ def _make_channel(channel_id: str = "ch1") -> AlarmChannel:
     )
 
 
-@pytest.fixture
-def mock_manager():
-    """Create a comprehensive mock alarm manager."""
+def _mock_connection():
+    """Create a mock WebSocket connection."""
+    conn = MagicMock()
+    conn.send_result = MagicMock()
+    conn.send_error = MagicMock()
+    conn.send_message = MagicMock()
+    conn.subscriptions = {}
+    conn.user = MagicMock()
+    conn.user.id = "test_user"
+    return conn
+
+
+def _mock_manager():
+    """Create a mock alarm manager."""
     manager = MagicMock()
     manager.alarms = {}
     manager.channels = {}
@@ -84,11 +110,11 @@ def mock_manager():
     return manager
 
 
-class TestAlarmWithStateHelper:
-    """Test the _alarm_with_state helper function."""
+class TestHelpers:
+    """Test helper functions."""
 
-    def test_combines_alarm_and_runtime(self):
-        """Test combining alarm definition with runtime state."""
+    def test_alarm_with_state_combines(self):
+        """Test _alarm_with_state returns combined dict."""
         manager = MagicMock()
         alarm = _make_alarm()
         runtime = _make_runtime()
@@ -100,568 +126,465 @@ class TestAlarmWithStateHelper:
         assert result["id"] == "alarm1"
         assert "runtime" in result
 
-    def test_returns_none_for_missing(self):
-        """Test returns None when alarm not found."""
+    def test_alarm_with_state_missing(self):
+        """Test _alarm_with_state returns None for missing."""
         manager = MagicMock()
         manager.alarms = {}
         manager.runtime_states = {}
+        assert _alarm_with_state(manager, "missing") is None
 
-        result = _alarm_with_state(manager, "missing")
-        assert result is None
-
-
-class TestGetManager:
-    """Test the _get_manager helper function."""
-
-    def test_finds_manager(self, hass: HomeAssistant):
-        """Test finding manager in hass data."""
+    def test_get_manager(self):
+        """Test _get_manager finds manager."""
+        hass = MagicMock()
         mgr = MagicMock()
-        hass.data[DOMAIN] = {"entry1": {"manager": mgr}}
+        hass.data = {DOMAIN: {"entry": {"manager": mgr}}}
         assert _get_manager(hass) is mgr
 
-    def test_raises_when_not_found(self, hass: HomeAssistant):
-        """Test raising when manager not found."""
-        hass.data[DOMAIN] = {}
+    def test_get_manager_raises(self):
+        """Test _get_manager raises when not found."""
+        hass = MagicMock()
+        hass.data = MagicMock()
+        hass.data.get = MagicMock(return_value={})
         with pytest.raises(ValueError):
             _get_manager(hass)
 
 
-class TestAlarmListCommand:
-    """Test the alarm/list WebSocket command."""
+class TestAlarmListWS:
+    """Test ws_alarm_list handler."""
 
-    async def test_list_empty(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
+    async def test_list_empty(self):
         """Test listing alarms when none exist."""
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
+        hass = MagicMock()
+        manager = _mock_manager()
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
 
-        client = await hass_ws_client(hass)
-        await client.send_json({"id": 1, "type": "scada_alarm_manager/alarm/list"})
-        msg = await client.receive_json()
+        await _unwrap(ws_alarm_list)(hass, conn, {"id": 1, "type": "scada_alarm_manager/alarm/list"})
 
-        assert msg["success"]
-        assert msg["result"]["alarms"] == []
+        conn.send_result.assert_called_once_with(1, {"alarms": []})
 
-    async def test_list_with_alarms(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
+    async def test_list_with_alarms(self):
         """Test listing alarms returns data."""
+        hass = MagicMock()
+        manager = _mock_manager()
         alarm = _make_alarm()
         runtime = _make_runtime()
-        mock_manager.alarms = {"alarm1": alarm}
-        mock_manager.runtime_states = {"alarm1": runtime}
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
+        manager.alarms = {"alarm1": alarm}
+        manager.runtime_states = {"alarm1": runtime}
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
 
-        client = await hass_ws_client(hass)
-        await client.send_json({"id": 1, "type": "scada_alarm_manager/alarm/list"})
-        msg = await client.receive_json()
+        await _unwrap(ws_alarm_list)(hass, conn, {"id": 1, "type": "scada_alarm_manager/alarm/list"})
 
-        assert msg["success"]
-        assert len(msg["result"]["alarms"]) == 1
-        assert msg["result"]["alarms"][0]["id"] == "alarm1"
+        result = conn.send_result.call_args[0][1]
+        assert len(result["alarms"]) == 1
+        assert result["alarms"][0]["id"] == "alarm1"
 
 
-class TestAlarmGetCommand:
-    """Test the alarm/get WebSocket command."""
+class TestAlarmGetWS:
+    """Test ws_alarm_get handler."""
 
-    async def test_get_existing(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
+    async def test_get_existing(self):
         """Test getting an existing alarm."""
+        hass = MagicMock()
+        manager = _mock_manager()
         alarm = _make_alarm()
         runtime = _make_runtime()
-        mock_manager.alarms = {"alarm1": alarm}
-        mock_manager.runtime_states = {"alarm1": runtime}
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
+        manager.alarms = {"alarm1": alarm}
+        manager.runtime_states = {"alarm1": runtime}
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
 
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/alarm/get",
-            "alarm_id": "alarm1",
-        })
-        msg = await client.receive_json()
+        await _unwrap(ws_alarm_get)(hass, conn, {"id": 1, "alarm_id": "alarm1"})
 
-        assert msg["success"]
-        assert msg["result"]["id"] == "alarm1"
-        assert msg["result"]["name"] == "Test Alarm"
+        result = conn.send_result.call_args[0][1]
+        assert result["id"] == "alarm1"
 
-    async def test_get_not_found(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test getting a nonexistent alarm returns error."""
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
+    async def test_get_not_found(self):
+        """Test getting a nonexistent alarm."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
 
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/alarm/get",
-            "alarm_id": "nonexistent",
-        })
-        msg = await client.receive_json()
+        await _unwrap(ws_alarm_get)(hass, conn, {"id": 1, "alarm_id": "nonexistent"})
 
-        assert not msg["success"]
-        assert msg["error"]["code"] == "not_found"
+        conn.send_error.assert_called_once_with(1, "not_found", "Alarm not found")
 
 
-class TestAlarmCreateCommand:
-    """Test the alarm/create WebSocket command."""
+class TestAlarmCreateWS:
+    """Test ws_alarm_create handler."""
 
-    async def test_create_alarm(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test creating an alarm via WebSocket."""
+    async def test_create(self):
+        """Test creating an alarm."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
+
         async def mock_create(alarm):
-            mock_manager.alarms[alarm.id] = alarm
-            mock_manager.runtime_states[alarm.id] = AlarmRuntimeState(
+            manager.alarms[alarm.id] = alarm
+            manager.runtime_states[alarm.id] = AlarmRuntimeState(
                 alarm_id=alarm.id, state=AlarmState.NORMAL
             )
             return alarm
 
-        mock_manager.async_create_alarm = AsyncMock(side_effect=mock_create)
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
+        manager.async_create_alarm = AsyncMock(side_effect=mock_create)
 
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/alarm/create",
+        msg = {
+            "id": 1,
             "name": "New Alarm",
-            "source_entity_id": "sensor.temp",
+            "source_entity_id": "sensor.test",
             "trigger_type": "analog",
             "trigger_config": {"operator": ">", "threshold": 50},
-        })
-        msg = await client.receive_json()
+        }
 
-        assert msg["success"]
-        assert msg["result"]["name"] == "New Alarm"
-        mock_manager.async_create_alarm.assert_awaited_once()
+        await _unwrap(ws_alarm_create)(hass, conn, msg)
+
+        manager.async_create_alarm.assert_awaited_once()
+        conn.send_result.assert_called_once()
 
 
-class TestAlarmUpdateCommand:
-    """Test the alarm/update WebSocket command."""
+class TestAlarmUpdateWS:
+    """Test ws_alarm_update handler."""
 
-    async def test_update_alarm(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test updating an alarm via WebSocket."""
+    async def test_update(self):
+        """Test updating an alarm."""
+        hass = MagicMock()
+        manager = _mock_manager()
         alarm = _make_alarm()
         runtime = _make_runtime()
-        mock_manager.alarms = {"alarm1": alarm}
-        mock_manager.runtime_states = {"alarm1": runtime}
+        manager.alarms = {"alarm1": alarm}
+        manager.runtime_states = {"alarm1": runtime}
+        manager.async_update_alarm = AsyncMock(side_effect=lambda a: a)
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
 
-        async def mock_update(a):
-            return a
+        msg = {"id": 1, "alarm_id": "alarm1", "name": "Updated"}
+        await _unwrap(ws_alarm_update)(hass, conn, msg)
 
-        mock_manager.async_update_alarm = AsyncMock(side_effect=mock_update)
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
+        assert alarm.name == "Updated"
+        conn.send_result.assert_called_once()
 
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/alarm/update",
-            "alarm_id": "alarm1",
-            "name": "Updated Alarm",
-        })
-        msg = await client.receive_json()
+    async def test_update_not_found(self):
+        """Test updating nonexistent alarm."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
 
-        assert msg["success"]
-        assert msg["result"]["name"] == "Updated Alarm"
+        msg = {"id": 1, "alarm_id": "nonexistent", "name": "Updated"}
+        await _unwrap(ws_alarm_update)(hass, conn, msg)
 
-    async def test_update_not_found(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test updating a nonexistent alarm returns error."""
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
-
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/alarm/update",
-            "alarm_id": "nonexistent",
-            "name": "Updated",
-        })
-        msg = await client.receive_json()
-
-        assert not msg["success"]
-        assert msg["error"]["code"] == "not_found"
+        conn.send_error.assert_called_once()
 
 
-class TestAlarmDeleteCommand:
-    """Test the alarm/delete WebSocket command."""
+class TestAlarmDeleteWS:
+    """Test ws_alarm_delete handler."""
 
-    async def test_delete_alarm(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test deleting an alarm via WebSocket."""
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
+    async def test_delete(self):
+        """Test deleting an alarm."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
 
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/alarm/delete",
-            "alarm_id": "alarm1",
-        })
-        msg = await client.receive_json()
+        await _unwrap(ws_alarm_delete)(hass, conn, {"id": 1, "alarm_id": "alarm1"})
 
-        assert msg["success"]
-        assert msg["result"]["success"] is True
-        mock_manager.async_delete_alarm.assert_awaited_once_with("alarm1")
+        manager.async_delete_alarm.assert_awaited_once_with("alarm1")
+        conn.send_result.assert_called_once_with(1, {"success": True})
 
 
-class TestAlarmActionCommands:
-    """Test the alarm action WebSocket commands."""
+class TestActionCommandsWS:
+    """Test alarm action WS commands."""
 
-    async def test_acknowledge(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test acknowledging an alarm via WebSocket."""
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
+    async def test_acknowledge(self):
+        """Test acknowledging an alarm."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
 
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/alarm/acknowledge",
-            "alarm_id": "alarm1",
-        })
-        msg = await client.receive_json()
+        await _unwrap(ws_alarm_acknowledge)(hass, conn, {"id": 1, "alarm_id": "alarm1"})
 
-        assert msg["success"]
-        mock_manager.async_acknowledge.assert_awaited_once()
+        manager.async_acknowledge.assert_awaited_once()
+        conn.send_result.assert_called_once_with(1, {"success": True})
 
-    async def test_acknowledge_all(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test acknowledging all alarms via WebSocket."""
-        mock_manager.async_acknowledge_all = AsyncMock(return_value=3)
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
+    async def test_acknowledge_all(self):
+        """Test acknowledging all alarms."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        manager.async_acknowledge_all = AsyncMock(return_value=3)
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
 
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/alarm/acknowledge_all",
-        })
-        msg = await client.receive_json()
+        await _unwrap(ws_alarm_acknowledge_all)(hass, conn, {"id": 1})
 
-        assert msg["success"]
-        assert msg["result"]["acknowledged"] == 3
+        manager.async_acknowledge_all.assert_awaited_once()
+        conn.send_result.assert_called_once_with(1, {"acknowledged": 3})
 
-    async def test_shelve(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test shelving an alarm via WebSocket."""
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
+    async def test_acknowledge_all_with_filters(self):
+        """Test acknowledging all with channel_id and priority filters."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        manager.async_acknowledge_all = AsyncMock(return_value=2)
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
 
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/alarm/shelve",
-            "alarm_id": "alarm1",
-            "duration": 15,
-        })
-        msg = await client.receive_json()
-
-        assert msg["success"]
-        mock_manager.async_shelve.assert_awaited_once()
-        call_args = mock_manager.async_shelve.call_args
-        assert call_args[0][0] == "alarm1"
-        assert call_args[1]["duration_minutes"] == 15
-
-    async def test_unshelve(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test unshelving an alarm via WebSocket."""
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
-
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/alarm/unshelve",
-            "alarm_id": "alarm1",
-        })
-        msg = await client.receive_json()
-
-        assert msg["success"]
-        mock_manager.async_unshelve.assert_awaited_once()
-
-    async def test_reset(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test resetting an alarm via WebSocket."""
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
-
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/alarm/reset",
-            "alarm_id": "alarm1",
-        })
-        msg = await client.receive_json()
-
-        assert msg["success"]
-        mock_manager.async_reset.assert_awaited_once()
-
-
-class TestChannelCommands:
-    """Test channel WebSocket commands."""
-
-    async def test_channel_list(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test listing channels."""
-        channel = _make_channel()
-        mock_manager.channels = {"ch1": channel}
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
-
-        client = await hass_ws_client(hass)
-        await client.send_json({"id": 1, "type": "scada_alarm_manager/channel/list"})
-        msg = await client.receive_json()
-
-        assert msg["success"]
-        assert len(msg["result"]["channels"]) == 1
-
-    async def test_channel_get(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test getting a single channel."""
-        channel = _make_channel()
-        mock_manager.channels = {"ch1": channel}
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
-
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/channel/get",
-            "channel_id": "ch1",
-        })
-        msg = await client.receive_json()
-
-        assert msg["success"]
-        assert msg["result"]["id"] == "ch1"
-
-    async def test_channel_get_not_found(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test getting a nonexistent channel returns error."""
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
-
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/channel/get",
-            "channel_id": "nonexistent",
-        })
-        msg = await client.receive_json()
-
-        assert not msg["success"]
-        assert msg["error"]["code"] == "not_found"
-
-    async def test_channel_create(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test creating a channel via WebSocket."""
-        async def mock_create(channel):
-            return channel
-
-        mock_manager.async_create_channel = AsyncMock(side_effect=mock_create)
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
-
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/channel/create",
-            "name": "New Channel",
-        })
-        msg = await client.receive_json()
-
-        assert msg["success"]
-        assert msg["result"]["name"] == "New Channel"
-
-    async def test_channel_update(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test updating a channel via WebSocket."""
-        channel = _make_channel()
-        mock_manager.channels = {"ch1": channel}
-
-        async def mock_update(c):
-            return c
-
-        mock_manager.async_update_channel = AsyncMock(side_effect=mock_update)
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
-
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/channel/update",
-            "channel_id": "ch1",
-            "name": "Updated Channel",
-        })
-        msg = await client.receive_json()
-
-        assert msg["success"]
-        assert msg["result"]["name"] == "Updated Channel"
-
-    async def test_channel_update_not_found(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test updating a nonexistent channel returns error."""
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
-
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/channel/update",
-            "channel_id": "nonexistent",
-            "name": "Updated",
-        })
-        msg = await client.receive_json()
-
-        assert not msg["success"]
-        assert msg["error"]["code"] == "not_found"
-
-    async def test_channel_delete(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test deleting a channel via WebSocket."""
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
-
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/channel/delete",
-            "channel_id": "ch1",
-        })
-        msg = await client.receive_json()
-
-        assert msg["success"]
-        mock_manager.async_delete_channel.assert_awaited_once_with("ch1")
-
-
-class TestEventListCommand:
-    """Test the event/list WebSocket command."""
-
-    async def test_event_list_empty(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test listing events when none exist."""
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
-
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/event/list",
-        })
-        msg = await client.receive_json()
-
-        assert msg["success"]
-        assert msg["result"]["events"] == []
-
-    async def test_event_list_with_data(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test listing events with data."""
-        event = AlarmEvent(
-            id=1,
-            alarm_id="alarm1",
-            event_type=AlarmEventType.TRIGGERED,
-            old_state=AlarmState.NORMAL,
-            new_state=AlarmState.ACTIVE_UNACKED,
+        await ws_alarm_acknowledge_all.__wrapped__(
+            hass, conn, {"id": 1, "channel_id": "ch1", "priority": 2}
         )
-        mock_manager._database.async_get_events = AsyncMock(return_value=[event])
+
+        call_kwargs = manager.async_acknowledge_all.call_args[1]
+        assert call_kwargs["channel_id"] == "ch1"
+        assert call_kwargs["priority"] == AlarmPriority.HIGH
+
+    async def test_shelve(self):
+        """Test shelving an alarm."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
+
+        await _unwrap(ws_alarm_shelve)(hass, conn, {"id": 1, "alarm_id": "alarm1", "duration": 15})
+
+        call_kwargs = manager.async_shelve.call_args
+        assert call_kwargs[0][0] == "alarm1"
+        assert call_kwargs[1]["duration_minutes"] == 15
+
+    async def test_unshelve(self):
+        """Test unshelving an alarm."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
+
+        await _unwrap(ws_alarm_unshelve)(hass, conn, {"id": 1, "alarm_id": "alarm1"})
+
+        manager.async_unshelve.assert_awaited_once()
+
+    async def test_reset(self):
+        """Test resetting an alarm."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
+
+        await _unwrap(ws_alarm_reset)(hass, conn, {"id": 1, "alarm_id": "alarm1"})
+
+        manager.async_reset.assert_awaited_once()
+
+
+class TestChannelCommandsWS:
+    """Test channel WS commands."""
+
+    async def test_channel_list(self):
+        """Test listing channels."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        channel = _make_channel()
+        manager.channels = {"ch1": channel}
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
+
+        await _unwrap(ws_channel_list)(hass, conn, {"id": 1})
+
+        result = conn.send_result.call_args[0][1]
+        assert len(result["channels"]) == 1
+
+    async def test_channel_get(self):
+        """Test getting a channel."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        channel = _make_channel()
+        manager.channels = {"ch1": channel}
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
+
+        await _unwrap(ws_channel_get)(hass, conn, {"id": 1, "channel_id": "ch1"})
+
+        result = conn.send_result.call_args[0][1]
+        assert result["id"] == "ch1"
+
+    async def test_channel_get_not_found(self):
+        """Test getting a nonexistent channel."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
+
+        await _unwrap(ws_channel_get)(hass, conn, {"id": 1, "channel_id": "missing"})
+
+        conn.send_error.assert_called_once_with(1, "not_found", "Channel not found")
+
+    async def test_channel_create(self):
+        """Test creating a channel."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        manager.async_create_channel = AsyncMock(side_effect=lambda c: c)
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
+
+        await _unwrap(ws_channel_create)(hass, conn, {"id": 1, "name": "New Channel"})
+
+        manager.async_create_channel.assert_awaited_once()
+        conn.send_result.assert_called_once()
+
+    async def test_channel_update(self):
+        """Test updating a channel."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        channel = _make_channel()
+        manager.channels = {"ch1": channel}
+        manager.async_update_channel = AsyncMock(side_effect=lambda c: c)
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
+
+        await _unwrap(ws_channel_update)(hass, conn, {"id": 1, "channel_id": "ch1", "name": "Updated"})
+
+        assert channel.name == "Updated"
+        conn.send_result.assert_called_once()
+
+    async def test_channel_update_not_found(self):
+        """Test updating nonexistent channel."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
+
+        await _unwrap(ws_channel_update)(hass, conn, {"id": 1, "channel_id": "missing", "name": "X"})
+
+        conn.send_error.assert_called_once()
+
+    async def test_channel_delete(self):
+        """Test deleting a channel."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
+
+        await _unwrap(ws_channel_delete)(hass, conn, {"id": 1, "channel_id": "ch1"})
+
+        manager.async_delete_channel.assert_awaited_once_with("ch1")
+        conn.send_result.assert_called_once_with(1, {"success": True})
+
+
+class TestEventListWS:
+    """Test ws_event_list handler."""
+
+    async def test_event_list_empty(self):
+        """Test listing events when none exist."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
+
+        await _unwrap(ws_event_list)(hass, conn, {"id": 1})
+
+        result = conn.send_result.call_args[0][1]
+        assert result["events"] == []
+
+    async def test_event_list_with_data(self):
+        """Test listing events returns enriched data."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        event = AlarmEvent(
+            id=1, alarm_id="alarm1", event_type=AlarmEventType.TRIGGERED,
+            old_state=AlarmState.NORMAL, new_state=AlarmState.ACTIVE_UNACKED,
+        )
+        manager._database.async_get_events = AsyncMock(return_value=[event])
         alarm = _make_alarm()
-        mock_manager.alarms = {"alarm1": alarm}
+        manager.alarms = {"alarm1": alarm}
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
 
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
+        await _unwrap(ws_event_list)(hass, conn, {"id": 1})
 
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/event/list",
-        })
-        msg = await client.receive_json()
+        result = conn.send_result.call_args[0][1]
+        assert len(result["events"]) == 1
+        assert result["events"][0]["alarm_name"] == "Test Alarm"
 
-        assert msg["success"]
-        assert len(msg["result"]["events"]) == 1
-        assert msg["result"]["events"][0]["alarm_name"] == "Test Alarm"
+    async def test_event_list_deleted_alarm_name(self):
+        """Test that deleted alarm shows 'Deleted alarm' name."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        event = AlarmEvent(
+            id=1, alarm_id="deleted_alarm", event_type=AlarmEventType.TRIGGERED,
+        )
+        manager._database.async_get_events = AsyncMock(return_value=[event])
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
 
-    async def test_event_list_with_filters(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test listing events with filters."""
-        mock_manager._database.async_get_events = AsyncMock(return_value=[])
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
+        await _unwrap(ws_event_list)(hass, conn, {"id": 1})
 
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/event/list",
+        result = conn.send_result.call_args[0][1]
+        assert result["events"][0]["alarm_name"] == "Deleted alarm"
+
+    async def test_event_list_with_filters(self):
+        """Test listing events with filters passes correct params."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
+
+        msg = {
+            "id": 1,
             "alarm_id": "alarm1",
             "event_type": "triggered",
             "limit": 10,
             "offset": 5,
-        })
-        msg = await client.receive_json()
+        }
+        await _unwrap(ws_event_list)(hass, conn, msg)
 
-        assert msg["success"]
-        call_kwargs = mock_manager._database.async_get_events.call_args[1]
+        call_kwargs = manager._database.async_get_events.call_args[1]
         assert call_kwargs["alarm_id"] == "alarm1"
         assert call_kwargs["event_type"] == AlarmEventType.TRIGGERED
         assert call_kwargs["limit"] == 10
         assert call_kwargs["offset"] == 5
 
 
-class TestSubscribeCommand:
-    """Test the subscribe WebSocket command."""
+class TestSubscribeWS:
+    """Test ws_subscribe handler."""
 
-    async def test_subscribe(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
+    async def test_subscribe(self):
         """Test subscribing to alarm state changes."""
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
+        hass = MagicMock()
+        manager = _mock_manager()
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
+        unsub_mock = MagicMock()
+        hass.bus.async_listen = MagicMock(return_value=unsub_mock)
 
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/subscribe",
-        })
-        msg = await client.receive_json()
+        await _unwrap(ws_subscribe)(hass, conn, {"id": 1})
 
-        assert msg["success"]
+        hass.bus.async_listen.assert_called_once()
+        call_args = hass.bus.async_listen.call_args
+        assert call_args[0][0] == EVENT_ALARM_STATE_CHANGED
+        assert callable(call_args[0][1])
+        conn.send_result.assert_called_once_with(1)
+        assert 1 in conn.subscriptions
 
-    async def test_subscribe_receives_events(
-        self, hass: HomeAssistant, hass_ws_client, mock_manager
-    ):
-        """Test that subscription receives fired events."""
-        hass.data[DOMAIN] = {"test_entry": {"manager": mock_manager}}
-        async_register_websocket_commands(hass)
+    async def test_subscribe_stores_unsub(self):
+        """Test that subscribe stores the unsubscribe callback."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
+        unsub_mock = MagicMock()
+        hass.bus.async_listen = MagicMock(return_value=unsub_mock)
 
-        client = await hass_ws_client(hass)
-        await client.send_json({
-            "id": 1, "type": "scada_alarm_manager/subscribe",
-        })
-        msg = await client.receive_json()
-        assert msg["success"]
+        await _unwrap(ws_subscribe)(hass, conn, {"id": 42})
 
-        # Fire an alarm state change event
-        hass.bus.async_fire(
-            EVENT_ALARM_STATE_CHANGED,
-            {
-                "alarm_id": "alarm1",
-                "alarm_name": "Test Alarm",
-                "old_state": "normal",
-                "new_state": "active_unacknowledged",
-                "priority": 2,
-                "priority_name": "high",
-                "channel_id": None,
-            },
-        )
-        await hass.async_block_till_done()
+        assert conn.subscriptions[42] is unsub_mock
 
-        msg = await client.receive_json()
-        assert msg["id"] == 1
-        assert msg["type"] == "event"
-        assert msg["event"]["alarm_id"] == "alarm1"
-        assert msg["event"]["new_state"] == "active_unacknowledged"
+
+class TestRegisterCommands:
+    """Test the register function."""
+
+    def test_registers_all_commands(self):
+        """Test that all WebSocket commands are registered."""
+        hass = MagicMock()
+        with patch("custom_components.scada_alarm_manager.websocket_api.websocket_api") as mock_ws_api:
+            async_register_websocket_commands(hass)
+            # 17 commands total
+            assert mock_ws_api.async_register_command.call_count == 17

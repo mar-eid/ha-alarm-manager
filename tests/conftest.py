@@ -24,6 +24,122 @@ if not _HA_PLUGIN_AVAILABLE:
 
     from homeassistant.core import HomeAssistant
 
+    class MockServiceRegistry:
+        """Mock HA service registry that tracks registrations and can invoke handlers."""
+
+        def __init__(self) -> None:
+            self._services: dict[tuple[str, str], dict] = {}
+
+        def async_register(
+            self,
+            domain: str,
+            name: str,
+            handler,
+            schema=None,
+            supports_response=None,
+        ) -> None:
+            """Register a service handler."""
+            self._services[(domain, name)] = {
+                "handler": handler,
+                "schema": schema,
+                "supports_response": supports_response,
+            }
+
+        def async_remove(self, domain: str, name: str) -> None:
+            """Remove a registered service."""
+            self._services.pop((domain, name), None)
+
+        def has_service(self, domain: str, name: str) -> bool:
+            """Return whether a service is registered."""
+            return (domain, name) in self._services
+
+        async def async_call(
+            self,
+            domain: str,
+            name: str,
+            service_data: dict | None = None,
+            blocking: bool = False,
+            return_response: bool = False,
+            context=None,
+        ):
+            """Call a registered service handler directly."""
+            key = (domain, name)
+            if key not in self._services:
+                raise ValueError(f"Service {domain}.{name} not found")
+
+            entry = self._services[key]
+            handler = entry["handler"]
+            schema = entry["schema"]
+
+            # Validate through schema if present
+            if schema and service_data is not None:
+                service_data = schema(service_data)
+            elif service_data is None:
+                service_data = {}
+                if schema:
+                    service_data = schema(service_data)
+
+            # Create a mock ServiceCall
+            call = MagicMock()
+            call.data = service_data
+            call.context = MagicMock()
+            call.context.user_id = None
+
+            result = await handler(call)
+            if return_response:
+                return result
+            return None
+
+        def get_handler(self, domain: str, name: str):
+            """Get the raw handler for a service (for direct invocation in tests)."""
+            key = (domain, name)
+            if key not in self._services:
+                return None
+            return self._services[key]["handler"]
+
+    class MockStateRegistry:
+        """Mock HA state registry that tracks states."""
+
+        def __init__(self) -> None:
+            self._states: dict[str, MagicMock] = {}
+
+        def get(self, entity_id: str):
+            """Get the state of an entity."""
+            return self._states.get(entity_id)
+
+        def async_set(self, entity_id: str, state_value: str, attributes: dict | None = None) -> None:
+            """Set the state of an entity."""
+            mock_state = MagicMock()
+            mock_state.entity_id = entity_id
+            mock_state.state = state_value
+            mock_state.attributes = attributes or {}
+            self._states[entity_id] = mock_state
+
+    class MockEventBus:
+        """Mock HA event bus that tracks listeners and can fire events."""
+
+        def __init__(self) -> None:
+            self._listeners: dict[str, list] = {}
+
+        def async_listen(self, event_type: str, callback, event_filter=None, run_immediately=False) -> MagicMock:
+            """Register an event listener."""
+            if event_type not in self._listeners:
+                self._listeners[event_type] = []
+            self._listeners[event_type].append(callback)
+            unsub = MagicMock()
+            unsub.side_effect = lambda: self._listeners.get(event_type, []).remove(callback) if callback in self._listeners.get(event_type, []) else None
+            return unsub
+
+        def async_fire(self, event_type: str, event_data: dict | None = None) -> None:
+            """Fire an event to all listeners."""
+            if event_type in self._listeners:
+                for listener in list(self._listeners[event_type]):
+                    # Create a mock event
+                    event = MagicMock()
+                    event.data = event_data or {}
+                    event.event_type = event_type
+                    listener(event)
+
     @pytest.fixture
     async def hass() -> MagicMock:
         """Provide a mocked HomeAssistant instance for Windows compatibility."""
@@ -31,24 +147,26 @@ if not _HA_PLUGIN_AVAILABLE:
         mock_hass = MagicMock(spec=HomeAssistant)
         mock_hass.data = {}
         mock_hass.loop = loop
-        mock_hass.states = MagicMock()
-        mock_hass.states.get = MagicMock(return_value=None)
-        mock_hass.states.async_set = MagicMock()
-        mock_hass.bus = MagicMock()
-        mock_hass.bus.async_listen = MagicMock(return_value=MagicMock())
-        mock_hass.bus.async_fire = MagicMock()
-        mock_hass.services = MagicMock()
-        mock_hass.services.async_register = MagicMock()
-        mock_hass.services.async_remove = MagicMock()
-        mock_hass.services.async_call = AsyncMock()
-        mock_hass.services.has_service = MagicMock(return_value=False)
+
+        # Use proper mock registries
+        mock_hass.states = MockStateRegistry()
+        mock_hass.bus = MockEventBus()
+        mock_hass.services = MockServiceRegistry()
+
         mock_hass.config = MagicMock()
         mock_hass.config.path = MagicMock(side_effect=lambda *args: "/".join(args))
         mock_hass.config_entries = MagicMock()
         mock_hass.config_entries.async_forward_entry_setups = AsyncMock()
         mock_hass.config_entries.async_unload_platforms = AsyncMock(return_value=True)
         mock_hass.async_create_task = MagicMock(side_effect=lambda coro: loop.create_task(coro))
-        mock_hass.async_block_till_done = AsyncMock()
+
+        async def mock_block_till_done():
+            """Allow all pending tasks to complete."""
+            # Give pending tasks a chance to run
+            await asyncio.sleep(0)
+            await asyncio.sleep(0)
+
+        mock_hass.async_block_till_done = mock_block_till_done
         mock_hass.http = MagicMock()
         mock_hass.http.async_register_static_paths = AsyncMock()
         mock_hass.components = MagicMock()

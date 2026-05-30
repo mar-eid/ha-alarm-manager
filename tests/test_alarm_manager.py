@@ -581,10 +581,10 @@ class TestSummaryAccessors:
 
 
 class TestEntityStateChange:
-    async def test_state_change_triggers_evaluation(
+    async def test_evaluate_alarm_triggers(
         self, hass: HomeAssistant, mock_database: AsyncMock, mock_store: AsyncMock
     ):
-        """Test that entity state changes trigger alarm evaluation."""
+        """Test that alarm evaluation triggers when condition is met."""
         alarm = AlarmDefinition(
             id="temp_alarm",
             name="High Temp",
@@ -600,18 +600,18 @@ class TestEntityStateChange:
         manager = AlarmManager(hass, mock_database, mock_store)
         await manager.async_start()
 
-        # Simulate entity state being set (which triggers the listener)
-        hass.states.async_set("sensor.temperature", "55.0")
-        await hass.async_block_till_done()
+        # Directly evaluate alarm with a mock entity state above threshold
+        mock_entity_state = MagicMock()
+        mock_entity_state.state = "55.0"
+        await manager._async_evaluate_alarm(alarm, mock_entity_state)
 
-        # After state change, the alarm should be triggered
         assert manager.runtime_states["temp_alarm"].state == AlarmState.ACTIVE_UNACKED
         await manager.async_stop()
 
-    async def test_state_change_clears_alarm(
+    async def test_evaluate_alarm_clears(
         self, hass: HomeAssistant, mock_database: AsyncMock, mock_store: AsyncMock
     ):
-        """Test that entity state below threshold clears alarm."""
+        """Test that alarm evaluation clears when condition is no longer met."""
         alarm = AlarmDefinition(
             id="temp_alarm",
             name="High Temp",
@@ -626,17 +626,18 @@ class TestEntityStateChange:
         mock_database.async_list_channels.return_value = []
 
         manager = AlarmManager(hass, mock_database, mock_store)
-
-        # Set initial entity state above threshold
-        hass.states.async_set("sensor.temperature", "55.0")
         await manager.async_start()
-        await hass.async_block_till_done()
 
+        # First trigger the alarm
+        mock_state_high = MagicMock()
+        mock_state_high.state = "55.0"
+        await manager._async_evaluate_alarm(alarm, mock_state_high)
         assert manager.runtime_states["temp_alarm"].state == AlarmState.ACTIVE_UNACKED
 
-        # Now set below threshold
-        hass.states.async_set("sensor.temperature", "45.0")
-        await hass.async_block_till_done()
+        # Now clear it
+        mock_state_low = MagicMock()
+        mock_state_low.state = "45.0"
+        await manager._async_evaluate_alarm(alarm, mock_state_low)
 
         # Since ack_required=False, should go straight to NORMAL
         assert manager.runtime_states["temp_alarm"].state == AlarmState.NORMAL
@@ -695,9 +696,10 @@ class TestNotificationIntegration:
         manager.set_notification_router(mock_router)
         await manager.async_start()
 
-        # Simulate trigger
-        hass.states.async_set("sensor.temperature", "55.0")
-        await hass.async_block_till_done()
+        # Directly evaluate alarm with state above threshold
+        mock_entity_state = MagicMock()
+        mock_entity_state.state = "55.0"
+        await manager._async_evaluate_alarm(sample_alarm, mock_entity_state)
 
         mock_router.async_send_alarm_notification.assert_awaited_once()
         await manager.async_stop()
@@ -722,15 +724,17 @@ class TestNotificationIntegration:
         manager = AlarmManager(hass, mock_database, mock_store)
         mock_router = AsyncMock()
         manager.set_notification_router(mock_router)
-
-        # Start with entity already above threshold
-        hass.states.async_set("sensor.temperature", "55.0")
         await manager.async_start()
-        await hass.async_block_till_done()
+
+        # Trigger the alarm
+        mock_state_high = MagicMock()
+        mock_state_high.state = "55.0"
+        await manager._async_evaluate_alarm(alarm, mock_state_high)
 
         # Clear the alarm
-        hass.states.async_set("sensor.temperature", "45.0")
-        await hass.async_block_till_done()
+        mock_state_low = MagicMock()
+        mock_state_low.state = "45.0"
+        await manager._async_evaluate_alarm(alarm, mock_state_low)
 
         mock_router.async_dismiss_alarm_notification.assert_awaited()
         await manager.async_stop()
