@@ -132,8 +132,17 @@ async def _async_register_card_resource(hass: HomeAssistant) -> None:
     """Register alarm card JS files as Lovelace resources if not already present."""
     try:
         lovelace_data = hass.data.get("lovelace")
-        if not lovelace_data or "resources" not in lovelace_data:
-            _LOGGER.debug("Lovelace resources not available (YAML mode?), skipping card registration")
+        if not lovelace_data:
+            _LOGGER.warning("Lovelace data not available, skipping card registration")
+            return
+
+        if "resources" not in lovelace_data:
+            _LOGGER.warning(
+                "Lovelace resources not available (YAML mode?). "
+                "Add card resources manually: %s and %s",
+                CARD_URL,
+                CENTER_CARD_URL,
+            )
             return
 
         resources: ResourceStorageCollection = lovelace_data["resources"]
@@ -141,13 +150,16 @@ async def _async_register_card_resource(hass: HomeAssistant) -> None:
             await resources.async_load()
 
         existing_urls = {item.get("url", "") for item in resources.async_items()}
+        _LOGGER.debug("Existing Lovelace resources: %s", existing_urls)
 
         for url in (CARD_URL, CENTER_CARD_URL):
             if not any(u.startswith(url) for u in existing_urls):
                 await resources.async_create_item({"res_type": "module", "url": url})
                 _LOGGER.info("Registered Lovelace resource: %s", url)
+            else:
+                _LOGGER.debug("Lovelace resource already registered: %s", url)
     except Exception:
-        _LOGGER.warning("Could not auto-register card resources")
+        _LOGGER.exception("Could not auto-register card resources")
 
 
 async def _async_remove_card_resource(hass: HomeAssistant) -> None:
