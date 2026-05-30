@@ -7,7 +7,7 @@ import logging
 from homeassistant.components.frontend import async_register_built_in_panel
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
-from homeassistant.helpers.http import StaticPathConfig
+from homeassistant.components.http import StaticPathConfig
 
 from .alarm_manager import AlarmManager
 from .const import (

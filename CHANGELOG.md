@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fix import of `StaticPathConfig` from correct module (`homeassistant.components.http`)
+
 ### Added
 
 - Initial project scaffolding
