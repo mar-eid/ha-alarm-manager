@@ -13,6 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Alarm CRUD: `list_alarms`, `get_alarm`, `create_alarm`, `update_alarm`, `delete_alarm`
   - Channel CRUD: `list_channels`, `get_channel`, `create_channel`, `update_channel`, `delete_channel`
   - Event history: `list_events` with filtering and pagination
+- Redesigned Alarm Center panel with MDI tab icons, status pill header, and KPI strip
+- KPI strip with severity breakdown tiles, severity bar, and clickable priority filtering
+- Alarm tile cards as visual alternative to table rows (severity accent, live value, time ago)
+- Shelve dialog with preset durations (15m, 30m, 1h, 4h, 8h) and fine slider (replaces prompt)
+- Notification target picker with chip-based multi-select and dropdown
+- External trigger type (`trigger_type: "external"`) for hybrid automation/blueprint integration
+- `scada_alarm_manager.trigger` and `scada_alarm_manager.clear` services for external alarms
 - HA-native entity picker (`ha-entity-picker`) and area picker (`ha-area-picker`) in alarm create/edit form
 - Column filtering on all table views (Active Alarms, All Alarms, History, Channels)
 - Test notification button on All Alarms table for alarms with assigned channels

@@ -7,7 +7,7 @@
 <p align="center">
   Industrial-style alarm management for Home Assistant
   <br>
-  <strong>v0.3.0</strong>
+  <strong>v0.5.0</strong>
 </p>
 
 <p align="center">
@@ -34,17 +34,22 @@ A SCADA-inspired alarm system for Home Assistant. Define alarm rules on any enti
 
 | Feature | Description |
 |---------|-------------|
-| **Three trigger types** | Analog thresholds, digital state match, custom state/template |
+| **Four trigger types** | Analog thresholds, digital state match, custom state/template, external (service-triggered) |
 | **SCADA state machine** | 6-state lifecycle with acknowledge, shelve, reset workflows |
-| **Alarm Center panel** | Full sidebar panel with Active, All, History, Channels, Create/Edit, Settings tabs |
+| **Alarm Center panel** | Redesigned sidebar panel with MDI icons, status pill, KPI strip with severity breakdown |
 | **Alarm Center card** | Same full panel as a Lovelace card -- use in panel mode for fullscreen |
+| **KPI strip** | Clickable severity tiles, severity bar, unacked/shelved counts with priority filtering |
+| **Alarm tile cards** | Visual card layout with severity accent, live value, time-ago, inline ACK/shelve |
 | **Monitoring card** | Compact card with severity bar, counts, ACK/shelve buttons |
+| **Shelve dialog** | Modal with preset durations (15m/30m/1h/4h/8h) and fine slider -- replaces prompt |
+| **Notification targets** | Chip-based multi-select picker with dropdown for channel targets |
 | **HA-native selectors** | Entity picker, area picker in create/edit forms |
 | **Column filtering** | Filter tables by priority, name, state, entity, channel |
 | **Alarm detail dialog** | Click any alarm row for full details |
+| **External triggers** | `trigger` and `clear` services for hybrid automation/blueprint integration |
 | **Priority notifications** | Persistent, mobile push, and critical alerts based on priority level |
 | **Actionable notifications** | ACK or shelve directly from Companion App push notifications |
-| **Full REST API** | 19 HA services (8 actions + 11 CRUD with response data) for automations and MCP |
+| **Full REST API** | 21 HA services (10 actions + 11 CRUD with response data) for automations and MCP |
 | **Binary sensors** | Each alarm is an entity with Recorder/History/Logbook support |
 | **Summary sensors** | Active count, unacked count, highest severity |
 | **SQLite history** | Full event log with filtering, pagination, and configurable retention |

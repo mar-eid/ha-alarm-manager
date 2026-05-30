@@ -1,13 +1,39 @@
 /**
- * SCADA Alarm Center - Full-screen sidebar panel.
+ * SCADA Alarm Center — full-screen sidebar panel (redesigned).
+ * Drop-in replacement for your existing alarm-center-panel.ts:
+ *   • MDI tab icons via <ha-svg-icon> (no more emoji)
+ *   • Status-pill header (all-normal / N active / N critical)
+ *   • <alarm-kpi-strip> wired on the Active + All tabs, driving a priority filter
+ *
+ * Place at: frontend/src/alarm-center-panel.ts (replaces the current file)
+ *
+ * The panel fetches `_alarms` once (for the header pill + KPI strip) and subscribes
+ * to changes; the individual views keep fetching their own data as today.
+ *
+ * NOTE: to make the KPI tiles filter the table, add an (optional) `priorityFilter`
+ * @property to active-alarms-view / all-alarms-view that, when set, overrides the
+ * column `_filterPriority`. One line in their `_filtered` getter:
+ *     const pf = this.priorityFilter || this._filterPriority;
  */
 
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import {
+  mdiBellRing,
+  mdiFormatListChecks,
+  mdiHistory,
+  mdiBroadcast,
+  mdiPlusBox,
+  mdiCog,
+  mdiAlert,
+  mdiAlertDecagram,
+  mdiCheckCircle,
+} from "@mdi/js";
 import { sharedStyles } from "./styles/shared-styles";
-import type { HomeAssistant } from "./types";
+import { fetchAlarms, subscribeAlarmChanges } from "./data/websocket";
+import type { HomeAssistant, AlarmWithState } from "./types";
 
-// Import views
+import "./components/alarm-kpi-strip";
 import "./views/active-alarms-view";
 import "./views/all-alarms-view";
 import "./views/history-view";
@@ -17,19 +43,19 @@ import "./views/settings-view";
 
 type TabId = "active" | "all" | "history" | "channels" | "create-edit" | "settings";
 
-interface Tab {
-  id: TabId;
-  label: string;
-  icon: string;
-}
+const TABS: { id: TabId; label: string; icon: string }[] = [
+  { id: "active", label: "Active", icon: mdiBellRing },
+  { id: "all", label: "All Alarms", icon: mdiFormatListChecks },
+  { id: "history", label: "History", icon: mdiHistory },
+  { id: "channels", label: "Channels", icon: mdiBroadcast },
+  { id: "create-edit", label: "Create / Edit", icon: mdiPlusBox },
+  { id: "settings", label: "Settings", icon: mdiCog },
+];
 
-const TABS: Tab[] = [
-  { id: "active", label: "Active Alarms", icon: "🔴" },
-  { id: "all", label: "All Alarms", icon: "📋" },
-  { id: "history", label: "History", icon: "📜" },
-  { id: "channels", label: "Channels", icon: "📡" },
-  { id: "create-edit", label: "Create / Edit", icon: "✏️" },
-  { id: "settings", label: "Settings", icon: "⚙️" },
+const ACTIVE_STATES = [
+  "active_unacknowledged",
+  "active_acknowledged",
+  "returned_to_normal_unacknowledged",
 ];
 
 @customElement("scada-alarm-center-panel")
@@ -38,6 +64,9 @@ export class ScadaAlarmCenterPanel extends LitElement {
   @property({ attribute: false }) panel?: Record<string, unknown>;
   @state() private _activeTab: TabId = "active";
   @state() private _editAlarmId?: string;
+  @state() private _priorityFilter = "";
+  @state() private _alarms: AlarmWithState[] = [];
+  private _unsub?: () => void;
 
   static styles = [
     sharedStyles,
@@ -48,22 +77,90 @@ export class ScadaAlarmCenterPanel extends LitElement {
         height: 100vh;
         background: var(--primary-background-color, #fafafa);
       }
-
       .header {
-        background: var(--app-header-background-color, var(--primary-color));
-        color: var(--app-header-text-color, white);
-        padding: 16px 24px;
-        font-size: 1.4em;
-        font-weight: 500;
+        height: 56px;
+        flex: none;
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 8px;
+        padding: 0 16px;
+        background: var(--card-background-color, #fff);
+        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+        --mdc-icon-size: 24px;
       }
-
-      .header-icon {
-        font-size: 1.2em;
+      .header .title {
+        font-size: 20px;
+        font-weight: 400;
+        color: var(--primary-text-color, #212121);
       }
-
+      .status {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 9999px;
+        font-size: 13px;
+        font-weight: 600;
+        --mdc-icon-size: 15px;
+      }
+      .tabs {
+        display: flex;
+        align-items: center;
+        background: var(--card-background-color, #fff);
+        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+        padding: 0 8px;
+        overflow-x: auto;
+        flex: none;
+      }
+      .tab {
+        position: relative;
+        height: 48px;
+        padding: 0 18px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font: inherit;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--secondary-text-color, #727272);
+        white-space: nowrap;
+        --mdc-icon-size: 19px;
+      }
+      .tab:hover {
+        color: var(--primary-text-color, #212121);
+      }
+      .tab.active {
+        color: var(--primary-color, #009ac7);
+      }
+      .tab.active::after {
+        content: "";
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 0;
+        height: 3px;
+        border-radius: 3px 3px 0 0;
+        background: var(--primary-color, #009ac7);
+      }
+      .tab .count {
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 9999px;
+        background: var(--ha-color-neutral-60, #989898);
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .tab.active .count {
+        background: var(--primary-color, #009ac7);
+      }
       .content {
         flex: 1;
         overflow-y: auto;
@@ -74,11 +171,24 @@ export class ScadaAlarmCenterPanel extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this.addEventListener("navigate", this._handleNavigate as EventListener);
+    this._loadAlarms();
+    this._subscribe();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this.removeEventListener("navigate", this._handleNavigate as EventListener);
+    this._unsub?.();
+  }
+
+  private async _loadAlarms() {
+    if (!this.hass) return;
+    this._alarms = await fetchAlarms(this.hass);
+  }
+
+  private async _subscribe() {
+    if (!this.hass) return;
+    this._unsub = await subscribeAlarmChanges(this.hass, () => this._loadAlarms());
   }
 
   private _handleNavigate = (e: CustomEvent) => {
@@ -89,16 +199,51 @@ export class ScadaAlarmCenterPanel extends LitElement {
 
   private _setTab(tab: TabId) {
     this._activeTab = tab;
-    if (tab !== "create-edit") {
-      this._editAlarmId = undefined;
+    if (tab !== "create-edit") this._editAlarmId = undefined;
+  }
+
+  private get _activeCount() {
+    return this._alarms.filter((a) => ACTIVE_STATES.includes(a.runtime.state)).length;
+  }
+  private get _criticalCount() {
+    return this._alarms.filter((a) => ACTIVE_STATES.includes(a.runtime.state) && a.priority === 3)
+      .length;
+  }
+
+  private _renderStatus() {
+    const crit = this._criticalCount;
+    const active = this._activeCount;
+    let color: string, icon: string, text: string;
+    if (crit > 0) {
+      color = "#f44336";
+      icon = mdiAlertDecagram;
+      text = `${crit} critical`;
+    } else if (active > 0) {
+      color = "#ff9800";
+      icon = mdiAlert;
+      text = `${active} active`;
+    } else {
+      color = "#4caf50";
+      icon = mdiCheckCircle;
+      text = "All normal";
     }
+    return html`
+      <div
+        class="status"
+        style=${`background:color-mix(in srgb, ${color} 14%, transparent); color:${color}`}
+      >
+        <ha-svg-icon .path=${icon}></ha-svg-icon>${text}
+      </div>
+    `;
   }
 
   render() {
+    const showKpis = this._activeTab === "active" || this._activeTab === "all";
     return html`
       <div class="header">
-        <span class="header-icon">&#x1F6A8;</span>
-        <span>SCADA Alarm Center</span>
+        <ha-svg-icon .path=${mdiBellRing} style="color: var(--primary-color)"></ha-svg-icon>
+        <span class="title">Alarm Center</span>
+        ${this._renderStatus()}
       </div>
 
       <div class="tabs">
@@ -108,13 +253,27 @@ export class ScadaAlarmCenterPanel extends LitElement {
               class="tab ${this._activeTab === tab.id ? "active" : ""}"
               @click=${() => this._setTab(tab.id)}
             >
-              ${tab.label}
+              <ha-svg-icon .path=${tab.icon}></ha-svg-icon>
+              <span>${tab.label}</span>
+              ${tab.id === "active" && this._activeCount > 0
+                ? html`<span class="count">${this._activeCount}</span>`
+                : nothing}
             </button>
           `
         )}
       </div>
 
       <div class="content">
+        ${showKpis
+          ? html`<alarm-kpi-strip
+              .alarms=${this._alarms}
+              .filterPriority=${this._priorityFilter}
+              @priority-filter=${(e: CustomEvent) => {
+                this._priorityFilter = e.detail.priority;
+                if (this._priorityFilter && this._activeTab !== "active") this._setTab("active");
+              }}
+            ></alarm-kpi-strip>`
+          : nothing}
         ${this._renderView()}
       </div>
     `;
@@ -123,15 +282,24 @@ export class ScadaAlarmCenterPanel extends LitElement {
   private _renderView() {
     switch (this._activeTab) {
       case "active":
-        return html`<active-alarms-view .hass=${this.hass}></active-alarms-view>`;
+        return html`<active-alarms-view
+          .hass=${this.hass}
+          .priorityFilter=${this._priorityFilter}
+        ></active-alarms-view>`;
       case "all":
-        return html`<all-alarms-view .hass=${this.hass}></all-alarms-view>`;
+        return html`<all-alarms-view
+          .hass=${this.hass}
+          .priorityFilter=${this._priorityFilter}
+        ></all-alarms-view>`;
       case "history":
         return html`<history-view .hass=${this.hass}></history-view>`;
       case "channels":
         return html`<channels-view .hass=${this.hass}></channels-view>`;
       case "create-edit":
-        return html`<create-edit-view .hass=${this.hass} .alarmId=${this._editAlarmId ?? ""}></create-edit-view>`;
+        return html`<create-edit-view
+          .hass=${this.hass}
+          .alarmId=${this._editAlarmId ?? ""}
+        ></create-edit-view>`;
       case "settings":
         return html`<settings-view .hass=${this.hass}></settings-view>`;
       default:
@@ -143,5 +311,6 @@ export class ScadaAlarmCenterPanel extends LitElement {
 declare global {
   interface HTMLElementTagNameMap {
     "scada-alarm-center-panel": ScadaAlarmCenterPanel;
+    "ha-svg-icon": any;
   }
 }
