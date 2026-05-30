@@ -38,4 +38,13 @@ export default [
     },
     plugins: commonPlugins,
   },
+  {
+    input: "src/alarm-dashboard.ts",
+    output: {
+      file: "../custom_components/scada_alarm_manager/frontend/alarm-dashboard.js",
+      format: "es",
+      sourcemap: !production,
+    },
+    plugins: commonPlugins,
+  },
 ];

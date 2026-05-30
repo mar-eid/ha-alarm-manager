@@ -26,6 +26,7 @@ _LOGGER = logging.getLogger(__name__)
 
 CARD_URL = f"/{DOMAIN}/frontend/alarm-card.js"
 CENTER_CARD_URL = f"/{DOMAIN}/frontend/alarm-center-card.js"
+DASHBOARD_URL = f"/{DOMAIN}/frontend/alarm-dashboard.js"
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -147,7 +148,7 @@ async def _async_register_card_resource(hass: HomeAssistant) -> None:
         if not resources.loaded:
             await resources.async_load()
 
-        for base_url in (CARD_URL, CENTER_CARD_URL):
+        for base_url in (CARD_URL, CENTER_CARD_URL, DASHBOARD_URL):
             versioned_url = f"{base_url}?v={version}"
 
             # Remove any existing entry for this base URL (stale versions)
