@@ -38,6 +38,10 @@ known-first-party = ["custom_components.scada_alarm_manager"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+# On Windows, the HA test harness plugin fails (missing fcntl).
+# Disable it here; tests use fallback fixtures from tests/conftest.py.
+# On Linux/CI, remove this line to use the full HA integration test harness.
+addopts = "-p no:homeassistant"
 
 [tool.mypy]
 python_version = "3.13"
