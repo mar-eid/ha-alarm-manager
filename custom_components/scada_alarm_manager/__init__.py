@@ -109,7 +109,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def _async_register_card_resource(hass: HomeAssistant) -> None:
-    """Register alarm card JS files as Lovelace resources if not already present."""
+    """Register alarm card JS files as Lovelace resources.
+
+    On every startup: removes stale versioned entries and re-adds with
+    the current version as cache buster. This ensures browser cache is
+    busted on every update and resources survive HACS wipes.
+    """
     try:
         lovelace_data = hass.data.get("lovelace")
         if not lovelace_data:
@@ -125,19 +130,34 @@ async def _async_register_card_resource(hass: HomeAssistant) -> None:
             )
             return
 
+        # Read version from manifest for cache busting
+        import json
+        manifest_path = hass.config.path("custom_components", DOMAIN, "manifest.json")
+        with open(manifest_path) as f:
+            version = json.load(f).get("version", "0")
+
         resources: ResourceStorageCollection = lovelace_data["resources"]
         if not resources.loaded:
             await resources.async_load()
 
-        existing_urls = {item.get("url", "") for item in resources.async_items()}
-        _LOGGER.debug("Existing Lovelace resources: %s", existing_urls)
+        for base_url in (CARD_URL, CENTER_CARD_URL):
+            versioned_url = f"{base_url}?v={version}"
 
-        for url in (CARD_URL, CENTER_CARD_URL):
-            if not any(u.startswith(url) for u in existing_urls):
-                await resources.async_create_item({"res_type": "module", "url": url})
-                _LOGGER.info("Registered Lovelace resource: %s", url)
-            else:
-                _LOGGER.debug("Lovelace resource already registered: %s", url)
+            # Remove any existing entry for this base URL (stale versions)
+            for item in list(resources.async_items()):
+                item_url = item.get("url", "")
+                if item_url.split("?")[0] == base_url and item_url != versioned_url:
+                    await resources.async_delete_item(item["id"])
+                    _LOGGER.info("Removed stale resource: %s", item_url)
+
+            # Check if current version is already registered
+            existing = any(
+                item.get("url", "") == versioned_url
+                for item in resources.async_items()
+            )
+            if not existing:
+                await resources.async_create_item({"res_type": "module", "url": versioned_url})
+                _LOGGER.info("Registered Lovelace resource: %s", versioned_url)
     except Exception:
         _LOGGER.exception("Could not auto-register card resources")
 

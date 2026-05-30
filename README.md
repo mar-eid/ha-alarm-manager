@@ -7,7 +7,7 @@
 <p align="center">
   Industrial-style alarm management for Home Assistant
   <br>
-  <strong>v0.5.4</strong>
+  <strong>v0.5.5</strong>
 </p>
 
 <p align="center">
