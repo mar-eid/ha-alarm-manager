@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-from homeassistant.core import HomeAssistant
 
 from custom_components.scada_alarm_manager.alarm_manager import AlarmManager
 from custom_components.scada_alarm_manager.const import DOMAIN, AlarmPriority, TriggerType
@@ -14,6 +13,51 @@ from custom_components.scada_alarm_manager.models import (
     AlarmChannel,
     AlarmDefinition,
 )
+
+# On Windows, pytest-homeassistant-custom-component can't load (missing fcntl).
+# Provide fallback fixtures so tests can run with `-p no:homeassistant`.
+_HA_PLUGIN_AVAILABLE = "pytest_homeassistant_custom_component" in sys.modules
+
+
+if not _HA_PLUGIN_AVAILABLE:
+    import asyncio
+
+    from homeassistant.core import HomeAssistant
+
+    @pytest.fixture
+    async def hass() -> MagicMock:
+        """Provide a mocked HomeAssistant instance for Windows compatibility."""
+        loop = asyncio.get_running_loop()
+        mock_hass = MagicMock(spec=HomeAssistant)
+        mock_hass.data = {}
+        mock_hass.loop = loop
+        mock_hass.states = MagicMock()
+        mock_hass.states.get = MagicMock(return_value=None)
+        mock_hass.states.async_set = MagicMock()
+        mock_hass.bus = MagicMock()
+        mock_hass.bus.async_listen = MagicMock(return_value=MagicMock())
+        mock_hass.bus.async_fire = MagicMock()
+        mock_hass.services = MagicMock()
+        mock_hass.services.async_register = MagicMock()
+        mock_hass.services.async_remove = MagicMock()
+        mock_hass.services.async_call = AsyncMock()
+        mock_hass.services.has_service = MagicMock(return_value=False)
+        mock_hass.config = MagicMock()
+        mock_hass.config.path = MagicMock(side_effect=lambda *args: "/".join(args))
+        mock_hass.config_entries = MagicMock()
+        mock_hass.config_entries.async_forward_entry_setups = AsyncMock()
+        mock_hass.config_entries.async_unload_platforms = AsyncMock(return_value=True)
+        mock_hass.async_create_task = MagicMock(side_effect=lambda coro: loop.create_task(coro))
+        mock_hass.async_block_till_done = AsyncMock()
+        mock_hass.http = MagicMock()
+        mock_hass.http.async_register_static_paths = AsyncMock()
+        mock_hass.components = MagicMock()
+        return mock_hass
+
+    @pytest.fixture
+    def enable_custom_integrations():
+        """No-op fixture for Windows compatibility."""
+        return None
 
 
 @pytest.fixture
