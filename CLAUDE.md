@@ -11,10 +11,15 @@ Domain: `scada_alarm_manager`
   - MAJOR: Breaking changes (config schema changes requiring migration, removed features)
   - MINOR: New features, backwards-compatible
   - PATCH: Bug fixes, backwards-compatible
-- **Current version**: 0.3.1
+- **Current version**: 0.3.2
 - Version is tracked in: `custom_components/scada_alarm_manager/manifest.json` and `pyproject.toml`
 - Both files MUST be updated together on version bumps
 - **Always bump the PATCH version** when making any code change (bug fix, refactor, etc.). Bump MINOR for new features, MAJOR for breaking changes.
+- **EVERY commit to master MUST include a version bump and git tag.** No exceptions.
+  - Bump in: `manifest.json`, `pyproject.toml`, `CLAUDE.md` (current version field above)
+  - Create tag: `git tag v<version>` (e.g., `v0.3.1`)
+  - Remind user to push both: `git push && git push origin v<version>`
+  - HACS uses tags for update detection — commits without tags are invisible to users
 
 ## Changelog
 
