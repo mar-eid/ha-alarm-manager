@@ -77,8 +77,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ]
     )
 
-    # Auto-register Lovelace card resource (idempotent)
-    await _async_register_card_resource(hass)
+    # Auto-register Lovelace card resources after HA is fully started
+    # (running during setup_entry can race with Lovelace resource loading)
+    async def _register_when_ready(_event: Event | None = None) -> None:
+        await _async_register_card_resource(hass)
+
+    if hass.is_running:
+        await _async_register_card_resource(hass)
+    else:
+        hass.bus.async_listen_once("homeassistant_started", _register_when_ready)
 
     # Listen for mobile notification actions
     @callback
