@@ -7,11 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-
-- Fix import of `StaticPathConfig` from correct module (`homeassistant.components.http`)
-
 ### Added
+
+- Auto-register Lovelace card resource so `scada-alarm-card` appears in the card picker without manual setup
+- Clean up card resource on integration unload
 
 - Initial project scaffolding
 - SCADA alarm state machine (Normal, Active Unacked, Active Acked, RTN Unacked, Shelved, Disabled)
@@ -27,3 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Binary sensor entity per alarm (integrates with HA Recorder/History)
 - Summary sensors: active count, unacknowledged count, highest severity
 - HACS distribution support
+
+### Fixed
+
+- Fix import of `StaticPathConfig` from correct module (`homeassistant.components.http`)

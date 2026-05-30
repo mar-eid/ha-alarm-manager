@@ -59,3 +59,6 @@ coverage.xml
 # pytest
 .pytest_cache/
 
+# Local dev notes (not shipped)
+CLAUDE.local.md
+

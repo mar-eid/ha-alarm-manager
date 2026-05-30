@@ -1,9 +1,10 @@
 {
   "domain": "scada_alarm_manager",
   "name": "SCADA Alarm Manager",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "codeowners": [],
   "config_flow": true,
+  "dependencies": ["frontend", "http", "lovelace"],
   "documentation": "https://github.com/placeholder/ha-scada-alarm-manager",
   "issue_tracker": "https://github.com/placeholder/ha-scada-alarm-manager/issues",
   "requirements": ["aiosqlite>=0.20.0"],

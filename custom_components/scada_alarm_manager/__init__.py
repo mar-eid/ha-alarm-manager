@@ -5,9 +5,10 @@ from __future__ import annotations
 import logging
 
 from homeassistant.components.frontend import async_register_built_in_panel
+from homeassistant.components.http import StaticPathConfig
+from homeassistant.components.lovelace.resources import ResourceStorageCollection
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
-from homeassistant.components.http import StaticPathConfig
 
 from .alarm_manager import AlarmManager
 from .const import (
@@ -27,6 +28,7 @@ _LOGGER = logging.getLogger(__name__)
 FRONTEND_URL_PATH = "scada-alarm-manager"
 PANEL_TITLE = "Alarm Center"
 PANEL_ICON = "mdi:alert-decagram"
+CARD_URL = f"/{DOMAIN}/frontend/alarm-card.js"
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -94,6 +96,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         require_admin=False,
     )
 
+    # Auto-register Lovelace card resource (idempotent)
+    await _async_register_card_resource(hass)
+
     # Listen for mobile notification actions
     @callback
     def _handle_notification_action(event: Event) -> None:
@@ -122,6 +127,35 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
+async def _async_register_card_resource(hass: HomeAssistant) -> None:
+    """Register the alarm card as a Lovelace resource if not already present."""
+    resources: ResourceStorageCollection = hass.data["lovelace"]["resources"]
+    # Wait for resources to load if they haven't yet
+    if not resources.loaded:
+        await resources.async_load()
+
+    # Check if already registered
+    for item in resources.async_items():
+        if item.get("url", "").startswith(CARD_URL):
+            return
+
+    await resources.async_create_item({"res_type": "module", "url": CARD_URL})
+    _LOGGER.info("Registered Lovelace resource: %s", CARD_URL)
+
+
+async def _async_remove_card_resource(hass: HomeAssistant) -> None:
+    """Remove the alarm card Lovelace resource."""
+    resources: ResourceStorageCollection = hass.data["lovelace"]["resources"]
+    if not resources.loaded:
+        await resources.async_load()
+
+    for item in resources.async_items():
+        if item.get("url", "").startswith(CARD_URL):
+            await resources.async_delete_item(item["id"])
+            _LOGGER.info("Removed Lovelace resource: %s", CARD_URL)
+            return
+
+
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a SCADA Alarm Manager config entry."""
     entry_data = hass.data[DOMAIN].get(entry.entry_id)
@@ -143,8 +177,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Unregister services
         await async_unregister_services(hass)
 
-        # Remove panel
+        # Remove panel and card resource
         hass.components.frontend.async_remove_panel(FRONTEND_URL_PATH)
+        await _async_remove_card_resource(hass)
 
         # Clean up
         hass.data[DOMAIN].pop(entry.entry_id)
