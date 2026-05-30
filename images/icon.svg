@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <!-- Alarm bell -->
+  <path d="M24 4 C16 4 10 11 10 20 L10 28 L6 32 L6 36 L42 36 L42 32 L38 28 L38 20 C38 11 32 4 24 4Z"
+        fill="#03a9f4"/>
+  <!-- Clapper -->
+  <circle cx="24" cy="40" r="4" fill="#03a9f4"/>
+  <!-- Lightning -->
+  <polygon points="27,10 22,22 27,21 21,32 28,20 24,21" fill="#FF9800"/>
+</svg>

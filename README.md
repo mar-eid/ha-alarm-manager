@@ -1,55 +1,117 @@
-# SCADA Alarm Manager for Home Assistant
+<p align="center">
+  <img src="images/logo.svg" alt="SCADA Alarm Manager" width="160">
+</p>
 
-**Version: 0.3.0**
+<h1 align="center">SCADA Alarm Manager</h1>
 
-An industrial-style alarm management system for Home Assistant, with GUI-configurable alarm rules, alarm channels, SCADA-like acknowledgement workflows, dashboard monitoring, and actionable mobile response.
+<p align="center">
+  Industrial-style alarm management for Home Assistant
+  <br>
+  <strong>v0.3.0</strong>
+</p>
+
+<p align="center">
+  <a href="#installation">Installation</a> &middot;
+  <a href="#quick-start">Quick Start</a> &middot;
+  <a href="#features">Features</a> &middot;
+  <a href="#services">Services</a> &middot;
+  <a href="#cards">Cards</a>
+</p>
+
+---
+
+## What is this?
+
+A SCADA-inspired alarm system for Home Assistant. Define alarm rules on any entity, group them into channels, and get notified through persistent notifications and mobile push -- with industrial-grade acknowledgement workflows.
+
+**Key concepts:**
+- **Alarms** monitor HA entities and trigger on thresholds, state changes, or custom conditions
+- **Channels** route notifications to the right people based on category and priority
+- **State machine** tracks each alarm through a SCADA lifecycle: Normal, Active, Acknowledged, Shelved, Disabled
+- **Priority-aware routing**: Info = panel only, Warning+ = persistent, High+ = mobile, Critical = bypasses DND
 
 ## Features
 
-- **SCADA-style alarm lifecycle**: Normal, Active (Unacknowledged/Acknowledged), Returned to Normal, Shelved, Disabled
-- **Three trigger types**: Analog thresholds, digital state changes, custom state/template conditions
-- **Alarm channels**: Route notifications to the right people based on alarm category and priority
-- **Alarm Center panel**: Full-screen sidebar panel with 6 tabs, column filtering, and HA-native entity/area pickers
-- **Lovelace card**: Compact dashboard card showing active alarms, counts, and quick actions (auto-registered)
-- **Full REST/Service API**: All CRUD operations available as HA services with response data — enables MCP servers and external integrations
-- **Actionable notifications**: Acknowledge, shelve, or open alarms directly from mobile push notifications
-- **Alarm history**: Full event log with filtering and pagination via SQLite
-- **HA integration**: Each alarm is a binary sensor entity with full Recorder/History support
+| Feature | Description |
+|---------|-------------|
+| **Three trigger types** | Analog thresholds, digital state match, custom state/template |
+| **SCADA state machine** | 6-state lifecycle with acknowledge, shelve, reset workflows |
+| **Alarm Center panel** | Full sidebar panel with Active, All, History, Channels, Create/Edit, Settings tabs |
+| **Alarm Center card** | Same full panel as a Lovelace card -- use in panel mode for fullscreen |
+| **Monitoring card** | Compact card with severity bar, counts, ACK/shelve buttons |
+| **HA-native selectors** | Entity picker, area picker in create/edit forms |
+| **Column filtering** | Filter tables by priority, name, state, entity, channel |
+| **Alarm detail dialog** | Click any alarm row for full details |
+| **Priority notifications** | Persistent, mobile push, and critical alerts based on priority level |
+| **Actionable notifications** | ACK or shelve directly from Companion App push notifications |
+| **Full REST API** | 19 HA services (8 actions + 11 CRUD with response data) for automations and MCP |
+| **Binary sensors** | Each alarm is an entity with Recorder/History/Logbook support |
+| **Summary sensors** | Active count, unacked count, highest severity |
+| **SQLite history** | Full event log with filtering, pagination, and configurable retention |
 
 ## Installation
 
 ### HACS (Recommended)
 
-1. Open HACS in Home Assistant
-2. Click the three dots menu > Custom repositories
-3. Add this repository URL and select "Integration" as the category
-4. Search for "SCADA Alarm Manager" and install
-5. Restart Home Assistant
-6. Go to Settings > Integrations > Add Integration > SCADA Alarm Manager
+1. Open **HACS** in Home Assistant
+2. Three dots menu > **Custom repositories**
+3. Add this repository URL, category **Integration**
+4. Search for **"SCADA Alarm Manager"** and install
+5. **Restart Home Assistant**
+6. Go to **Settings > Integrations > Add Integration > SCADA Alarm Manager**
 
 ### Manual
 
-1. Copy `custom_components/scada_alarm_manager/` to your Home Assistant `custom_components/` directory
+1. Copy `custom_components/scada_alarm_manager/` to your HA `custom_components/` directory
 2. Restart Home Assistant
-3. Go to Settings > Integrations > Add Integration > SCADA Alarm Manager
+3. Add the integration via Settings > Integrations
 
 ## Quick Start
 
-1. After installation, the **Alarm Center** appears in the sidebar
-2. Create alarm channels (e.g., "Safety", "HVAC", "Security") to define notification routing
-3. Create alarms by selecting a source entity (with autocomplete), trigger condition, priority, and channel
-4. Alarms automatically evaluate and transition through the SCADA state machine
-5. Use the Lovelace card on dashboards for at-a-glance monitoring
-6. Test notifications from the **All Alarms** tab to verify channel routing
+1. The **Alarm Center** appears in the sidebar after setup
+2. Go to **Channels** tab -- create channels (e.g., "Safety", "HVAC") with notification targets
+3. Go to **Create/Edit** tab -- create alarms with the entity picker, set trigger, priority, and channel
+4. Alarms evaluate automatically and transition through the state machine
+5. Use **Test** button on the All Alarms tab to verify notifications
+6. Add the **SCADA Alarm Center** card to a dashboard for embedded monitoring
+
+## Cards
+
+### SCADA Alarm Center
+
+Full Alarm Center embedded in a Lovelace card. All 6 tabs, all functionality. Best used in **panel mode** for a fullscreen alarm dashboard.
+
+```yaml
+type: custom:scada-alarm-center-card
+title: Alarm Center
+```
+
+### SCADA Alarm Card
+
+Compact monitoring card with severity bar, active alarm count, and quick actions.
+
+```yaml
+type: custom:scada-alarm-card
+title: Alarms
+show_count: true
+show_list: true
+max_items: 10
+show_ack_button: true
+show_shelve_button: true
+```
+
+**Card options:** `title`, `show_count`, `show_list`, `max_items`, `filter_channel`, `filter_priority`, `show_ack_button`, `show_shelve_button`
 
 ## Alarm Priorities
 
-| Priority | Use Case |
-|----------|----------|
-| Critical | Safety-critical conditions requiring immediate action |
-| High | Important conditions requiring prompt attention |
-| Warning | Conditions that should be investigated |
-| Info | Informational alerts for awareness |
+| Priority | Notification Behavior |
+|----------|----------------------|
+| **Critical** | Persistent + mobile push with critical alert (bypasses DND) |
+| **High** | Persistent notification + mobile push |
+| **Warning** | Persistent notification only |
+| **Info** | Panel and history only (no notifications) |
+
+Channel configuration can further restrict notifications via `min_priority`.
 
 ## Services
 
@@ -68,6 +130,8 @@ An industrial-style alarm management system for Home Assistant, with GUI-configu
 
 ### CRUD Services (with response data)
 
+These services return data via HA's `response_data`, making them accessible via the REST API for automations, scripts, MCP servers, and external integrations.
+
 | Service | Description |
 |---------|-------------|
 | `scada_alarm_manager.list_alarms` | List all alarm definitions with runtime state |
@@ -82,13 +146,32 @@ An industrial-style alarm management system for Home Assistant, with GUI-configu
 | `scada_alarm_manager.delete_channel` | Delete an alarm channel |
 | `scada_alarm_manager.list_events` | Query alarm event history with filters |
 
-These CRUD services return data via HA's `response_data` mechanism, making them accessible via the REST API for MCP servers and external tools.
+## Configuration
+
+After installation, configure defaults via **Settings > Integrations > SCADA Alarm Manager > Configure**:
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| Default shelve duration | 15 min | Default duration when shelving alarms |
+| History retention | 90 days | How long alarm events are kept |
+| Scan interval | 30 sec | How often entity states are checked |
+
+## State Machine
+
+```
+NORMAL ──> ACTIVE (Unacked) ──> ACTIVE (Acked) ──> NORMAL
+                │                      │
+                └──> RTN (Unacked) ────┘
+                
+Any state ──> SHELVED ──> (restored on timer/unshelve)
+Any state ──> DISABLED ──> NORMAL (on enable)
+```
 
 ## Requirements
 
-- Home Assistant 2026.1.0 or newer
-- HACS (for HACS installation)
+- Home Assistant **2026.1.0** or newer
+- HACS (for HACS installation method)
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License -- see [LICENSE](LICENSE) for details.
