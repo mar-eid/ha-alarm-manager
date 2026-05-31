@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-05-31
+
+### Changed
+
+- Redesigned Alarm Center panel (`scada-alarm-overview`) with MDI tab icons, status pill header, and KPI strip
+- Redesigned Lovelace card (`scada-alarm-banner`) with severity bar, area filter, inline ACK/Shelve
+- Shelve dialog replaces browser `prompt()` with preset durations and fine slider
+- Notification target picker with chip-based multi-select replaces comma-separated text input
+- Alarm tile cards as visual alternative to table rows (Table/Cards toggle)
+- KPI strip priority tiles filter the active alarms table
+- Views accept external `priorityFilter` from the KPI strip
+
+### Breaking
+
+- Card type renamed: `custom:scada-alarm-card` -> `custom:scada-alarm-banner`
+- Panel element renamed: `scada-alarm-center-panel` -> `scada-alarm-overview`
+- Old Lovelace resource URLs removed; new ones auto-registered on restart
+
 ## [0.6.3] - 2026-05-31
 
 ### Fixed
