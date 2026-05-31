@@ -109,7 +109,7 @@ class AlarmChannel:
     """Alarm notification channel definition."""
 
     name: str
-    notification_targets: list[str] = field(default_factory=list)
+    notification_targets: list[Any] = field(default_factory=list)
     min_priority: AlarmPriority = AlarmPriority.INFO
     persistent_notification: bool = True
     mobile_push: bool = True

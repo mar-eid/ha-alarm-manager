@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-05-31
+
+### Added
+
+- **Per-subscriber severity filter**: Each notification target in a channel can now have its own minimum priority. For example, Marius gets Warning+ while Anna only gets Critical. Shown as a dropdown next to each target chip in the channel editor.
+- Backward compatible — existing plain string targets continue to work (inherit channel's min_priority)
+
 ## [0.12.3] - 2026-05-31
 
 ### Fixed

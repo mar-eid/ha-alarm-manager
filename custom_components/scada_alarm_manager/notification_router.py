@@ -243,7 +243,19 @@ class NotificationRouter:
             action_data["ttl"] = 0
             action_data["channel"] = "alarm"
 
-        for target in channel.notification_targets:
+        for entry in channel.notification_targets:
+            # Support both formats: plain string or {"target": str, "min_priority": int}
+            if isinstance(entry, dict):
+                target = entry.get("target", "")
+                target_min = entry.get("min_priority", channel.min_priority.value)
+                if alarm.priority.value < target_min:
+                    continue
+            else:
+                target = entry
+
+            if not target:
+                continue
+
             try:
                 await self._hass.services.async_call(
                     "notify",

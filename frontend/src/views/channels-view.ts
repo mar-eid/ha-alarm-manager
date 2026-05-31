@@ -25,7 +25,7 @@ export class ChannelsView extends LitElement {
   @state() private _loading = true;
   @state() private _editing: AlarmChannel | null = null;
   @state() private _formName = "";
-  @state() private _formTargets: string[] = [];
+  @state() private _formTargets: Array<{target: string; min_priority: number}> = [];
   @state() private _formMinPriority: AlarmPriority = 0;
   @state() private _formPersistent = true;
   @state() private _formMobile = true;
@@ -73,7 +73,7 @@ export class ChannelsView extends LitElement {
   private _startCreate() {
     this._editing = {} as AlarmChannel;
     this._formName = "";
-    this._formTargets = [];
+    this._formTargets = [] as Array<{target: string; min_priority: number}>;
     this._formMinPriority = 0;
     this._formPersistent = true;
     this._formMobile = true;
@@ -83,7 +83,9 @@ export class ChannelsView extends LitElement {
   private _startEdit(channel: AlarmChannel) {
     this._editing = channel;
     this._formName = channel.name;
-    this._formTargets = [...channel.notification_targets];
+    this._formTargets = channel.notification_targets.map((t: any) =>
+      typeof t === "string" ? { target: t, min_priority: 0 } : { target: t.target, min_priority: t.min_priority ?? 0 }
+    );
     this._formMinPriority = channel.min_priority;
     this._formPersistent = channel.persistent_notification;
     this._formMobile = channel.mobile_push;
@@ -146,7 +148,7 @@ export class ChannelsView extends LitElement {
             (ch) => html`
               <tr>
                 <td><strong>${ch.name}</strong></td>
-                <td>${ch.notification_targets.join(", ") || "-"}</td>
+                <td>${ch.notification_targets.length === 0 ? "-" : ch.notification_targets.map((t: any) => typeof t === "string" ? t : t.target).join(", ")}</td>
                 <td>${PRIORITY_LABELS[ch.min_priority] ?? "Info"}</td>
                 <td>${ch.persistent_notification ? "Yes" : "No"}</td>
                 <td>${ch.mobile_push ? "Yes" : "No"}</td>

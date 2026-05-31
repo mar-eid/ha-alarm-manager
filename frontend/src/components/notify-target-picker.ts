@@ -59,9 +59,14 @@ export const DEFAULT_NOTIFY_TARGETS: NotifyTarget[] = [
   { id: "notify.alexa_everywhere", label: "Alexa — announce", path: mdiBullhorn },
 ];
 
+export interface TargetEntry {
+  target: string;
+  min_priority: number;
+}
+
 @customElement("notify-target-picker")
 export class NotifyTargetPicker extends LitElement {
-  @property({ attribute: false }) value: string[] = [];
+  @property({ attribute: false }) value: TargetEntry[] = [];
   @property({ attribute: false }) targets: NotifyTarget[] = DEFAULT_NOTIFY_TARGETS;
   @state() private _open = false;
 
@@ -187,31 +192,43 @@ export class NotifyTargetPicker extends LitElement {
     return this.targets.find((t) => t.id === id) ?? { id, label: id, path: mdiBellOutline };
   }
 
-  private _emit(value: string[]) {
+  private _emit(value: TargetEntry[]) {
     this.dispatchEvent(new CustomEvent("value-changed", { detail: { value } }));
   }
 
   private _add(id: string) {
-    this._emit([...this.value, id]);
+    this._emit([...this.value, { target: id, min_priority: 0 }]);
   }
   private _remove(id: string) {
-    this._emit(this.value.filter((v) => v !== id));
+    this._emit(this.value.filter((v) => v.target !== id));
+  }
+  private _setPriority(id: string, priority: number) {
+    this._emit(this.value.map((v) => v.target === id ? { ...v, min_priority: priority } : v));
   }
 
   render() {
-    const remaining = this.targets.filter((t) => !this.value.includes(t.id));
+    const ids = this.value.map((v) => v.target);
+    const remaining = this.targets.filter((t) => !ids.includes(t.id));
+    const priLabels: Record<number, string> = { 0: "All", 1: "Warn+", 2: "High+", 3: "Crit" };
     return html`
       <div class="box">
         ${this.value.length === 0
           ? html`<span class="empty">No targets — alarms log to history only</span>`
           : nothing}
-        ${this.value.map((id) => {
-          const m = this._meta(id);
+        ${this.value.map((entry) => {
+          const m = this._meta(entry.target);
           return html`
             <span class="chip">
               <ha-svg-icon .path=${m.path}></ha-svg-icon>
               ${m.label}
-              <span class="x" title="Remove" @click=${() => this._remove(id)}>
+              <select style="border:none;background:transparent;font:inherit;font-size:11px;color:inherit;padding:0 2px;cursor:pointer"
+                title="Minimum priority to notify this target"
+                .value=${String(entry.min_priority)}
+                @change=${(e: Event) => { e.stopPropagation(); this._setPriority(entry.target, parseInt((e.target as HTMLSelectElement).value)); }}
+                @click=${(e: Event) => e.stopPropagation()}>
+                ${[0, 1, 2, 3].map((p) => html`<option value=${p}>${priLabels[p]}</option>`)}
+              </select>
+              <span class="x" title="Remove" @click=${() => this._remove(entry.target)}>
                 <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
               </span>
             </span>
