@@ -6,7 +6,8 @@ import logging
 import operator
 from typing import Any
 
-from homeassistant.core import State
+from homeassistant.core import HomeAssistant, State
+from homeassistant.helpers.template import Template
 
 from .const import TriggerType
 from .models import AlarmDefinition
@@ -114,3 +115,25 @@ class TriggerEvaluator:
     ) -> bool:
         """Evaluate a pre-rendered template result."""
         return template_result.lower() in ("true", "1", "yes", "on")
+
+    def evaluate_condition_template(
+        self,
+        hass: HomeAssistant,
+        alarm_def: AlarmDefinition,
+    ) -> bool:
+        """Evaluate an alarm's condition_template. Returns True if no template or template is truthy."""
+        if not alarm_def.condition_template:
+            return True
+
+        try:
+            tpl = Template(alarm_def.condition_template, hass)
+            tpl.hass = hass
+            result = tpl.async_render()
+            return str(result).lower() in ("true", "1", "yes", "on")
+        except Exception:
+            _LOGGER.warning(
+                "Alarm %s: condition_template evaluation failed: %s",
+                alarm_def.name,
+                alarm_def.condition_template,
+            )
+            return False

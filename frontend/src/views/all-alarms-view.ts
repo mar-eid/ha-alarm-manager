@@ -180,7 +180,7 @@ export class AllAlarmsView extends LitElement {
                     ? html`<br><span style="font-size: 0.75em; color: var(--secondary-text-color);">Until ${new Date(alarm.runtime.shelved_until).toLocaleString()}</span>`
                     : ""}
                 </td>
-                <td><span class="badge" style="background: ${getStateColor(alarm.runtime.state)}">${STATE_LABELS[alarm.runtime.state] ?? alarm.runtime.state}</span></td>
+                <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${getStateColor(alarm.runtime.state)}" title="${STATE_LABELS[alarm.runtime.state] ?? alarm.runtime.state}"></span></td>
                 <td>${alarm.source_entity_id}</td>
                 <td>${alarm.trigger_type}</td>
                 <td>${this._getChannelName(alarm.channel_id)}</td>
@@ -188,7 +188,7 @@ export class AllAlarmsView extends LitElement {
                 <td class="actions">
                   ${alarm.runtime.state === "shelved"
                     ? html`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" @click=${(e: Event) => { e.stopPropagation(); this._unshelve(alarm.id); }}>Unshelve</button>`
-                    : alarm.runtime.state !== "disabled" && alarm.runtime.state !== "normal"
+                    : alarm.runtime.state !== "disabled"
                       ? html`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" @click=${(e: Event) => { e.stopPropagation(); this._shelve(alarm); }}>Shelve</button>`
                       : ""}
                   ${alarm.channel_id ? html`<button class="btn btn-small" style="background: #607D8B; color: white;" @click=${(e: Event) => { e.stopPropagation(); this._testNotification(alarm); }} title="Test notification">Test</button>` : ""}

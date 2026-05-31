@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-05-31
+
+### Added
+
+- Condition template: optional Jinja2 template on alarm definitions that must evaluate to true for the trigger to fire (e.g. `{{ is_state('device_tracker.car', 'home') }}`)
+- Condition template field in create/edit alarm form
+- Database schema v2 migration for condition_template column
+
+### Changed
+
+- Priority badges: icon + color circle with tooltip instead of text labels (saves table space)
+- State badges: colored dot with tooltip instead of text labels
+- Shelve button available for all alarm states except disabled and already-shelved (was active-only)
+
 ## [0.7.2] - 2026-05-31
 
 ### Fixed

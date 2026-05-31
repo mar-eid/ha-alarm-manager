@@ -119,6 +119,7 @@ async def ws_alarm_get(
         vol.Optional("latching", default=False): bool,
         vol.Optional("ack_required", default=True): bool,
         vol.Optional("auto_clear", default=True): bool,
+        vol.Optional("condition_template"): vol.Any(str, None),
         vol.Optional("repeat_interval"): vol.Any(int, None),
         vol.Optional("escalation_delay"): vol.Any(int, None),
     }
@@ -146,6 +147,7 @@ async def ws_alarm_create(
         latching=msg.get("latching", False),
         ack_required=msg.get("ack_required", True),
         auto_clear=msg.get("auto_clear", True),
+        condition_template=msg.get("condition_template"),
         repeat_interval=msg.get("repeat_interval"),
         escalation_delay=msg.get("escalation_delay"),
     )
@@ -171,6 +173,7 @@ async def ws_alarm_create(
         vol.Optional("latching"): bool,
         vol.Optional("ack_required"): bool,
         vol.Optional("auto_clear"): bool,
+        vol.Optional("condition_template"): vol.Any(str, None),
         vol.Optional("repeat_interval"): vol.Any(int, None),
         vol.Optional("escalation_delay"): vol.Any(int, None),
     }
@@ -192,7 +195,8 @@ async def ws_alarm_update(
     for field in (
         "name", "description", "source_entity_id", "area",
         "equipment", "tag", "channel_id", "enabled", "latching",
-        "ack_required", "auto_clear", "repeat_interval", "escalation_delay",
+        "ack_required", "auto_clear", "condition_template",
+        "repeat_interval", "escalation_delay",
     ):
         if field in msg:
             setattr(alarm, field, msg[field])

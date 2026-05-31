@@ -35,6 +35,7 @@ export class CreateEditView extends LitElement {
   @state() private _latching = false;
   @state() private _ackRequired = true;
   @state() private _autoClear = true;
+  @state() private _conditionTemplate = "";
 
   // Trigger config
   @state() private _analogOperator = ">";
@@ -93,6 +94,7 @@ export class CreateEditView extends LitElement {
         this._latching = alarm.latching;
         this._ackRequired = alarm.ack_required;
         this._autoClear = alarm.auto_clear;
+        this._conditionTemplate = alarm.condition_template || "";
 
         if (alarm.trigger_type === "analog") {
           this._analogOperator = alarm.trigger_config.operator ?? ">";
@@ -124,6 +126,7 @@ export class CreateEditView extends LitElement {
     this._latching = false;
     this._ackRequired = true;
     this._autoClear = true;
+    this._conditionTemplate = "";
     this._analogOperator = ">";
     this._analogThreshold = "0";
     this._digitalTargetState = "on";
@@ -160,6 +163,7 @@ export class CreateEditView extends LitElement {
         latching: this._latching,
         ack_required: this._ackRequired,
         auto_clear: this._autoClear,
+        condition_template: this._conditionTemplate || null,
       };
 
       if (this.alarmId) {
@@ -295,6 +299,10 @@ export class CreateEditView extends LitElement {
             <label><input type="checkbox" .checked=${this._latching} @change=${(e: Event) => (this._latching = (e.target as HTMLInputElement).checked)} /> Latching</label>
             <label><input type="checkbox" .checked=${this._ackRequired} @change=${(e: Event) => (this._ackRequired = (e.target as HTMLInputElement).checked)} /> Acknowledge Required</label>
             <label><input type="checkbox" .checked=${this._autoClear} @change=${(e: Event) => (this._autoClear = (e.target as HTMLInputElement).checked)} /> Auto Clear</label>
+          </div>
+          <div class="form-group">
+            <label>Condition Template (Jinja2, optional)</label>
+            <textarea rows="2" .value=${this._conditionTemplate} @input=${(e: Event) => (this._conditionTemplate = (e.target as HTMLTextAreaElement).value)} placeholder="e.g. {{ is_state('device_tracker.car', 'home') }}"></textarea>
           </div>
         </div>
 

@@ -100,6 +100,7 @@ SCHEMA_CREATE_ALARM = vol.Schema(
         vol.Optional("latching", default=False): cv.boolean,
         vol.Optional("ack_required", default=True): cv.boolean,
         vol.Optional("auto_clear", default=True): cv.boolean,
+        vol.Optional("condition_template"): vol.Any(str, None),
         vol.Optional("repeat_interval"): vol.Any(vol.Coerce(int), None),
         vol.Optional("escalation_delay"): vol.Any(vol.Coerce(int), None),
     }
@@ -122,6 +123,7 @@ SCHEMA_UPDATE_ALARM = vol.Schema(
         vol.Optional("latching"): cv.boolean,
         vol.Optional("ack_required"): cv.boolean,
         vol.Optional("auto_clear"): cv.boolean,
+        vol.Optional("condition_template"): vol.Any(str, None),
         vol.Optional("repeat_interval"): vol.Any(vol.Coerce(int), None),
         vol.Optional("escalation_delay"): vol.Any(vol.Coerce(int), None),
     }
@@ -290,6 +292,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
             latching=call.data.get("latching", False),
             ack_required=call.data.get("ack_required", True),
             auto_clear=call.data.get("auto_clear", True),
+            condition_template=call.data.get("condition_template"),
             repeat_interval=call.data.get("repeat_interval"),
             escalation_delay=call.data.get("escalation_delay"),
         )
@@ -315,6 +318,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
             "latching",
             "ack_required",
             "auto_clear",
+            "condition_template",
             "repeat_interval",
             "escalation_delay",
         ):

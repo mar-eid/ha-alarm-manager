@@ -199,7 +199,7 @@ export class ActiveAlarmsView extends LitElement {
                 <tr class="${rowClass} ${alarm.priority >= 3 && isUnacked ? "flashing" : ""}" @click=${() => this._detailAlarm = alarm}>
                   <td><severity-badge .priority=${alarm.priority}></severity-badge></td>
                   <td><strong>${alarm.name}</strong>${alarm.area ? html`<br><span class="time-ago">${alarm.area}</span>` : ""}</td>
-                  <td><span class="badge" style="background: ${getStateColor(alarm.runtime.state)}">${STATE_LABELS[alarm.runtime.state] ?? alarm.runtime.state}</span></td>
+                  <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${getStateColor(alarm.runtime.state)}" title="${STATE_LABELS[alarm.runtime.state] ?? alarm.runtime.state}"></span></td>
                   <td>${alarm.source_entity_id}</td>
                   <td>${alarm.runtime.last_value ?? "-"}</td>
                   <td class="time-ago">${alarm.runtime.triggered_at ? new Date(alarm.runtime.triggered_at).toLocaleString() : "-"}</td>

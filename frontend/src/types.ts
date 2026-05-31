@@ -75,6 +75,7 @@ export interface AlarmDefinition {
   latching: boolean;
   ack_required: boolean;
   auto_clear: boolean;
+  condition_template: string | null;
   repeat_interval: number | null;
   escalation_delay: number | null;
   source_entity_id: string;

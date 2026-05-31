@@ -1,7 +1,20 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
+import {
+  mdiInformation,
+  mdiAlert,
+  mdiAlertOctagon,
+  mdiAlertDecagram,
+} from "@mdi/js";
 import { getPriorityColor } from "../styles/shared-styles";
 import { PRIORITY_LABELS, type AlarmPriority } from "../types";
+
+const PRIORITY_ICON: Record<AlarmPriority, string> = {
+  0: mdiInformation,
+  1: mdiAlert,
+  2: mdiAlertOctagon,
+  3: mdiAlertDecagram,
+};
 
 @customElement("severity-badge")
 export class SeverityBadge extends LitElement {
@@ -9,14 +22,13 @@ export class SeverityBadge extends LitElement {
 
   static styles = css`
     .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 0.75em;
-      font-weight: 600;
-      color: white;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      --mdc-icon-size: 18px;
     }
   `;
 
@@ -24,7 +36,19 @@ export class SeverityBadge extends LitElement {
     const color = getPriorityColor(this.priority);
     const label = PRIORITY_LABELS[this.priority] ?? "Unknown";
     return html`
-      <span class="badge" style="background-color: ${color}">${label}</span>
+      <span
+        class="badge"
+        style="background: color-mix(in srgb, ${color} 18%, transparent); color: ${color}"
+        title=${label}
+      >
+        <ha-svg-icon .path=${PRIORITY_ICON[this.priority]}></ha-svg-icon>
+      </span>
     `;
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "ha-svg-icon": any;
   }
 }

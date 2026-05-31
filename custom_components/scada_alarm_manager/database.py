@@ -15,7 +15,7 @@ from .models import AlarmChannel, AlarmDefinition, AlarmEvent
 
 _LOGGER = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 CREATE_TABLES_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS alarm_definitions (
     latching INTEGER NOT NULL DEFAULT 0,
     ack_required INTEGER NOT NULL DEFAULT 1,
     auto_clear INTEGER NOT NULL DEFAULT 1,
+    condition_template TEXT,
     repeat_interval INTEGER,
     escalation_delay INTEGER,
     source_entity_id TEXT NOT NULL,
@@ -103,8 +104,30 @@ class AlarmDatabase:
                     (SCHEMA_VERSION,),
                 )
 
+        # Run migrations
+        await self._async_migrate()
+
         await self._db.commit()
         _LOGGER.debug("Database initialized at %s", self._db_path)
+
+    async def _async_migrate(self) -> None:
+        """Run database migrations."""
+        async with self._db.execute("SELECT version FROM schema_version") as cursor:
+            row = await cursor.fetchone()
+            current = row[0] if row else 1
+
+        if current < 2:
+            # v2: add condition_template column
+            try:
+                await self._db.execute(
+                    "ALTER TABLE alarm_definitions ADD COLUMN condition_template TEXT"
+                )
+                _LOGGER.info("Migrated database to schema v2: added condition_template")
+            except Exception:
+                pass  # Column already exists (fresh install)
+            await self._db.execute(
+                "UPDATE schema_version SET version = ?", (2,)
+            )
 
     async def async_close(self) -> None:
         """Close database connection."""
@@ -125,10 +148,10 @@ class AlarmDatabase:
         await self._conn.execute(
             """INSERT INTO alarm_definitions
             (id, name, description, priority, area, equipment, tag, channel_id,
-             enabled, latching, ack_required, auto_clear, repeat_interval,
-             escalation_delay, source_entity_id, trigger_type, trigger_config,
-             created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+             enabled, latching, ack_required, auto_clear, condition_template,
+             repeat_interval, escalation_delay, source_entity_id, trigger_type,
+             trigger_config, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 alarm.id,
                 alarm.name,
@@ -142,6 +165,7 @@ class AlarmDatabase:
                 int(alarm.latching),
                 int(alarm.ack_required),
                 int(alarm.auto_clear),
+                alarm.condition_template,
                 alarm.repeat_interval,
                 alarm.escalation_delay,
                 alarm.source_entity_id,
@@ -160,8 +184,8 @@ class AlarmDatabase:
             """UPDATE alarm_definitions SET
             name=?, description=?, priority=?, area=?, equipment=?, tag=?,
             channel_id=?, enabled=?, latching=?, ack_required=?, auto_clear=?,
-            repeat_interval=?, escalation_delay=?, source_entity_id=?,
-            trigger_type=?, trigger_config=?, updated_at=?
+            condition_template=?, repeat_interval=?, escalation_delay=?,
+            source_entity_id=?, trigger_type=?, trigger_config=?, updated_at=?
             WHERE id=?""",
             (
                 alarm.name,
@@ -175,6 +199,7 @@ class AlarmDatabase:
                 int(alarm.latching),
                 int(alarm.ack_required),
                 int(alarm.auto_clear),
+                alarm.condition_template,
                 alarm.repeat_interval,
                 alarm.escalation_delay,
                 alarm.source_entity_id,
@@ -224,6 +249,7 @@ class AlarmDatabase:
             latching=bool(row["latching"]),
             ack_required=bool(row["ack_required"]),
             auto_clear=bool(row["auto_clear"]),
+            condition_template=row["condition_template"],
             repeat_interval=row["repeat_interval"],
             escalation_delay=row["escalation_delay"],
             source_entity_id=row["source_entity_id"],
