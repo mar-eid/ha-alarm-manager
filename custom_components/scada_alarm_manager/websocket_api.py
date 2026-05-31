@@ -122,6 +122,7 @@ async def ws_alarm_get(
         vol.Optional("condition_template"): vol.Any(str, None),
         vol.Optional("notification_title_template"): vol.Any(str, None),
         vol.Optional("notification_text_template"): vol.Any(str, None),
+        vol.Optional("hysteresis"): vol.Any(vol.Coerce(float), None),
         vol.Optional("repeat_interval"): vol.Any(int, None),
         vol.Optional("escalation_delay"): vol.Any(int, None),
     }
@@ -152,6 +153,7 @@ async def ws_alarm_create(
         condition_template=msg.get("condition_template"),
         notification_title_template=msg.get("notification_title_template"),
         notification_text_template=msg.get("notification_text_template"),
+        hysteresis=msg.get("hysteresis"),
         repeat_interval=msg.get("repeat_interval"),
         escalation_delay=msg.get("escalation_delay"),
     )
@@ -180,6 +182,7 @@ async def ws_alarm_create(
         vol.Optional("condition_template"): vol.Any(str, None),
         vol.Optional("notification_title_template"): vol.Any(str, None),
         vol.Optional("notification_text_template"): vol.Any(str, None),
+        vol.Optional("hysteresis"): vol.Any(vol.Coerce(float), None),
         vol.Optional("repeat_interval"): vol.Any(int, None),
         vol.Optional("escalation_delay"): vol.Any(int, None),
     }
@@ -203,7 +206,7 @@ async def ws_alarm_update(
         "equipment", "tag", "channel_id", "enabled", "latching",
         "ack_required", "auto_clear", "condition_template",
         "notification_title_template", "notification_text_template",
-        "repeat_interval", "escalation_delay",
+        "hysteresis", "repeat_interval", "escalation_delay",
     ):
         if field in msg:
             setattr(alarm, field, msg[field])

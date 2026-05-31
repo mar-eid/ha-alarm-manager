@@ -45,6 +45,7 @@ export class CreateEditView extends LitElement {
   // Trigger config
   @state() private _analogOperator = ">";
   @state() private _analogThreshold = "0";
+  @state() private _hysteresis = "";
   @state() private _digitalTargetState = "on";
   @state() private _customMatchValues = "";
 
@@ -119,6 +120,7 @@ export class CreateEditView extends LitElement {
         if (alarm.trigger_type === "analog") {
           this._analogOperator = alarm.trigger_config.operator ?? ">";
           this._analogThreshold = String(alarm.trigger_config.threshold ?? 0);
+          this._hysteresis = alarm.hysteresis != null ? String(alarm.hysteresis) : "";
         } else if (alarm.trigger_type === "digital") {
           this._digitalTargetState = alarm.trigger_config.target_state ?? "on";
         } else if (alarm.trigger_type === "custom_state") {
@@ -152,7 +154,7 @@ export class CreateEditView extends LitElement {
     this._conditionState = "";
     this._notificationTitleTemplate = "";
     this._notificationTextTemplate = "";
-    this._analogOperator = ">";
+    this._analogOperator = ">"; this._hysteresis = "";
     this._analogThreshold = "0";
     this._digitalTargetState = "on";
     this._customMatchValues = "";
@@ -194,6 +196,7 @@ export class CreateEditView extends LitElement {
           : null,
         notification_title_template: this._notificationTitleTemplate || null,
         notification_text_template: this._notificationTextTemplate || null,
+        hysteresis: this._hysteresis ? parseFloat(this._hysteresis) : null,
       };
 
       if (this.alarmId) {
@@ -303,6 +306,10 @@ export class CreateEditView extends LitElement {
               <div class="form-group">
                 <label>Threshold</label>
                 <input type="number" step="any" .value=${this._analogThreshold} @input=${(e: Event) => (this._analogThreshold = (e.target as HTMLInputElement).value)} />
+              </div>
+              <div class="form-group">
+                <label>Hysteresis (optional deadband)</label>
+                <input type="number" step="any" .value=${this._hysteresis} @input=${(e: Event) => (this._hysteresis = (e.target as HTMLInputElement).value)} placeholder="e.g. 2" />
               </div>
             </div>
           ` : ""}

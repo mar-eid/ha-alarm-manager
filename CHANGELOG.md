@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-05-31
+
+### Added
+
+- **Hysteresis/deadband**: Optional `hysteresis` field on analog triggers prevents alarm chattering. Alarm triggers at threshold but doesn't clear until value passes threshold +/- hysteresis.
+- **Import/export services**: `export_alarms` returns all alarm and channel definitions as JSON. `import_alarms` bulk-creates alarms from a JSON array.
+- **Maintenance mode**: `maintenance_mode` service suppresses all notifications when enabled. Alarms still trigger and track state, but no persistent/mobile notifications are sent.
+- **Alarm analytics**: Settings tab now shows active/shelved/disabled counts, average ACK time, and top 10 most frequently triggered alarms with visual bar chart.
+- DB schema v5 migration for hysteresis column
+
 ## [0.10.0] - 2026-05-31
 
 ### Added

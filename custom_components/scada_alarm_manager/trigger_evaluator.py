@@ -27,10 +27,11 @@ _OPERATORS: dict[str, Any] = {
 class TriggerEvaluator:
     """Evaluates alarm trigger conditions against entity state."""
 
-    def evaluate(self, alarm_def: AlarmDefinition, entity_state: State | None) -> bool:
+    def evaluate(self, alarm_def: AlarmDefinition, entity_state: State | None, *, is_active: bool = False) -> bool:
         """Evaluate whether the alarm condition is met.
 
         Returns True if the condition is active (alarm should trigger).
+        When is_active=True and hysteresis is set, uses hysteresis band for clearing.
         """
         if entity_state is None:
             return False
@@ -39,7 +40,7 @@ class TriggerEvaluator:
             return False  # External alarms are triggered via service calls, not entity evaluation
 
         if alarm_def.trigger_type == TriggerType.ANALOG:
-            return self._evaluate_analog(alarm_def, entity_state)
+            return self._evaluate_analog(alarm_def, entity_state, is_active=is_active)
         if alarm_def.trigger_type == TriggerType.DIGITAL:
             return self._evaluate_digital(alarm_def, entity_state)
         if alarm_def.trigger_type == TriggerType.CUSTOM_STATE:
@@ -48,8 +49,8 @@ class TriggerEvaluator:
         _LOGGER.warning("Unknown trigger type: %s", alarm_def.trigger_type)
         return False
 
-    def _evaluate_analog(self, alarm_def: AlarmDefinition, entity_state: State) -> bool:
-        """Evaluate analog threshold condition."""
+    def _evaluate_analog(self, alarm_def: AlarmDefinition, entity_state: State, *, is_active: bool = False) -> bool:
+        """Evaluate analog threshold condition with optional hysteresis."""
         config = alarm_def.trigger_config
         op_str = config.get("operator", ">")
         threshold = config.get("threshold")
@@ -77,7 +78,20 @@ class TriggerEvaluator:
             )
             return False
 
-        return bool(op_func(value, float(threshold)))
+        t = float(threshold)
+
+        # When alarm is already active and hysteresis is set, use hysteresis band
+        # to prevent chattering. The value must cross threshold + hysteresis to clear.
+        if is_active and alarm_def.hysteresis:
+            h = alarm_def.hysteresis
+            if op_str in (">", ">="):
+                # Trigger at > threshold, clear at < threshold - hysteresis
+                return value > (t - h)
+            if op_str in ("<", "<="):
+                # Trigger at < threshold, clear at > threshold + hysteresis
+                return value < (t + h)
+
+        return bool(op_func(value, t))
 
     def _evaluate_digital(self, alarm_def: AlarmDefinition, entity_state: State) -> bool:
         """Evaluate digital state condition."""

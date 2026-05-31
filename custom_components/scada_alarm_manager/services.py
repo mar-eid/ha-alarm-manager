@@ -103,6 +103,7 @@ SCHEMA_CREATE_ALARM = vol.Schema(
         vol.Optional("condition_template"): vol.Any(str, None),
         vol.Optional("notification_title_template"): vol.Any(str, None),
         vol.Optional("notification_text_template"): vol.Any(str, None),
+        vol.Optional("hysteresis"): vol.Any(vol.Coerce(float), None),
         vol.Optional("repeat_interval"): vol.Any(vol.Coerce(int), None),
         vol.Optional("escalation_delay"): vol.Any(vol.Coerce(int), None),
     }
@@ -128,6 +129,7 @@ SCHEMA_UPDATE_ALARM = vol.Schema(
         vol.Optional("condition_template"): vol.Any(str, None),
         vol.Optional("notification_title_template"): vol.Any(str, None),
         vol.Optional("notification_text_template"): vol.Any(str, None),
+        vol.Optional("hysteresis"): vol.Any(vol.Coerce(float), None),
         vol.Optional("repeat_interval"): vol.Any(vol.Coerce(int), None),
         vol.Optional("escalation_delay"): vol.Any(vol.Coerce(int), None),
     }
@@ -299,6 +301,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
             condition_template=call.data.get("condition_template"),
             notification_title_template=call.data.get("notification_title_template"),
             notification_text_template=call.data.get("notification_text_template"),
+            hysteresis=call.data.get("hysteresis"),
             repeat_interval=call.data.get("repeat_interval"),
             escalation_delay=call.data.get("escalation_delay"),
         )
@@ -327,6 +330,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
             "condition_template",
             "notification_title_template",
             "notification_text_template",
+            "hysteresis",
             "repeat_interval",
             "escalation_delay",
         ):
@@ -436,6 +440,53 @@ async def async_register_services(hass: HomeAssistant) -> None:
             event_dicts.append(d)
 
         return {"events": event_dicts}
+
+    async def handle_export_alarms(call: ServiceCall) -> ServiceResponse:
+        """Export all alarm definitions as JSON."""
+        manager = _get_manager(hass)
+        alarms = [a.to_dict() for a in manager.alarms.values()]
+        channels = [c.to_dict() for c in manager.channels.values()]
+        return {"alarms": alarms, "channels": channels}
+
+    async def handle_import_alarms(call: ServiceCall) -> ServiceResponse:
+        """Bulk import alarm definitions from JSON array."""
+        manager = _get_manager(hass)
+        definitions = call.data.get("alarms", [])
+        created = 0
+        for d in definitions:
+            alarm = AlarmDefinition(
+                name=d["name"],
+                source_entity_id=d["source_entity_id"],
+                trigger_type=TriggerType(d["trigger_type"]),
+                trigger_config=d.get("trigger_config", {}),
+                priority=AlarmPriority(d.get("priority", 1)),
+                description=d.get("description", ""),
+                area=d.get("area", ""),
+                equipment=d.get("equipment", ""),
+                tag=d.get("tag", ""),
+                channel_id=d.get("channel_id"),
+                enabled=d.get("enabled", True),
+                latching=d.get("latching", False),
+                ack_required=d.get("ack_required", True),
+                auto_clear=d.get("auto_clear", True),
+                condition_template=d.get("condition_template"),
+                notification_title_template=d.get("notification_title_template"),
+                notification_text_template=d.get("notification_text_template"),
+                hysteresis=d.get("hysteresis"),
+                repeat_interval=d.get("repeat_interval"),
+                escalation_delay=d.get("escalation_delay"),
+            )
+            await manager.async_create_alarm(alarm)
+            created += 1
+        return {"created": created}
+
+    async def handle_maintenance_mode(call: ServiceCall) -> ServiceResponse:
+        """Toggle maintenance mode (suppress all notifications)."""
+        manager = _get_manager(hass)
+        enabled = call.data.get("enabled", True)
+        if manager._notification_router:
+            manager._notification_router.maintenance_mode = enabled
+        return {"maintenance_mode": enabled}
 
     async def handle_trigger(call: ServiceCall) -> None:
         manager = _get_manager(hass)
@@ -547,6 +598,27 @@ async def async_register_services(hass: HomeAssistant) -> None:
         schema=SCHEMA_LIST_EVENTS,
         supports_response=SupportsResponse.OPTIONAL,
     )
+    hass.services.async_register(
+        DOMAIN,
+        "export_alarms",
+        handle_export_alarms,
+        schema=vol.Schema({}),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        "import_alarms",
+        handle_import_alarms,
+        schema=vol.Schema({vol.Required("alarms"): list}),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        "maintenance_mode",
+        handle_maintenance_mode,
+        schema=vol.Schema({vol.Required("enabled"): cv.boolean}),
+        supports_response=SupportsResponse.OPTIONAL,
+    )
 
 
 async def async_unregister_services(hass: HomeAssistant) -> None:
@@ -573,5 +645,8 @@ async def async_unregister_services(hass: HomeAssistant) -> None:
         SERVICE_UPDATE_CHANNEL,
         SERVICE_DELETE_CHANNEL,
         SERVICE_LIST_EVENTS,
+        "export_alarms",
+        "import_alarms",
+        "maintenance_mode",
     ):
         hass.services.async_remove(DOMAIN, service)

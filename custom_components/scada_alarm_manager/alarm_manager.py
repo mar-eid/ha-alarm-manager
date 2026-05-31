@@ -532,7 +532,10 @@ class AlarmManager:
         if runtime is None or runtime.state == AlarmState.DISABLED:
             return
 
-        trigger_active = self._trigger_evaluator.evaluate(alarm, entity_state)
+        is_active = runtime.state in (
+            AlarmState.ACTIVE_UNACKED, AlarmState.ACTIVE_ACKED, AlarmState.RTN_UNACKED
+        )
+        trigger_active = self._trigger_evaluator.evaluate(alarm, entity_state, is_active=is_active)
         value = entity_state.state if entity_state else None
 
         # Check optional condition_template (e.g. "car must be home")

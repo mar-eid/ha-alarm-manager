@@ -39,6 +39,7 @@ class AlarmDefinition:
     condition_template: str | None = None
     notification_title_template: str | None = None
     notification_text_template: str | None = None
+    hysteresis: float | None = None
     repeat_interval: int | None = None
     escalation_delay: int | None = None
     id: str = field(default_factory=_new_id)
@@ -63,6 +64,7 @@ class AlarmDefinition:
             "condition_template": self.condition_template,
             "notification_title_template": self.notification_title_template,
             "notification_text_template": self.notification_text_template,
+            "hysteresis": self.hysteresis,
             "repeat_interval": self.repeat_interval,
             "escalation_delay": self.escalation_delay,
             "source_entity_id": self.source_entity_id,
@@ -91,6 +93,7 @@ class AlarmDefinition:
             condition_template=data.get("condition_template"),
             notification_title_template=data.get("notification_title_template"),
             notification_text_template=data.get("notification_text_template"),
+            hysteresis=data.get("hysteresis"),
             repeat_interval=data.get("repeat_interval"),
             escalation_delay=data.get("escalation_delay"),
             source_entity_id=data["source_entity_id"],

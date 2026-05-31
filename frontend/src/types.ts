@@ -78,6 +78,7 @@ export interface AlarmDefinition {
   condition_template: string | null;
   notification_title_template: string | null;
   notification_text_template: string | null;
+  hysteresis: number | null;
   repeat_interval: number | null;
   escalation_delay: number | null;
   source_entity_id: string;

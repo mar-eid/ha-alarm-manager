@@ -29,6 +29,7 @@ class NotificationRouter:
     def __init__(self, hass: HomeAssistant, manager: Any) -> None:
         self._hass = hass
         self._manager = manager
+        self.maintenance_mode = False
 
     async def async_send_alarm_notification(
         self,
@@ -46,6 +47,11 @@ class NotificationRouter:
         Channel config can further restrict (via min_priority) but cannot
         lower the floor set by alarm priority.
         """
+        # Maintenance mode — suppress all notifications
+        if self.maintenance_mode:
+            _LOGGER.debug("Maintenance mode active, suppressing notification for %s", alarm.name)
+            return
+
         # Info alarms never generate notifications — panel and history only
         if alarm.priority == AlarmPriority.INFO:
             _LOGGER.debug("Info alarm %s — no notification (panel only)", alarm.name)
