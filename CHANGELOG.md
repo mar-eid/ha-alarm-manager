@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.1] - 2026-05-31
+
+### Added
+
+- Brand icon (icon.png, dark_icon.png, @2x variants) for HA Settings > Integrations display
+- Auto-cleanup of legacy Lovelace resources from pre-v0.7.0 (alarm-card.js, alarm-center-card.js, etc.)
+
+### Changed
+
+- Simplified logo SVG (removed status dots, signal waves — just bell + lightning on dark circle)
+- Updated README card examples to use new `scada-alarm-banner` type
+- Updated CLAUDE.md frontend entry point references
+
 ## [0.7.0] - 2026-05-31
 
 ### Changed

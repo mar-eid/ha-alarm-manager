@@ -1,27 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
-  <!-- Background circle -->
-  <circle cx="100" cy="100" r="96" fill="#1c1c2e" stroke="#03a9f4" stroke-width="3"/>
+  <!-- Background -->
+  <circle cx="100" cy="100" r="96" fill="#1a2332"/>
 
-  <!-- Alarm bell body -->
-  <path d="M100 40 C70 40 50 65 50 95 L50 115 L40 125 L40 135 L160 135 L160 125 L150 115 L150 95 C150 65 130 40 100 40Z"
-        fill="#03a9f4" opacity="0.9"/>
+  <!-- Bell body -->
+  <path d="M100 42 C72 42 52 66 52 94 L52 114 L42 126 L42 134 L158 134 L158 126 L148 114 L148 94 C148 66 128 42 100 42Z"
+        fill="#03a9f4"/>
 
-  <!-- Bell clapper -->
-  <circle cx="100" cy="145" r="10" fill="#03a9f4"/>
+  <!-- Clapper -->
+  <ellipse cx="100" cy="146" rx="14" ry="10" fill="#03a9f4"/>
 
-  <!-- Lightning bolt (alarm trigger) -->
-  <polygon points="108,55 95,90 110,88 92,120 115,80 100,82"
-           fill="#FF9800" stroke="#FF5722" stroke-width="1"/>
-
-  <!-- Status dots - priority colors -->
-  <circle cx="55" cy="160" r="8" fill="#F44336"/>
-  <circle cx="80" cy="168" r="6" fill="#FF5722"/>
-  <circle cx="102" cy="172" r="5" fill="#FF9800"/>
-  <circle cx="122" cy="170" r="4" fill="#2196F3"/>
-
-  <!-- Signal waves -->
-  <path d="M35 80 Q25 70 35 60" fill="none" stroke="#03a9f4" stroke-width="2.5" opacity="0.5"/>
-  <path d="M25 85 Q10 70 25 55" fill="none" stroke="#03a9f4" stroke-width="2" opacity="0.3"/>
-  <path d="M165 80 Q175 70 165 60" fill="none" stroke="#03a9f4" stroke-width="2.5" opacity="0.5"/>
-  <path d="M175 85 Q190 70 175 55" fill="none" stroke="#03a9f4" stroke-width="2" opacity="0.3"/>
+  <!-- Lightning bolt -->
+  <polygon points="110,54 94,92 110,88 90,122 116,82 100,84"
+           fill="#FF9800"/>
 </svg>

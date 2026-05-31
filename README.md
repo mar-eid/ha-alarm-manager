@@ -7,7 +7,7 @@
 <p align="center">
   Industrial-style alarm management for Home Assistant
   <br>
-  <strong>v0.7.0</strong>
+  <strong>v0.7.1</strong>
 </p>
 
 <p align="center">
@@ -82,30 +82,21 @@ A SCADA-inspired alarm system for Home Assistant. Define alarm rules on any enti
 
 ## Cards
 
-### SCADA Alarm Center
+### SCADA Alarm Banner
 
-Full Alarm Center embedded in a Lovelace card. All 6 tabs, all functionality. Best used in **panel mode** for a fullscreen alarm dashboard.
+Compact monitoring card with severity bar, area filter, active alarm list, and inline ACK/Shelve.
 
 ```yaml
-type: custom:scada-alarm-center-card
+type: custom:scada-alarm-banner
 title: Alarm Center
-```
-
-### SCADA Alarm Card
-
-Compact monitoring card with severity bar, active alarm count, and quick actions.
-
-```yaml
-type: custom:scada-alarm-card
-title: Alarms
-show_count: true
-show_list: true
-max_items: 10
+max_items: 6
+selectable_area: true
 show_ack_button: true
 show_shelve_button: true
+default_shelve_minutes: 15
 ```
 
-**Card options:** `title`, `show_count`, `show_list`, `max_items`, `filter_channel`, `filter_priority`, `show_ack_button`, `show_shelve_button`
+**Card options:** `title`, `max_items`, `filter_area`, `filter_priority`, `filter_channel`, `selectable_area`, `show_ack_button`, `show_shelve_button`, `default_shelve_minutes`
 
 ## Alarm Priorities
 

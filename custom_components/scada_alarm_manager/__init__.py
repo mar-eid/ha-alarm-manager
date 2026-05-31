@@ -27,6 +27,14 @@ _LOGGER = logging.getLogger(__name__)
 OVERVIEW_URL = f"/{DOMAIN}/frontend/alarm-overview.js"
 BANNER_URL = f"/{DOMAIN}/frontend/alarm-banner.js"
 
+# Old URLs from previous versions — cleaned up on startup
+_LEGACY_URLS = [
+    f"/{DOMAIN}/frontend/alarm-card.js",
+    f"/{DOMAIN}/frontend/alarm-center-card.js",
+    f"/{DOMAIN}/frontend/alarm-center-panel.js",
+    f"/{DOMAIN}/frontend/alarm-dashboard.js",
+]
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up SCADA Alarm Manager from a config entry."""
@@ -170,6 +178,13 @@ async def _async_register_card_resources(hass: HomeAssistant) -> None:
         resources: ResourceStorageCollection = lovelace_data["resources"]
         if not resources.loaded:
             await resources.async_load()
+
+        # Remove legacy resources from previous versions
+        for item in list(resources.async_items()):
+            item_base = item.get("url", "").split("?")[0]
+            if item_base in _LEGACY_URLS:
+                await resources.async_delete_item(item["id"])
+                _LOGGER.info("Removed legacy resource: %s", item.get("url"))
 
         for base_url in (OVERVIEW_URL, BANNER_URL):
             versioned_url = f"{base_url}?v={version}"

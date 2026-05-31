@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
-  <!-- Alarm bell -->
+  <!-- Bell body -->
   <path d="M24 4 C16 4 10 11 10 20 L10 28 L6 32 L6 36 L42 36 L42 32 L38 28 L38 20 C38 11 32 4 24 4Z"
         fill="#03a9f4"/>
   <!-- Clapper -->

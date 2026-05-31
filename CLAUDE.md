@@ -11,7 +11,7 @@ Domain: `scada_alarm_manager`
   - MAJOR: Breaking changes (config schema changes requiring migration, removed features)
   - MINOR: New features, backwards-compatible
   - PATCH: Bug fixes, backwards-compatible
-- **Current version**: 0.7.0
+- **Current version**: 0.7.1
 - Version is tracked in: `custom_components/scada_alarm_manager/manifest.json` and `pyproject.toml`
 - Both files MUST be updated together on version bumps
 - **Always bump the PATCH version** when making any code change (bug fix, refactor, etc.). Bump MINOR for new features, MAJOR for breaking changes.
@@ -120,8 +120,8 @@ plan/                                     # Implementation plans (git-ignored)
 - **Build**: `cd frontend && npm run build`
 - **Watch mode**: `cd frontend && npm run watch`
 - **Two entry points**:
-  - `alarm-center-panel.ts` → sidebar panel
-  - `alarm-card.ts` → Lovelace dashboard card
+  - `alarm-overview.ts` → Alarm Center panel (`scada-alarm-overview`)
+  - `alarm-banner.ts` → compact Lovelace card (`scada-alarm-banner`)
 
 ## Database
 
