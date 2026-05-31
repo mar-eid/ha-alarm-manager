@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.template import Template
 
 from .const import (
     DOMAIN,
@@ -62,9 +63,8 @@ class NotificationRouter:
             )
             return
 
-        priority_label = alarm.priority.name.capitalize()
-        title = f"[{priority_label}] {alarm.name}"
-        message = self._build_message(alarm, runtime)
+        title = self._render_title(alarm, runtime)
+        message = self._render_message(alarm, runtime)
 
         # Persistent notification: WARNING and above always get one
         await self._async_send_persistent(alarm, title, message)
@@ -126,24 +126,68 @@ class NotificationRouter:
             return None
         return self._manager.channels.get(alarm.channel_id)
 
-    def _build_message(
+    def _get_template_context(
+        self, alarm: AlarmDefinition, runtime: AlarmRuntimeState
+    ) -> dict[str, Any]:
+        """Build template context for Jinja2 rendering."""
+        entity_state = self._hass.states.get(alarm.source_entity_id)
+        return {
+            "name": alarm.name,
+            "description": alarm.description,
+            "priority": alarm.priority.name.capitalize(),
+            "area": alarm.area,
+            "equipment": alarm.equipment,
+            "tag": alarm.tag,
+            "source_entity_id": alarm.source_entity_id,
+            "value": runtime.last_value or "",
+            "state_name": entity_state.state if entity_state else "",
+            "unit": entity_state.attributes.get("unit_of_measurement", "") if entity_state else "",
+            "friendly_name": entity_state.attributes.get("friendly_name", alarm.source_entity_id) if entity_state else alarm.source_entity_id,
+            "trigger_type": alarm.trigger_type.value,
+            "threshold": alarm.trigger_config.get("threshold", ""),
+            "operator": alarm.trigger_config.get("operator", ""),
+        }
+
+    def _render_template(self, template_str: str, context: dict[str, Any]) -> str:
+        """Render a Jinja2 template string with context."""
+        try:
+            tpl = Template(template_str, self._hass)
+            tpl.hass = self._hass
+            return tpl.async_render(context)
+        except Exception:
+            _LOGGER.warning("Failed to render template: %s", template_str)
+            return template_str
+
+    def _render_title(
         self, alarm: AlarmDefinition, runtime: AlarmRuntimeState
     ) -> str:
-        """Build notification message body."""
+        """Render notification title."""
+        if alarm.notification_title_template:
+            ctx = self._get_template_context(alarm, runtime)
+            return self._render_template(alarm.notification_title_template, ctx)
+        priority_label = alarm.priority.name.capitalize()
+        return f"[{priority_label}] {alarm.name}"
+
+    def _render_message(
+        self, alarm: AlarmDefinition, runtime: AlarmRuntimeState
+    ) -> str:
+        """Render notification message body."""
+        if alarm.notification_text_template:
+            ctx = self._get_template_context(alarm, runtime)
+            return self._render_template(alarm.notification_text_template, ctx)
+        # Default format
         parts = []
         if alarm.description:
             parts.append(alarm.description)
-
         parts.append(f"Source: {alarm.source_entity_id}")
-
         if runtime.last_value is not None:
-            parts.append(f"Value: {runtime.last_value}")
-
+            entity_state = self._hass.states.get(alarm.source_entity_id)
+            unit = entity_state.attributes.get("unit_of_measurement", "") if entity_state else ""
+            parts.append(f"Value: {runtime.last_value}{' ' + unit if unit else ''}")
         if alarm.area:
             parts.append(f"Area: {alarm.area}")
         if alarm.equipment:
             parts.append(f"Equipment: {alarm.equipment}")
-
         return "\n".join(parts)
 
     async def _async_send_persistent(

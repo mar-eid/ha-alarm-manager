@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-05-31
+
+### Added
+
+- **Notification text templates**: Per-alarm Jinja2 templates for notification title and message body
+  - `notification_title_template`: custom title (default: `[Priority] Alarm Name`)
+  - `notification_text_template`: custom message (default: description + source + value + area)
+  - Template variables: `{{ name }}`, `{{ value }}`, `{{ unit }}`, `{{ area }}`, `{{ equipment }}`, `{{ friendly_name }}`, `{{ threshold }}`, `{{ operator }}`, `{{ priority }}`
+  - Example: `{{ name }} har lite batteri, kun {{ value }}{{ unit }} igjen`
+- Default notification message now includes unit of measurement from source entity
+- DB schema v4 migration for notification template columns
+- Notification template fields in create/edit form with variable reference
+
 ## [0.9.1] - 2026-05-31
 
 ### Changed

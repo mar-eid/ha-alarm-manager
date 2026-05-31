@@ -37,6 +37,8 @@ class AlarmDefinition:
     ack_required: bool = True
     auto_clear: bool = True
     condition_template: str | None = None
+    notification_title_template: str | None = None
+    notification_text_template: str | None = None
     repeat_interval: int | None = None
     escalation_delay: int | None = None
     id: str = field(default_factory=_new_id)
@@ -59,6 +61,8 @@ class AlarmDefinition:
             "ack_required": self.ack_required,
             "auto_clear": self.auto_clear,
             "condition_template": self.condition_template,
+            "notification_title_template": self.notification_title_template,
+            "notification_text_template": self.notification_text_template,
             "repeat_interval": self.repeat_interval,
             "escalation_delay": self.escalation_delay,
             "source_entity_id": self.source_entity_id,
@@ -85,6 +89,8 @@ class AlarmDefinition:
             ack_required=data.get("ack_required", True),
             auto_clear=data.get("auto_clear", True),
             condition_template=data.get("condition_template"),
+            notification_title_template=data.get("notification_title_template"),
+            notification_text_template=data.get("notification_text_template"),
             repeat_interval=data.get("repeat_interval"),
             escalation_delay=data.get("escalation_delay"),
             source_entity_id=data["source_entity_id"],

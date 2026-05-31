@@ -38,6 +38,8 @@ export class CreateEditView extends LitElement {
   @state() private _conditionTemplate = "";
   @state() private _conditionMode: "none" | "simple" | "template" = "none";
   @state() private _conditionEntity = "";
+  @state() private _notificationTitleTemplate = "";
+  @state() private _notificationTextTemplate = "";
   @state() private _conditionState = "";
 
   // Trigger config
@@ -111,6 +113,8 @@ export class CreateEditView extends LitElement {
         } else {
           this._conditionMode = "none";
         }
+        this._notificationTitleTemplate = alarm.notification_title_template || "";
+        this._notificationTextTemplate = alarm.notification_text_template || "";
 
         if (alarm.trigger_type === "analog") {
           this._analogOperator = alarm.trigger_config.operator ?? ">";
@@ -146,6 +150,8 @@ export class CreateEditView extends LitElement {
     this._conditionMode = "none";
     this._conditionEntity = "";
     this._conditionState = "";
+    this._notificationTitleTemplate = "";
+    this._notificationTextTemplate = "";
     this._analogOperator = ">";
     this._analogThreshold = "0";
     this._digitalTargetState = "on";
@@ -186,6 +192,8 @@ export class CreateEditView extends LitElement {
           ? `{{ is_state('${this._conditionEntity}', '${this._conditionState}') }}`
           : this._conditionMode === "template" ? (this._conditionTemplate || null)
           : null,
+        notification_title_template: this._notificationTitleTemplate || null,
+        notification_text_template: this._notificationTextTemplate || null,
       };
 
       if (this.alarmId) {
@@ -349,6 +357,21 @@ export class CreateEditView extends LitElement {
             ` : this._conditionMode === "template" ? html`
               <textarea rows="2" .value=${this._conditionTemplate} @input=${(e: Event) => (this._conditionTemplate = (e.target as HTMLTextAreaElement).value)} placeholder="e.g. {{ is_state('device_tracker.car', 'home') }}"></textarea>
             ` : ""}
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Notification Templates (optional Jinja2)</h3>
+          <div class="form-group">
+            <label>Title template</label>
+            <input type="text" .value=${this._notificationTitleTemplate} @input=${(e: Event) => (this._notificationTitleTemplate = (e.target as HTMLInputElement).value)} placeholder="Default: [Priority] Alarm Name" />
+          </div>
+          <div class="form-group">
+            <label>Message template</label>
+            <textarea rows="2" .value=${this._notificationTextTemplate} @input=${(e: Event) => (this._notificationTextTemplate = (e.target as HTMLTextAreaElement).value)} placeholder="e.g. {{ name }} har lite batteri, kun {{ value }}{{ unit }} igjen"></textarea>
+          </div>
+          <div style="font-size: 0.8em; color: var(--secondary-text-color); margin-top: -8px;">
+            Variables: {{ name }}, {{ value }}, {{ unit }}, {{ area }}, {{ equipment }}, {{ friendly_name }}, {{ threshold }}, {{ operator }}, {{ priority }}
           </div>
         </div>
 

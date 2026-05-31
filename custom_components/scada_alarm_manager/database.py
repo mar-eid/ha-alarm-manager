@@ -15,7 +15,7 @@ from .models import AlarmChannel, AlarmDefinition, AlarmEvent
 
 _LOGGER = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 CREATE_TABLES_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -36,6 +36,8 @@ CREATE TABLE IF NOT EXISTS alarm_definitions (
     ack_required INTEGER NOT NULL DEFAULT 1,
     auto_clear INTEGER NOT NULL DEFAULT 1,
     condition_template TEXT,
+    notification_title_template TEXT,
+    notification_text_template TEXT,
     repeat_interval INTEGER,
     escalation_delay INTEGER,
     source_entity_id TEXT NOT NULL,
@@ -161,6 +163,21 @@ class AlarmDatabase:
                 "UPDATE schema_version SET version = ?", (3,)
             )
             _LOGGER.info("Migrated database to schema v3: added alarm_runtime_states table")
+            current = 3
+
+        if current < 4:
+            # v4: notification template columns
+            for col in ("notification_title_template", "notification_text_template"):
+                try:
+                    await self._db.execute(
+                        f"ALTER TABLE alarm_definitions ADD COLUMN {col} TEXT"
+                    )
+                except Exception:
+                    pass
+            await self._db.execute(
+                "UPDATE schema_version SET version = ?", (4,)
+            )
+            _LOGGER.info("Migrated database to schema v4: added notification template columns")
 
     async def async_close(self) -> None:
         """Close database connection."""
@@ -182,9 +199,10 @@ class AlarmDatabase:
             """INSERT INTO alarm_definitions
             (id, name, description, priority, area, equipment, tag, channel_id,
              enabled, latching, ack_required, auto_clear, condition_template,
+             notification_title_template, notification_text_template,
              repeat_interval, escalation_delay, source_entity_id, trigger_type,
              trigger_config, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 alarm.id,
                 alarm.name,
@@ -199,6 +217,8 @@ class AlarmDatabase:
                 int(alarm.ack_required),
                 int(alarm.auto_clear),
                 alarm.condition_template,
+                alarm.notification_title_template,
+                alarm.notification_text_template,
                 alarm.repeat_interval,
                 alarm.escalation_delay,
                 alarm.source_entity_id,
@@ -217,7 +237,8 @@ class AlarmDatabase:
             """UPDATE alarm_definitions SET
             name=?, description=?, priority=?, area=?, equipment=?, tag=?,
             channel_id=?, enabled=?, latching=?, ack_required=?, auto_clear=?,
-            condition_template=?, repeat_interval=?, escalation_delay=?,
+            condition_template=?, notification_title_template=?,
+            notification_text_template=?, repeat_interval=?, escalation_delay=?,
             source_entity_id=?, trigger_type=?, trigger_config=?, updated_at=?
             WHERE id=?""",
             (
@@ -233,6 +254,8 @@ class AlarmDatabase:
                 int(alarm.ack_required),
                 int(alarm.auto_clear),
                 alarm.condition_template,
+                alarm.notification_title_template,
+                alarm.notification_text_template,
                 alarm.repeat_interval,
                 alarm.escalation_delay,
                 alarm.source_entity_id,
@@ -283,6 +306,8 @@ class AlarmDatabase:
             ack_required=bool(row["ack_required"]),
             auto_clear=bool(row["auto_clear"]),
             condition_template=row["condition_template"],
+            notification_title_template=row["notification_title_template"],
+            notification_text_template=row["notification_text_template"],
             repeat_interval=row["repeat_interval"],
             escalation_delay=row["escalation_delay"],
             source_entity_id=row["source_entity_id"],
