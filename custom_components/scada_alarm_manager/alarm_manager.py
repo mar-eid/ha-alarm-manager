@@ -57,6 +57,9 @@ class AlarmManager:
         # Callbacks for entity updates
         self._entity_update_callbacks: list[Any] = []
 
+        # Suppress notifications during initial evaluation on startup
+        self._suppress_notifications = False
+
     @property
     def alarms(self) -> dict[str, AlarmDefinition]:
         """Return all alarm definitions."""
@@ -91,10 +94,28 @@ class AlarmManager:
         alarms = await self._database.async_list_alarms()
         for alarm in alarms:
             self._alarms[alarm.id] = alarm
-            self._runtime_states[alarm.id] = AlarmRuntimeState(
-                alarm_id=alarm.id,
-                state=AlarmState.DISABLED if not alarm.enabled else AlarmState.NORMAL,
-            )
+
+        # Restore persisted runtime states
+        saved_states = await self._database.async_load_runtime_states()
+        for alarm in alarms:
+            if alarm.id in saved_states:
+                runtime = saved_states[alarm.id]
+                # If alarm was disabled in config, force disabled state
+                if not alarm.enabled:
+                    runtime = AlarmRuntimeState(
+                        alarm_id=alarm.id, state=AlarmState.DISABLED
+                    )
+                self._runtime_states[alarm.id] = runtime
+                _LOGGER.debug(
+                    "Restored runtime state for %s: %s",
+                    alarm.name,
+                    runtime.state.value,
+                )
+            else:
+                self._runtime_states[alarm.id] = AlarmRuntimeState(
+                    alarm_id=alarm.id,
+                    state=AlarmState.DISABLED if not alarm.enabled else AlarmState.NORMAL,
+                )
 
         # Load channels
         channels = await self._database.async_list_channels()
@@ -107,16 +128,17 @@ class AlarmManager:
         # Set up entity listeners for all watched entities
         self._setup_entity_listeners()
 
-        # Evaluate current state of all source entities
+        # Evaluate current state — but don't re-notify already-active alarms
         await self._async_initial_evaluation()
 
         # Start periodic task for shelve timeouts and repeat notifications
         self._start_periodic_task()
 
         _LOGGER.info(
-            "Alarm manager started with %d alarms and %d channels",
+            "Alarm manager started with %d alarms and %d channels (%d states restored)",
             len(self._alarms),
             len(self._channels),
+            len(saved_states),
         )
 
     async def async_stop(self) -> None:
@@ -221,6 +243,7 @@ class AlarmManager:
         self._runtime_states.pop(alarm_id, None)
 
         await self._database.async_delete_alarm(alarm_id)
+        await self._database.async_delete_runtime_state(alarm_id)
 
         # Sync store
         await self._store.async_save(
@@ -464,6 +487,9 @@ class AlarmManager:
 
         self._runtime_states[alarm_id] = new_runtime
 
+        # Persist runtime state to database
+        await self._database.async_save_runtime_state(new_runtime)
+
         # Log events to database
         for event in events:
             await self._database.async_log_event(event)
@@ -487,8 +513,8 @@ class AlarmManager:
         # Notify entity platforms
         self._notify_entity_updates()
 
-        # Handle notifications
-        if self._notification_router and alarm:
+        # Handle notifications (suppressed during initial evaluation on startup)
+        if self._notification_router and alarm and not self._suppress_notifications:
             if new_runtime.state == AlarmState.ACTIVE_UNACKED and old_runtime.state != AlarmState.ACTIVE_UNACKED:
                 await self._notification_router.async_send_alarm_notification(
                     alarm, new_runtime
@@ -569,11 +595,17 @@ class AlarmManager:
         self._setup_entity_listeners()
 
     async def _async_initial_evaluation(self) -> None:
-        """Evaluate all alarms against current entity states on startup."""
+        """Evaluate all alarms against current entity states on startup.
+
+        Uses _suppress_notifications to prevent re-notifying alarms that were
+        already active before the restart.
+        """
+        self._suppress_notifications = True
         for alarm in self._alarms.values():
             if alarm.enabled and alarm.trigger_type != TriggerType.EXTERNAL:
                 entity_state = self.hass.states.get(alarm.source_entity_id)
                 await self._async_evaluate_alarm(alarm, entity_state)
+        self._suppress_notifications = False
 
     def _start_periodic_task(self) -> None:
         """Start periodic task for shelve timeouts and notification repeats."""

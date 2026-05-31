@@ -15,7 +15,7 @@ from .models import AlarmChannel, AlarmDefinition, AlarmEvent
 
 _LOGGER = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 CREATE_TABLES_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -73,6 +73,18 @@ CREATE TABLE IF NOT EXISTS alarm_events (
 CREATE INDEX IF NOT EXISTS idx_events_alarm_id ON alarm_events(alarm_id);
 CREATE INDEX IF NOT EXISTS idx_events_timestamp ON alarm_events(timestamp);
 CREATE INDEX IF NOT EXISTS idx_events_type ON alarm_events(event_type);
+
+CREATE TABLE IF NOT EXISTS alarm_runtime_states (
+    alarm_id TEXT PRIMARY KEY,
+    state TEXT NOT NULL DEFAULT 'normal',
+    triggered_at TEXT,
+    acked_at TEXT,
+    acked_by TEXT,
+    shelved_until TEXT,
+    previous_state TEXT,
+    last_notification_at TEXT,
+    last_value TEXT
+);
 """
 
 
@@ -128,6 +140,27 @@ class AlarmDatabase:
             await self._db.execute(
                 "UPDATE schema_version SET version = ?", (2,)
             )
+            current = 2
+
+        if current < 3:
+            # v3: alarm_runtime_states table (persists across restarts)
+            await self._db.execute("""
+                CREATE TABLE IF NOT EXISTS alarm_runtime_states (
+                    alarm_id TEXT PRIMARY KEY,
+                    state TEXT NOT NULL DEFAULT 'normal',
+                    triggered_at TEXT,
+                    acked_at TEXT,
+                    acked_by TEXT,
+                    shelved_until TEXT,
+                    previous_state TEXT,
+                    last_notification_at TEXT,
+                    last_value TEXT
+                )
+            """)
+            await self._db.execute(
+                "UPDATE schema_version SET version = ?", (3,)
+            )
+            _LOGGER.info("Migrated database to schema v3: added alarm_runtime_states table")
 
     async def async_close(self) -> None:
         """Close database connection."""
@@ -446,3 +479,56 @@ class AlarmDatabase:
             user=row["user"],
             details=json.loads(row["details"]),
         )
+
+    # --- Runtime State Persistence ---
+
+    async def async_save_runtime_state(self, runtime: "AlarmRuntimeState") -> None:
+        """Save or update a single alarm's runtime state."""
+        from .models import AlarmRuntimeState as _ARS  # noqa: F841
+
+        await self._conn.execute(
+            """INSERT OR REPLACE INTO alarm_runtime_states
+            (alarm_id, state, triggered_at, acked_at, acked_by,
+             shelved_until, previous_state, last_notification_at, last_value)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                runtime.alarm_id,
+                runtime.state.value,
+                runtime.triggered_at.isoformat() if runtime.triggered_at else None,
+                runtime.acked_at.isoformat() if runtime.acked_at else None,
+                runtime.acked_by,
+                runtime.shelved_until.isoformat() if runtime.shelved_until else None,
+                runtime.previous_state.value if runtime.previous_state else None,
+                runtime.last_notification_at.isoformat() if runtime.last_notification_at else None,
+                runtime.last_value,
+            ),
+        )
+        await self._conn.commit()
+
+    async def async_load_runtime_states(self) -> dict[str, "AlarmRuntimeState"]:
+        """Load all persisted runtime states."""
+        from .models import AlarmRuntimeState
+
+        result: dict[str, AlarmRuntimeState] = {}
+        async with self._conn.execute("SELECT * FROM alarm_runtime_states") as cursor:
+            rows = await cursor.fetchall()
+            for row in rows:
+                result[row["alarm_id"]] = AlarmRuntimeState(
+                    alarm_id=row["alarm_id"],
+                    state=AlarmState(row["state"]),
+                    triggered_at=datetime.fromisoformat(row["triggered_at"]) if row["triggered_at"] else None,
+                    acked_at=datetime.fromisoformat(row["acked_at"]) if row["acked_at"] else None,
+                    acked_by=row["acked_by"],
+                    shelved_until=datetime.fromisoformat(row["shelved_until"]) if row["shelved_until"] else None,
+                    previous_state=AlarmState(row["previous_state"]) if row["previous_state"] else None,
+                    last_notification_at=datetime.fromisoformat(row["last_notification_at"]) if row["last_notification_at"] else None,
+                    last_value=row["last_value"],
+                )
+        return result
+
+    async def async_delete_runtime_state(self, alarm_id: str) -> None:
+        """Delete runtime state for an alarm."""
+        await self._conn.execute(
+            "DELETE FROM alarm_runtime_states WHERE alarm_id=?", (alarm_id,)
+        )
+        await self._conn.commit()

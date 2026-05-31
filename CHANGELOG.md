@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-05-31
+
+### Added
+
+- **Runtime state persistence**: Alarm states (acknowledged, shelved, triggered_at, last_notification_at) are now saved to the database and restored across HA restarts. No more lost acknowledgments or notification spam on reboot.
+- DB schema v3: new `alarm_runtime_states` table
+
+### Fixed
+
+- Suppress notifications during initial evaluation on startup — alarms that were already active before restart don't re-notify
+- Clean up runtime state when alarms are deleted
+
 ## [0.8.1] - 2026-05-31
 
 ### Added
