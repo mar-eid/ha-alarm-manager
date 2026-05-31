@@ -72,15 +72,12 @@ class NotificationRouter:
         title = self._render_title(alarm, runtime)
         message = self._render_message(alarm, runtime)
 
-        # Persistent notification: WARNING and above always get one
-        await self._async_send_persistent(alarm, title, message)
+        # Persistent notification: WARNING and above, or if channel opts in
+        if alarm.priority >= AlarmPriority.WARNING or (channel and channel.persistent_notification):
+            await self._async_send_persistent(alarm, title, message)
 
-        # Mobile push: HIGH and above, if channel has targets
-        if (
-            alarm.priority >= AlarmPriority.HIGH
-            and channel
-            and channel.notification_targets
-        ):
+        # Mobile push: if channel has targets and mobile_push enabled
+        if channel and channel.notification_targets and channel.mobile_push:
             await self._async_send_mobile(alarm, channel, title, message)
 
         # Update last notification timestamp

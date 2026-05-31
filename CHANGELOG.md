@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.3] - 2026-05-31
+
+### Fixed
+
+- Mobile push now controlled by channel's `mobile_push` flag instead of hardcoded priority >= High. Any alarm reaching a channel with `mobile_push: true` and notification targets will push to mobile.
+- All channels updated to `mobile_push: true`
+
 ## [0.12.2] - 2026-05-31
 
 ### Changed
