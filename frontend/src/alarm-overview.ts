@@ -1,22 +1,18 @@
 /**
- * SCADA Alarm Overview — full-screen sidebar panel (redesigned).
- * Drop-in replacement for your existing alarm-overview.ts:
- *   • MDI tab icons via <ha-svg-icon> (no more emoji)
+ * SCADA Alarm Overview — full Alarm Center as a Lovelace card.
+ * Best used in a **panel mode** dashboard for fullscreen experience.
+ *
+ *   • MDI tab icons via <ha-svg-icon>
  *   • Status-pill header (all-normal / N active / N critical)
  *   • <alarm-kpi-strip> wired on the Active + All tabs, driving a priority filter
  *
- * Place at: frontend/src/alarm-overview.ts (replaces the current file)
- *
- * The panel fetches `_alarms` once (for the header pill + KPI strip) and subscribes
- * to changes; the individual views keep fetching their own data as today.
- *
- * NOTE: to make the KPI tiles filter the table, add an (optional) `priorityFilter`
- * @property to active-alarms-view / all-alarms-view that, when set, overrides the
- * column `_filterPriority`. One line in their `_filtered` getter:
- *     const pf = this.priorityFilter || this._filterPriority;
+ * YAML:
+ *   type: custom:scada-alarm-overview
+ *   title: Alarm Center        # optional, shown in header
+ *   default_tab: active        # optional: active|all|history|channels|create-edit|settings
  */
 
-import { LitElement, html, css, nothing } from "lit";
+import { LitElement, html, css, nothing, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import {
   mdiBellRing,
@@ -43,6 +39,12 @@ import "./views/settings-view";
 
 type TabId = "active" | "all" | "history" | "channels" | "create-edit" | "settings";
 
+interface OverviewConfig {
+  type: string;
+  title?: string;
+  default_tab?: TabId;
+}
+
 const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: "active", label: "Active", icon: mdiBellRing },
   { id: "all", label: "All Alarms", icon: mdiFormatListChecks },
@@ -61,12 +63,29 @@ const ACTIVE_STATES = [
 @customElement("scada-alarm-overview")
 export class ScadaAlarmOverview extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
-  @property({ attribute: false }) panel?: Record<string, unknown>;
+  @state() private _config!: OverviewConfig;
   @state() private _activeTab: TabId = "active";
   @state() private _editAlarmId?: string;
   @state() private _priorityFilter = "";
   @state() private _alarms: AlarmWithState[] = [];
   private _unsub?: () => void;
+
+  // --- Lovelace card API ---
+
+  setConfig(config: OverviewConfig) {
+    this._config = config;
+    if (config.default_tab) this._activeTab = config.default_tab;
+  }
+
+  getCardSize() {
+    return 12;
+  }
+
+  static getStubConfig() {
+    return { type: "custom:scada-alarm-overview", title: "Alarm Center" };
+  }
+
+  // --- Styles ---
 
   static styles = [
     sharedStyles,
@@ -74,7 +93,7 @@ export class ScadaAlarmOverview extends LitElement {
       :host {
         display: flex;
         flex-direction: column;
-        height: 100vh;
+        min-height: 600px;
         background: var(--primary-background-color, #fafafa);
       }
       .header {
@@ -168,6 +187,8 @@ export class ScadaAlarmOverview extends LitElement {
     `,
   ];
 
+  // --- Lifecycle ---
+
   connectedCallback() {
     super.connectedCallback();
     this.addEventListener("navigate", this._handleNavigate as EventListener);
@@ -179,6 +200,13 @@ export class ScadaAlarmOverview extends LitElement {
     super.disconnectedCallback();
     this.removeEventListener("navigate", this._handleNavigate as EventListener);
     this._unsub?.();
+  }
+
+  updated(changed: PropertyValues) {
+    if (changed.has("hass") && !changed.get("hass")) {
+      this._loadAlarms();
+      this._subscribe();
+    }
   }
 
   private async _loadAlarms() {
@@ -237,12 +265,16 @@ export class ScadaAlarmOverview extends LitElement {
     `;
   }
 
+  // --- Render ---
+
   render() {
+    if (!this._config) return html``;
+    const title = this._config.title ?? "Alarm Center";
     const showKpis = this._activeTab === "active" || this._activeTab === "all";
     return html`
       <div class="header">
         <ha-svg-icon .path=${mdiBellRing} style="color: var(--primary-color)"></ha-svg-icon>
-        <span class="title">Alarm Center</span>
+        <span class="title">${title}</span>
         ${this._renderStatus()}
       </div>
 
@@ -307,6 +339,14 @@ export class ScadaAlarmOverview extends LitElement {
     }
   }
 }
+
+// Register in the card picker
+(window as any).customCards = (window as any).customCards || [];
+(window as any).customCards.push({
+  type: "scada-alarm-overview",
+  name: "SCADA Alarm Overview",
+  description: "Full Alarm Center with tabs, KPI strip, and management views. Best in panel mode.",
+});
 
 declare global {
   interface HTMLElementTagNameMap {

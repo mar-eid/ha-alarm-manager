@@ -7,7 +7,7 @@
 <p align="center">
   Industrial-style alarm management for Home Assistant
   <br>
-  <strong>v0.7.1</strong>
+  <strong>v0.7.2</strong>
 </p>
 
 <p align="center">
@@ -81,6 +81,18 @@ A SCADA-inspired alarm system for Home Assistant. Define alarm rules on any enti
 6. Add the **SCADA Alarm Center** card to a dashboard for embedded monitoring
 
 ## Cards
+
+### SCADA Alarm Overview
+
+Full Alarm Center with 6 tabs, KPI strip, and alarm management. Best used in a **panel mode** dashboard for a fullscreen experience.
+
+```yaml
+type: custom:scada-alarm-overview
+title: Alarm Center
+default_tab: active
+```
+
+**Card options:** `title`, `default_tab` (active, all, history, channels, create-edit, settings)
 
 ### SCADA Alarm Banner
 

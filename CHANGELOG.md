@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.2] - 2026-05-31
+
+### Fixed
+
+- Make alarm-overview a proper Lovelace card with `setConfig`/`getCardSize`/`getStubConfig` and `window.customCards` registration so it appears in the card picker
+- Add `title` and `default_tab` config options to the overview card
+
 ## [0.7.1] - 2026-05-31
 
 ### Added
