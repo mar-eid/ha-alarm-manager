@@ -532,6 +532,12 @@ class AlarmManager:
         if runtime is None or runtime.state == AlarmState.DISABLED:
             return
 
+        # Don't clear active alarms based on unavailable/unknown entity state
+        # — the entity may just be temporarily offline during startup
+        if entity_state is None or entity_state.state in ("unavailable", "unknown"):
+            if runtime.state != AlarmState.NORMAL:
+                return  # Keep current state, don't clear
+
         is_active = runtime.state in (
             AlarmState.ACTIVE_UNACKED, AlarmState.ACTIVE_ACKED, AlarmState.RTN_UNACKED
         )
@@ -600,13 +606,27 @@ class AlarmManager:
     async def _async_initial_evaluation(self) -> None:
         """Evaluate all alarms against current entity states on startup.
 
-        Uses _suppress_notifications to prevent re-notifying alarms that were
-        already active before the restart.
+        Skips evaluation for alarms with persisted active states when the
+        entity isn't available yet — prevents clearing acknowledged alarms
+        during startup when entities haven't loaded.
         """
         self._suppress_notifications = True
         for alarm in self._alarms.values():
             if alarm.enabled and alarm.trigger_type != TriggerType.EXTERNAL:
                 entity_state = self.hass.states.get(alarm.source_entity_id)
+                runtime = self._runtime_states.get(alarm.id)
+
+                # If alarm has a persisted non-normal state and entity isn't
+                # available yet, skip — don't clear it based on missing data
+                if runtime and runtime.state != AlarmState.NORMAL:
+                    if entity_state is None or entity_state.state in ("unavailable", "unknown"):
+                        _LOGGER.debug(
+                            "Skipping initial eval for %s (state=%s, entity not ready)",
+                            alarm.name,
+                            runtime.state.value,
+                        )
+                        continue
+
                 await self._async_evaluate_alarm(alarm, entity_state)
         self._suppress_notifications = False
 

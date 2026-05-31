@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.1] - 2026-05-31
+
+### Fixed
+
+- **Alarm states now truly persist across restarts**: Fixed bug where acknowledged/shelved alarms were cleared during startup because entities weren't loaded yet. The evaluator now skips evaluation for alarms with persisted active states when the entity is unavailable/unknown/None — preserving acknowledged, shelved, and RTN states until the entity actually reports a valid value.
+
 ## [0.13.0] - 2026-05-31
 
 ### Added
