@@ -36,6 +36,9 @@ export class CreateEditView extends LitElement {
   @state() private _ackRequired = true;
   @state() private _autoClear = true;
   @state() private _conditionTemplate = "";
+  @state() private _conditionMode: "none" | "simple" | "template" = "none";
+  @state() private _conditionEntity = "";
+  @state() private _conditionState = "";
 
   // Trigger config
   @state() private _analogOperator = ">";
@@ -95,6 +98,19 @@ export class CreateEditView extends LitElement {
         this._ackRequired = alarm.ack_required;
         this._autoClear = alarm.auto_clear;
         this._conditionTemplate = alarm.condition_template || "";
+        // Parse simple condition: {{ is_state('entity', 'state') }}
+        const simpleMatch = (alarm.condition_template || "").match(
+          /\{\{\s*is_state\(\s*'([^']+)'\s*,\s*'([^']+)'\s*\)\s*\}\}/
+        );
+        if (simpleMatch) {
+          this._conditionMode = "simple";
+          this._conditionEntity = simpleMatch[1];
+          this._conditionState = simpleMatch[2];
+        } else if (alarm.condition_template) {
+          this._conditionMode = "template";
+        } else {
+          this._conditionMode = "none";
+        }
 
         if (alarm.trigger_type === "analog") {
           this._analogOperator = alarm.trigger_config.operator ?? ">";
@@ -127,6 +143,9 @@ export class CreateEditView extends LitElement {
     this._ackRequired = true;
     this._autoClear = true;
     this._conditionTemplate = "";
+    this._conditionMode = "none";
+    this._conditionEntity = "";
+    this._conditionState = "";
     this._analogOperator = ">";
     this._analogThreshold = "0";
     this._digitalTargetState = "on";
@@ -163,7 +182,10 @@ export class CreateEditView extends LitElement {
         latching: this._latching,
         ack_required: this._ackRequired,
         auto_clear: this._autoClear,
-        condition_template: this._conditionTemplate || null,
+        condition_template: this._conditionMode === "simple" && this._conditionEntity
+          ? `{{ is_state('${this._conditionEntity}', '${this._conditionState}') }}`
+          : this._conditionMode === "template" ? (this._conditionTemplate || null)
+          : null,
       };
 
       if (this.alarmId) {
@@ -301,8 +323,32 @@ export class CreateEditView extends LitElement {
             <label><input type="checkbox" .checked=${this._autoClear} @change=${(e: Event) => (this._autoClear = (e.target as HTMLInputElement).checked)} /> Auto Clear</label>
           </div>
           <div class="form-group">
-            <label>Condition Template (Jinja2, optional)</label>
-            <textarea rows="2" .value=${this._conditionTemplate} @input=${(e: Event) => (this._conditionTemplate = (e.target as HTMLTextAreaElement).value)} placeholder="e.g. {{ is_state('device_tracker.car', 'home') }}"></textarea>
+            <label>Condition (optional — alarm only fires when condition is true)</label>
+            <div style="display:flex;gap:4px;margin-bottom:8px">
+              ${(["none", "simple", "template"] as const).map((m) => html`
+                <button class="btn btn-small" style=${this._conditionMode === m ? "background:var(--primary-color);color:#fff" : "background:var(--secondary-background-color)"}
+                  @click=${() => (this._conditionMode = m)}>
+                  ${m === "none" ? "None" : m === "simple" ? "Entity state" : "Template"}
+                </button>
+              `)}
+            </div>
+            ${this._conditionMode === "simple" ? html`
+              <div class="form-row">
+                <ha-entity-picker
+                  .hass=${this.hass}
+                  .value=${this._conditionEntity}
+                  @value-changed=${(e: CustomEvent) => (this._conditionEntity = e.detail.value)}
+                  allow-custom-entity
+                  .label=${"Condition entity"}
+                ></ha-entity-picker>
+                <div class="form-group">
+                  <label>Expected state</label>
+                  <input type="text" .value=${this._conditionState} @input=${(e: Event) => (this._conditionState = (e.target as HTMLInputElement).value)} placeholder="home, on, true, etc." />
+                </div>
+              </div>
+            ` : this._conditionMode === "template" ? html`
+              <textarea rows="2" .value=${this._conditionTemplate} @input=${(e: Event) => (this._conditionTemplate = (e.target as HTMLTextAreaElement).value)} placeholder="e.g. {{ is_state('device_tracker.car', 'home') }}"></textarea>
+            ` : ""}
           </div>
         </div>
 

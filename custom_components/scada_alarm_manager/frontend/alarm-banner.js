@@ -358,26 +358,28 @@ const ct={attribute:!0,type:String,converter:v,reflect:!1,hasChanged:y},ht=(t=ct
         font-size: 13px;
         color: var(--secondary-text-color, #727272);
       }
-    `]}setConfig(t){this._config={title:"Alarm Center",max_items:5,show_ack_button:!0,show_shelve_button:!0,default_shelve_minutes:15,...t},this._areaFilter=t.filter_area??""}getCardSize(){return 3}static getStubConfig(){return{type:"custom:scada-alarm-banner",title:"Alarm Center",max_items:6}}firstUpdated(){this._load(),this._subscribe()}disconnectedCallback(){super.disconnectedCallback(),this._unsub?.()}updated(t){t.has("hass")&&!t.get("hass")&&this._load()}async _load(){this.hass&&(this._alarms=await(async t=>(await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/list"})).alarms)(this.hass))}async _subscribe(){this.hass&&(this._unsub=await(async(t,e)=>t.connection.subscribeMessage(e,{type:"scada_alarm_manager/subscribe"}))(this.hass,()=>this._load()))}async _ack(t){this.hass&&await(async(t,e)=>{await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/acknowledge",alarm_id:e})})(this.hass,t),this._load()}async _shelve(t){this.hass&&await(async(t,e,i)=>{await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/shelve",alarm_id:e,duration:i})})(this.hass,t,this._config.default_shelve_minutes??15),this._load()}get _active(){const t=this._config;return this._alarms.filter(t=>mt.includes(t.runtime.state)).filter(t=>!this._areaFilter||t.area===this._areaFilter).filter(e=>null==t.filter_priority||String(e.priority)===String(t.filter_priority)).filter(e=>!t.filter_channel||e.channel_id===t.filter_channel).sort((t,e)=>e.priority-t.priority||new Date(e.runtime.triggered_at??0).getTime()-new Date(t.runtime.triggered_at??0).getTime())}render(){if(!this._config)return B``;const t=this._config,e=this._active,i=e.length,s=e.filter(t=>3===t.priority).length,r=e.filter(t=>gt.includes(t.runtime.state)).length,o=s>0?"#f44336":i?"#ff9800":"#4caf50",n=_t.map(t=>({p:t,n:e.filter(e=>e.priority===t).length})).filter(t=>t.n>0),a=[...new Set(this._alarms.filter(t=>mt.includes(t.runtime.state)).map(t=>t.area))].filter(Boolean).sort(),l=e.slice(0,t.max_items);return B`
+    `]}setConfig(t){this._config={title:"Alarm Center",max_items:5,show_ack_button:!0,show_shelve_button:!0,default_shelve_minutes:15,...t},this._areaFilter=t.filter_area??""}getCardSize(){return 3}static getStubConfig(){return{type:"custom:scada-alarm-banner",title:"Alarm Center",max_items:6}}firstUpdated(){this._load(),this._subscribe()}disconnectedCallback(){super.disconnectedCallback(),this._unsub?.()}updated(t){t.has("hass")&&!t.get("hass")&&this._load()}async _load(){this.hass&&(this._alarms=await(async t=>(await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/list"})).alarms)(this.hass))}async _subscribe(){this.hass&&(this._unsub=await(async(t,e)=>t.connection.subscribeMessage(e,{type:"scada_alarm_manager/subscribe"}))(this.hass,()=>this._load()))}async _ack(t){this.hass&&await(async(t,e)=>{await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/acknowledge",alarm_id:e})})(this.hass,t),this._load()}async _shelve(t){this.hass&&await(async(t,e,i)=>{await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/shelve",alarm_id:e,duration:i})})(this.hass,t,this._config.default_shelve_minutes??15),this._load()}get _active(){const t=this._config;return this._alarms.filter(t=>mt.includes(t.runtime.state)).filter(t=>!this._areaFilter||t.area===this._areaFilter).filter(e=>null==t.filter_priority||String(e.priority)===String(t.filter_priority)).filter(e=>!t.filter_channel||e.channel_id===t.filter_channel).sort((t,e)=>e.priority-t.priority||new Date(e.runtime.triggered_at??0).getTime()-new Date(t.runtime.triggered_at??0).getTime())}render(){if(!this._config)return B``;const t=this._config,e=this._active,i=e.length,s=e.filter(t=>3===t.priority).length,r=e.filter(t=>gt.includes(t.runtime.state)).length,o=s>0?"#f44336":i?"#ff9800":"#4caf50",n=_t.map(t=>({p:t,n:e.filter(e=>e.priority===t).length})).filter(t=>t.n>0),a=[...new Set(this._alarms.filter(t=>mt.includes(t.runtime.state)).map(t=>t.area))].filter(Boolean).sort(),l=e.slice(0,t.max_items),c=t.show_header??!1;return B`
       <ha-card>
-        <div class="head">
-          <div class="ic" style=${`background:color-mix(in srgb, ${o} 16%, transparent); color:${o}`}>
-            <ha-svg-icon .path=${"M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21M19.75,3.19L18.33,4.61C20.04,6.3 21,8.6 21,11H23C23,8.07 21.84,5.25 19.75,3.19M1,11H3C3,8.6 3.96,6.3 5.67,4.61L4.25,3.19C2.16,5.25 1,8.07 1,11Z"}></ha-svg-icon>
-          </div>
-          <div class="t">
-            <div class="name">${t.title}</div>
-            <div class="sub">
-              ${this._areaFilter?`${this._areaFilter} · `:""}
-              ${0===i?"All systems normal":`${i} active · ${r} unacknowledged`}
+        ${c?B`
+          <div class="head">
+            <div class="ic" style=${`background:color-mix(in srgb, ${o} 16%, transparent); color:${o}`}>
+              <ha-svg-icon .path=${"M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21M19.75,3.19L18.33,4.61C20.04,6.3 21,8.6 21,11H23C23,8.07 21.84,5.25 19.75,3.19M1,11H3C3,8.6 3.96,6.3 5.67,4.61L4.25,3.19C2.16,5.25 1,8.07 1,11Z"}></ha-svg-icon>
             </div>
-          </div>
-          ${i>0?B`<span
+            <div class="t">
+              <div class="name">${t.title}</div>
+              <div class="sub">
+                ${this._areaFilter?`${this._areaFilter} · `:""}
+                ${0===i?"All systems normal":`${i} active · ${r} unacknowledged`}
+              </div>
+            </div>
+            ${i>0?B`<span
                 class="pill"
                 style=${`background:color-mix(in srgb, ${o} 15%, transparent); color:${o}`}
               >
                 <ha-svg-icon .path=${s>0?"M23,12L20.56,9.22L20.9,5.54L17.29,4.72L15.4,1.54L12,3L8.6,1.54L6.71,4.72L3.1,5.53L3.44,9.21L1,12L3.44,14.78L3.1,18.47L6.71,19.29L8.6,22.47L12,21L15.4,22.46L17.29,19.28L20.9,18.46L20.56,14.78L23,12M13,17H11V15H13V17M13,13H11V7H13V13Z":"M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z"}></ha-svg-icon>${i}
               </span>`:Z}
-        </div>
+          </div>
+        `:Z}
 
         ${i>0?B`<div class="bar">
               ${n.map(t=>B`<span style=${`flex:${t.n}; background:${ft(t.p)}`}></span>`)}

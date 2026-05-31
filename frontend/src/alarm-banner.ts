@@ -48,6 +48,7 @@ interface AlarmBannerConfig {
   selectable_area?: boolean;
   show_ack_button?: boolean;
   show_shelve_button?: boolean;
+  show_header?: boolean;
   default_shelve_minutes?: number;
 }
 
@@ -329,20 +330,23 @@ export class ScadaAlarmBanner extends LitElement {
       .sort();
     const shown = active.slice(0, c.max_items);
 
+    const showHeader = c.show_header ?? false;
+
     return html`
       <ha-card>
-        <div class="head">
-          <div class="ic" style=${`background:color-mix(in srgb, ${accent} 16%, transparent); color:${accent}`}>
-            <ha-svg-icon .path=${mdiBellRing}></ha-svg-icon>
-          </div>
-          <div class="t">
-            <div class="name">${c.title}</div>
-            <div class="sub">
-              ${this._areaFilter ? `${this._areaFilter} · ` : ""}
-              ${total === 0 ? "All systems normal" : `${total} active · ${unacked} unacknowledged`}
+        ${showHeader ? html`
+          <div class="head">
+            <div class="ic" style=${`background:color-mix(in srgb, ${accent} 16%, transparent); color:${accent}`}>
+              <ha-svg-icon .path=${mdiBellRing}></ha-svg-icon>
             </div>
-          </div>
-          ${total > 0
+            <div class="t">
+              <div class="name">${c.title}</div>
+              <div class="sub">
+                ${this._areaFilter ? `${this._areaFilter} · ` : ""}
+                ${total === 0 ? "All systems normal" : `${total} active · ${unacked} unacknowledged`}
+              </div>
+            </div>
+            ${total > 0
             ? html`<span
                 class="pill"
                 style=${`background:color-mix(in srgb, ${accent} 15%, transparent); color:${accent}`}
@@ -350,7 +354,8 @@ export class ScadaAlarmBanner extends LitElement {
                 <ha-svg-icon .path=${crit > 0 ? mdiAlertDecagram : mdiAlert}></ha-svg-icon>${total}
               </span>`
             : nothing}
-        </div>
+          </div>
+        ` : nothing}
 
         ${total > 0
           ? html`<div class="bar">

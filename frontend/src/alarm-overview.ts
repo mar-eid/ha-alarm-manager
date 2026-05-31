@@ -43,6 +43,8 @@ interface OverviewConfig {
   type: string;
   title?: string;
   default_tab?: TabId;
+  show_header?: boolean;
+  max_width?: string;
 }
 
 const TABS: { id: TabId; label: string; icon: string }[] = [
@@ -269,14 +271,18 @@ export class ScadaAlarmOverview extends LitElement {
 
   render() {
     if (!this._config) return html``;
-    const title = this._config.title ?? "Alarm Center";
+    const showHeader = this._config.show_header ?? false;
+    const maxWidth = this._config.max_width ?? "";
     const showKpis = this._activeTab === "active" || this._activeTab === "all";
     return html`
-      <div class="header">
-        <ha-svg-icon .path=${mdiBellRing} style="color: var(--primary-color)"></ha-svg-icon>
-        <span class="title">${title}</span>
-        ${this._renderStatus()}
-      </div>
+      <div style=${maxWidth ? `max-width:${maxWidth};margin:0 auto` : ""}>
+      ${showHeader ? html`
+        <div class="header">
+          <ha-svg-icon .path=${mdiBellRing} style="color: var(--primary-color)"></ha-svg-icon>
+          <span class="title">${this._config.title ?? "Alarm Center"}</span>
+          ${this._renderStatus()}
+        </div>
+      ` : nothing}
 
       <div class="tabs">
         ${TABS.map(
@@ -307,6 +313,7 @@ export class ScadaAlarmOverview extends LitElement {
             ></alarm-kpi-strip>`
           : nothing}
         ${this._renderView()}
+      </div>
       </div>
     `;
   }

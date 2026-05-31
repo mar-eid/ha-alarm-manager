@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-05-31
+
+### Changed
+
+- Card headers hidden by default on both overview and banner cards (opt-in via `show_header: true`)
+- Configurable overview card width via `max_width` config (e.g., `max_width: "1200px"`)
+- Condition picker UI: toggle between None / Entity state (simple) / Template (advanced)
+  - Simple mode: pick entity + expected state, auto-generates Jinja2 template
+  - Template mode: raw Jinja2 textarea
+  - Parses existing `is_state()` templates back into simple mode when editing
+
 ## [0.9.0] - 2026-05-31
 
 ### Added
