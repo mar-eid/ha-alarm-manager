@@ -7,10 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.6.2] - 2026-05-31
+## [0.6.3] - 2026-05-31
 
 ### Fixed
 
+- Remove frontend build step from release workflow (no frontend to build)
+- Add empty frontend directory placeholder for HACS compatibility
 - Update README version badge to match release
 
 ## [0.6.1] - 2026-05-31
