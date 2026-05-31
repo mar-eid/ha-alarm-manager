@@ -281,8 +281,8 @@ export class ActiveAlarmsView extends LitElement {
                   <td>${alarm.runtime.last_value ?? "-"}</td>
                   <td class="time-ago">${alarm.runtime.triggered_at ? new Date(alarm.runtime.triggered_at).toLocaleString() : "-"}</td>
                   <td class="actions">
-                    ${isUnacked ? html`<button class="btn btn-primary btn-small" @click=${(e: Event) => { e.stopPropagation(); this._ack(alarm.id); }}>ACK</button>` : ""}
-                    <button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" @click=${(e: Event) => { e.stopPropagation(); this._shelve(alarm); }}>Shelve</button>
+                    ${isUnacked ? html`<button class="btn btn-primary btn-small" title="Acknowledge this alarm" @click=${(e: Event) => { e.stopPropagation(); this._ack(alarm.id); }}>ACK</button>` : ""}
+                    <button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" title="Temporarily suppress this alarm" @click=${(e: Event) => { e.stopPropagation(); this._shelve(alarm); }}>Shelve</button>
                   </td>
                 </tr>
               `;

@@ -220,13 +220,13 @@ export class AllAlarmsView extends LitElement {
                 <td>${alarm.enabled ? "Yes" : "No"}</td>
                 <td class="actions">
                   ${alarm.runtime.state === "shelved"
-                    ? html`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" @click=${(e: Event) => { e.stopPropagation(); this._unshelve(alarm.id); }}>Unshelve</button>`
+                    ? html`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" title="Remove shelve and restore alarm" @click=${(e: Event) => { e.stopPropagation(); this._unshelve(alarm.id); }}>Unshelve</button>`
                     : alarm.runtime.state !== "disabled"
-                      ? html`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" @click=${(e: Event) => { e.stopPropagation(); this._shelve(alarm); }}>Shelve</button>`
+                      ? html`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" title="Temporarily suppress this alarm" @click=${(e: Event) => { e.stopPropagation(); this._shelve(alarm); }}>Shelve</button>`
                       : ""}
-                  ${alarm.channel_id ? html`<button class="btn btn-small" style="background: #607D8B; color: white;" @click=${(e: Event) => { e.stopPropagation(); this._testNotification(alarm); }} title="Test notification">Test</button>` : ""}
-                  <button class="btn btn-small btn-primary" @click=${(e: Event) => { e.stopPropagation(); this._edit(alarm.id); }}>Edit</button>
-                  <button class="btn btn-small btn-danger" @click=${(e: Event) => { e.stopPropagation(); this._confirmDelete(alarm); }}>Delete</button>
+                  ${alarm.channel_id ? html`<button class="btn btn-small" style="background: #607D8B; color: white;" title="Send a test notification through this alarm's channel" @click=${(e: Event) => { e.stopPropagation(); this._testNotification(alarm); }}>Test</button>` : ""}
+                  <button class="btn btn-small btn-primary" title="Edit alarm definition" @click=${(e: Event) => { e.stopPropagation(); this._edit(alarm.id); }}>Edit</button>
+                  <button class="btn btn-small btn-danger" title="Permanently delete this alarm" @click=${(e: Event) => { e.stopPropagation(); this._confirmDelete(alarm); }}>Delete</button>
                 </td>
               </tr>
             `

@@ -183,7 +183,7 @@ export class ChannelsView extends LitElement {
         </div>
         <div class="form-group">
           <label>Minimum Priority</label>
-          <select .value=${String(this._formMinPriority)} @change=${(e: Event) => (this._formMinPriority = Number((e.target as HTMLSelectElement).value) as AlarmPriority)}>
+          <select title="Only alarms at this priority or higher will use this channel" .value=${String(this._formMinPriority)} @change=${(e: Event) => (this._formMinPriority = Number((e.target as HTMLSelectElement).value) as AlarmPriority)}>
             <option value="0">Info</option>
             <option value="1">Warning</option>
             <option value="2">High</option>
@@ -191,9 +191,9 @@ export class ChannelsView extends LitElement {
           </select>
         </div>
         <div class="checkbox-group">
-          <label><input type="checkbox" .checked=${this._formPersistent} @change=${(e: Event) => (this._formPersistent = (e.target as HTMLInputElement).checked)} /> Persistent Notifications</label>
-          <label><input type="checkbox" .checked=${this._formMobile} @change=${(e: Event) => (this._formMobile = (e.target as HTMLInputElement).checked)} /> Mobile Push</label>
-          <label><input type="checkbox" .checked=${this._formCritical} @change=${(e: Event) => (this._formCritical = (e.target as HTMLInputElement).checked)} /> Critical Alerts</label>
+          <label title="Show alarm in HA UI persistent notifications panel"><input type="checkbox" .checked=${this._formPersistent} @change=${(e: Event) => (this._formPersistent = (e.target as HTMLInputElement).checked)} /> Persistent Notifications</label>
+          <label title="Send push notification to mobile devices via Companion App"><input type="checkbox" .checked=${this._formMobile} @change=${(e: Event) => (this._formMobile = (e.target as HTMLInputElement).checked)} /> Mobile Push</label>
+          <label title="Critical alerts bypass Do Not Disturb on iOS/Android"><input type="checkbox" .checked=${this._formCritical} @change=${(e: Event) => (this._formCritical = (e.target as HTMLInputElement).checked)} /> Critical Alerts</label>
         </div>
         <div class="actions">
           <button class="btn btn-primary" @click=${this._save}>Save</button>

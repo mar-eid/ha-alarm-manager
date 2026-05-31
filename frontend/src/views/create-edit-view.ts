@@ -228,11 +228,11 @@ export class CreateEditView extends LitElement {
           </div>
           <div class="form-group">
             <label>Priority</label>
-            <select .value=${String(this._priority)} @change=${(e: Event) => (this._priority = Number((e.target as HTMLSelectElement).value) as AlarmPriority)}>
-              <option value="0">Info</option>
-              <option value="1">Warning</option>
-              <option value="2">High</option>
-              <option value="3">Critical</option>
+            <select title="Determines notification behavior and visual severity" .value=${String(this._priority)} @change=${(e: Event) => (this._priority = Number((e.target as HTMLSelectElement).value) as AlarmPriority)}>
+              <option value="0">Info — panel only, no notifications</option>
+              <option value="1">Warning — persistent notification</option>
+              <option value="2">High — persistent + mobile push</option>
+              <option value="3">Critical — mobile push, bypasses DND</option>
             </select>
           </div>
         </div>
@@ -252,7 +252,7 @@ export class CreateEditView extends LitElement {
           ></ha-entity-picker>
           <div class="form-group">
             <label>Channel</label>
-            <select .value=${this._channelId ?? ""} @change=${(e: Event) => { const v = (e.target as HTMLSelectElement).value; this._channelId = v || null; }}>
+            <select title="Routes notifications to specific targets (mobile, persistent, etc.)" .value=${this._channelId ?? ""} @change=${(e: Event) => { const v = (e.target as HTMLSelectElement).value; this._channelId = v || null; }}>
               <option value="">No channel</option>
               ${this._channels.map((ch) => html`<option value=${ch.id}>${ch.name}</option>`)}
             </select>
@@ -283,8 +283,8 @@ export class CreateEditView extends LitElement {
           <h3>Trigger Configuration</h3>
           <div class="form-group">
             <label>Trigger Type</label>
-            <select .value=${this._triggerType} @change=${(e: Event) => (this._triggerType = (e.target as HTMLSelectElement).value as TriggerType)}>
-              <option value="analog">Analog (threshold)</option>
+            <select title="How the alarm evaluates the source entity" .value=${this._triggerType} @change=${(e: Event) => (this._triggerType = (e.target as HTMLSelectElement).value as TriggerType)}>
+              <option value="analog">Analog — numeric threshold (>, <, etc.)</option>
               <option value="digital">Digital (state match)</option>
               <option value="custom_state">Custom State (value list)</option>
             </select>
@@ -308,8 +308,8 @@ export class CreateEditView extends LitElement {
                 <input type="number" step="any" .value=${this._analogThreshold} @input=${(e: Event) => (this._analogThreshold = (e.target as HTMLInputElement).value)} />
               </div>
               <div class="form-group">
-                <label>Hysteresis (optional deadband)</label>
-                <input type="number" step="any" .value=${this._hysteresis} @input=${(e: Event) => (this._hysteresis = (e.target as HTMLInputElement).value)} placeholder="e.g. 2" />
+                <label>Hysteresis (deadband)</label>
+                <input type="number" step="any" title="Prevents chattering: alarm triggers at threshold but won't clear until value passes threshold +/- this value" .value=${this._hysteresis} @input=${(e: Event) => (this._hysteresis = (e.target as HTMLInputElement).value)} placeholder="e.g. 2" />
               </div>
             </div>
           ` : ""}
@@ -332,20 +332,23 @@ export class CreateEditView extends LitElement {
         <div class="section">
           <h3>Behavior</h3>
           <div class="checkbox-group">
-            <label><input type="checkbox" .checked=${this._enabled} @change=${(e: Event) => (this._enabled = (e.target as HTMLInputElement).checked)} /> Enabled</label>
-            <label><input type="checkbox" .checked=${this._latching} @change=${(e: Event) => (this._latching = (e.target as HTMLInputElement).checked)} /> Latching</label>
-            <label><input type="checkbox" .checked=${this._ackRequired} @change=${(e: Event) => (this._ackRequired = (e.target as HTMLInputElement).checked)} /> Acknowledge Required</label>
-            <label><input type="checkbox" .checked=${this._autoClear} @change=${(e: Event) => (this._autoClear = (e.target as HTMLInputElement).checked)} /> Auto Clear</label>
+            <label title="When disabled, the alarm won't evaluate or trigger"><input type="checkbox" .checked=${this._enabled} @change=${(e: Event) => (this._enabled = (e.target as HTMLInputElement).checked)} /> Enabled</label>
+            <label title="Latching alarms stay active until manually reset, even if condition clears"><input type="checkbox" .checked=${this._latching} @change=${(e: Event) => (this._latching = (e.target as HTMLInputElement).checked)} /> Latching</label>
+            <label title="Require user to acknowledge alarm before it can return to normal"><input type="checkbox" .checked=${this._ackRequired} @change=${(e: Event) => (this._ackRequired = (e.target as HTMLInputElement).checked)} /> Acknowledge Required</label>
+            <label title="Automatically clear alarm when the trigger condition is no longer met"><input type="checkbox" .checked=${this._autoClear} @change=${(e: Event) => (this._autoClear = (e.target as HTMLInputElement).checked)} /> Auto Clear</label>
           </div>
           <div class="form-group">
             <label>Condition (optional — alarm only fires when condition is true)</label>
             <div style="display:flex;gap:4px;margin-bottom:8px">
-              ${(["none", "simple", "template"] as const).map((m) => html`
-                <button class="btn btn-small" style=${this._conditionMode === m ? "background:var(--primary-color);color:#fff" : "background:var(--secondary-background-color)"}
-                  @click=${() => (this._conditionMode = m)}>
-                  ${m === "none" ? "None" : m === "simple" ? "Entity state" : "Template"}
-                </button>
-              `)}
+              <button class="btn btn-small" style=${this._conditionMode === "none" ? "background:var(--primary-color);color:#fff" : "background:var(--secondary-background-color)"}
+                title="No additional condition — alarm triggers whenever the threshold is met"
+                @click=${() => (this._conditionMode = "none")}>None</button>
+              <button class="btn btn-small" style=${this._conditionMode === "simple" ? "background:var(--primary-color);color:#fff" : "background:var(--secondary-background-color)"}
+                title="Simple condition: pick an entity and expected state (e.g. car must be home)"
+                @click=${() => (this._conditionMode = "simple")}>Entity state</button>
+              <button class="btn btn-small" style=${this._conditionMode === "template" ? "background:var(--primary-color);color:#fff" : "background:var(--secondary-background-color)"}
+                title="Advanced Jinja2 template for complex conditions"
+                @click=${() => (this._conditionMode = "template")}>Template</button>
             </div>
             ${this._conditionMode === "simple" ? html`
               <div class="form-row">

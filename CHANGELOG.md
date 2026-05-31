@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.1] - 2026-05-31
+
+### Changed
+
+- Added tooltips to all buttons, checkboxes, and dropdowns across the UI:
+  - Create/Edit: priority levels explain notification behavior, behavior checkboxes describe their effect, condition modes have descriptions, hysteresis explains deadband, trigger type describes evaluation method
+  - Channels: min priority, persistent/mobile/critical checkboxes explain routing behavior
+  - Active view: ACK and Shelve buttons have tooltips
+  - All Alarms: Shelve/Unshelve/Test/Edit/Delete buttons all have descriptive tooltips
+
 ## [0.12.0] - 2026-05-31
 
 ### Added
