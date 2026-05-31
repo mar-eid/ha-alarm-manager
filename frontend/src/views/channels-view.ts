@@ -4,10 +4,23 @@ import { sharedStyles } from "../styles/shared-styles";
 import { fetchChannels, createChannel, updateChannel, deleteChannel } from "../data/websocket";
 import { PRIORITY_LABELS, type HomeAssistant, type AlarmChannel, type AlarmPriority } from "../types";
 import "../components/notify-target-picker";
+import { type NotifyTarget } from "../components/notify-target-picker";
+import { mdiBellOutline } from "@mdi/js";
 
 @customElement("channels-view")
 export class ChannelsView extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
+
+  private get _notifyTargets(): NotifyTarget[] {
+    if (!this.hass?.services?.notify) return [];
+    return Object.keys(this.hass.services.notify)
+      .filter((s) => s !== "send_message" && s !== "persistent_notification")
+      .map((s) => ({
+        id: `notify.${s}`,
+        label: s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+        path: mdiBellOutline,
+      }));
+  }
   @state() private _channels: AlarmChannel[] = [];
   @state() private _loading = true;
   @state() private _editing: AlarmChannel | null = null;
@@ -164,6 +177,7 @@ export class ChannelsView extends LitElement {
           <label>Notification Targets</label>
           <notify-target-picker
             .value=${this._formTargets}
+            .targets=${this._notifyTargets}
             @value-changed=${(e: CustomEvent) => (this._formTargets = e.detail.value)}
           ></notify-target-picker>
         </div>

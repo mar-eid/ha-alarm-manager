@@ -24,6 +24,7 @@
 
 import { LitElement, html, css, nothing, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import "./alarm-banner-editor";
 import {
   mdiBellRing,
   mdiAlert,
@@ -259,6 +260,10 @@ export class ScadaAlarmBanner extends LitElement {
 
   getCardSize() {
     return 3;
+  }
+
+  static getConfigElement() {
+    return document.createElement("scada-alarm-banner-editor");
   }
 
   static getStubConfig() {

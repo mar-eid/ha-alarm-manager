@@ -14,6 +14,7 @@
 
 import { LitElement, html, css, nothing, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import "./alarm-overview-editor";
 import {
   mdiBellRing,
   mdiFormatListChecks,
@@ -81,6 +82,10 @@ export class ScadaAlarmOverview extends LitElement {
 
   getCardSize() {
     return 12;
+  }
+
+  static getConfigElement() {
+    return document.createElement("scada-alarm-overview-editor");
   }
 
   static getStubConfig() {

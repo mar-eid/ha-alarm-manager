@@ -11,6 +11,7 @@ export interface HomeAssistant {
     ): Promise<() => void>;
   };
   states: Record<string, HassState>;
+  services: Record<string, Record<string, unknown>>;
   callService(
     domain: string,
     service: string,

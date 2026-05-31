@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-05-31
+
+### Added
+
+- **Visual card editors**: Both banner and overview cards now have GUI editors in the HA card config dialog (no more YAML-only config)
+  - Banner editor: title, max items, area/priority/channel filters, area dropdown toggle, ACK/shelve buttons, header visibility, shelve duration
+  - Overview editor: title, default tab, max width, header visibility
+- **Notify target picker from HA services**: Channel notification targets now auto-discover from actual `notify.*` services registered in HA (no more hardcoded list)
+
 ## [0.11.0] - 2026-05-31
 
 ### Added
