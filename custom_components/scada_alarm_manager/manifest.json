@@ -1,7 +1,7 @@
 {
   "domain": "scada_alarm_manager",
   "name": "SCADA Alarm Manager",
-  "version": "0.12.1",
+  "version": "0.12.2",
   "codeowners": [],
   "config_flow": true,
   "dependencies": ["http", "lovelace"],

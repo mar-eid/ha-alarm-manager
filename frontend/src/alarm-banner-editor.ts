@@ -16,6 +16,7 @@ interface BannerConfig {
   filter_area?: string;
   filter_priority?: number | string;
   filter_channel?: string;
+  filter_states?: string[];
   selectable_area?: boolean;
   show_ack_button?: boolean;
   show_shelve_button?: boolean;
@@ -106,10 +107,40 @@ export class ScadaAlarmBannerEditor extends LitElement {
 
       <div class="form-group">
         <label>Filter by area</label>
-        <input type="text"
+        <ha-area-picker
+          .hass=${this.hass}
           .value=${this._config.filter_area ?? ""}
-          @input=${(e: Event) => this._update("filter_area", (e.target as HTMLInputElement).value)}
-          placeholder="Leave empty for all areas" />
+          @value-changed=${(e: CustomEvent) => this._update("filter_area", e.detail.value || undefined)}
+          .label=${"Area (empty = all)"}
+        ></ha-area-picker>
+      </div>
+
+      <div class="form-group">
+        <label>Show alarm states</label>
+        <div class="checkbox-row">
+          ${([
+            ["active_unacknowledged", "Active (Unacked)"],
+            ["active_acknowledged", "Active (Acked)"],
+            ["returned_to_normal_unacknowledged", "RTN (Unacked)"],
+            ["shelved", "Shelved"],
+            ["normal", "Normal"],
+            ["disabled", "Disabled"],
+          ] as const).map(([state, label]) => {
+            const states = this._config.filter_states ?? ["active_unacknowledged", "active_acknowledged", "returned_to_normal_unacknowledged"];
+            const checked = states.includes(state);
+            return html`<label title="Show alarms in ${label} state">
+              <input type="checkbox" .checked=${checked}
+                @change=${(e: Event) => {
+                  const on = (e.target as HTMLInputElement).checked;
+                  const current = [...(this._config.filter_states ?? ["active_unacknowledged", "active_acknowledged", "returned_to_normal_unacknowledged"])];
+                  if (on && !current.includes(state)) current.push(state);
+                  if (!on) { const i = current.indexOf(state); if (i >= 0) current.splice(i, 1); }
+                  this._update("filter_states", current.length > 0 ? current : undefined);
+                }} />
+              ${label}
+            </label>`;
+          })}
+        </div>
       </div>
 
       <div class="row">

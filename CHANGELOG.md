@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.12.2] - 2026-05-31
+
+### Changed
+
+- Banner editor: area filter now uses HA native area picker (`ha-area-picker`) instead of text input
+- Banner editor: new state filter with multi-select checkboxes — choose which alarm states to show (Active Unacked, Active Acked, RTN, Shelved, Normal, Disabled)
+- Banner card respects `filter_states` config — defaults to active states only, configurable from the editor
+
 ## [0.12.1] - 2026-05-31
 
 ### Changed

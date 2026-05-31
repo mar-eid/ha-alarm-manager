@@ -46,6 +46,7 @@ interface AlarmBannerConfig {
   filter_area?: string;
   filter_priority?: number | string;
   filter_channel?: string;
+  filter_states?: string[];
   selectable_area?: boolean;
   show_ack_button?: boolean;
   show_shelve_button?: boolean;
@@ -302,8 +303,9 @@ export class ScadaAlarmBanner extends LitElement {
 
   private get _active(): AlarmWithState[] {
     const c = this._config;
+    const showStates = c.filter_states ?? ACTIVE_STATES;
     return this._alarms
-      .filter((a) => ACTIVE_STATES.includes(a.runtime.state))
+      .filter((a) => showStates.includes(a.runtime.state))
       .filter((a) => !this._areaFilter || a.area === this._areaFilter)
       .filter((a) => c.filter_priority == null || String(a.priority) === String(c.filter_priority))
       .filter((a) => !c.filter_channel || a.channel_id === c.filter_channel)
