@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-05-31
+
+### Removed
+
+- Frontend cards and panel (temporarily stripped for GUI troubleshooting)
+- Lovelace resource auto-registration and static path serving
+- `http` and `lovelace` integration dependencies
+
 ### Added
 
 - Full REST/Service API: 11 new CRUD services with `response_data` for remote access (MCP servers, external tools)

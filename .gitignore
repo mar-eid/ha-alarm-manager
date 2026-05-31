@@ -62,3 +62,10 @@ coverage.xml
 # Local dev notes (not shipped)
 CLAUDE.local.md
 
+# Troubleshooting
+.gui_issues.md
+
+# Old frontend (backup during troubleshooting)
+frontend_old/
+**/frontend_old/
+
