@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-05-31
+
+### Added
+
+- Search bar on Active view: filters by name, area, and entity ID
+- Ack All button: bulk acknowledge all unacked alarms with count badge
+- Toast notifications: brief popup feedback after ACK, shelve, delete actions
+- Alarm detail dialog: ACK, Shelve, and Edit action buttons in footer
+- Confirm dialog: proper modal for alarm deletion (replaces browser confirm())
+- Layout toggle icons (list/grid) instead of text buttons
+
 ## [0.8.0] - 2026-05-31
 
 ### Added

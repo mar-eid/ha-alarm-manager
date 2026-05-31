@@ -39,6 +39,24 @@ export class AllAlarmsView extends LitElement {
       }
       .test-ok { color: var(--alarm-normal, #4CAF50); font-size: 0.8em; }
       tbody tr { cursor: pointer; }
+      .overlay {
+        position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
+        background: rgba(0,0,0,.45); padding: 20px;
+      }
+      .confirm-dialog {
+        background: var(--card-background-color, #fff); border-radius: 12px; padding: 24px;
+        box-shadow: 0 16px 48px rgba(0,0,0,.3); max-width: 400px; width: 100%;
+      }
+      .confirm-dialog h3 { margin: 0 0 8px; font-size: 1.1em; }
+      .confirm-dialog p { margin: 0 0 20px; font-size: 0.9em; color: var(--primary-text-color); line-height: 1.5; }
+      .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+      .toast {
+        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 999;
+        padding: 10px 20px; border-radius: 9999px; font-size: 13px; font-weight: 500;
+        background: var(--primary-text-color, #333); color: var(--card-background-color, #fff);
+        box-shadow: 0 4px 16px rgba(0,0,0,.2); animation: toast-in .25s ease;
+      }
+      @keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } }
     `,
   ];
 
@@ -85,9 +103,24 @@ export class AllAlarmsView extends LitElement {
     });
   }
 
-  private async _delete(alarmId: string) {
-    if (!this.hass || !confirm("Delete this alarm?")) return;
-    await deleteAlarm(this.hass, alarmId);
+  @state() private _deleteTarget?: AlarmWithState;
+  @state() private _toast = "";
+
+  private _showToast(msg: string) {
+    this._toast = msg;
+    setTimeout(() => (this._toast = ""), 2600);
+  }
+
+  private _confirmDelete(alarm: AlarmWithState) {
+    this._deleteTarget = alarm;
+  }
+
+  private async _doDelete() {
+    if (!this.hass || !this._deleteTarget) return;
+    const name = this._deleteTarget.name;
+    await deleteAlarm(this.hass, this._deleteTarget.id);
+    this._deleteTarget = undefined;
+    this._showToast(`Deleted: ${name}`);
     this._load();
   }
 
@@ -193,7 +226,7 @@ export class AllAlarmsView extends LitElement {
                       : ""}
                   ${alarm.channel_id ? html`<button class="btn btn-small" style="background: #607D8B; color: white;" @click=${(e: Event) => { e.stopPropagation(); this._testNotification(alarm); }} title="Test notification">Test</button>` : ""}
                   <button class="btn btn-small btn-primary" @click=${(e: Event) => { e.stopPropagation(); this._edit(alarm.id); }}>Edit</button>
-                  <button class="btn btn-small btn-danger" @click=${(e: Event) => { e.stopPropagation(); this._delete(alarm.id); }}>Delete</button>
+                  <button class="btn btn-small btn-danger" @click=${(e: Event) => { e.stopPropagation(); this._confirmDelete(alarm); }}>Delete</button>
                 </td>
               </tr>
             `
@@ -214,9 +247,25 @@ export class AllAlarmsView extends LitElement {
         @shelve-confirm=${async (e: CustomEvent) => {
           await shelveAlarm(this.hass!, e.detail.alarmId, e.detail.minutes);
           this._shelveTarget = undefined;
+          this._showToast("Alarm shelved");
           this._load();
         }}
       ></shelve-dialog>
+
+      ${this._deleteTarget ? html`
+        <div class="overlay" @click=${() => (this._deleteTarget = undefined)}>
+          <div class="confirm-dialog" @click=${(e: Event) => e.stopPropagation()}>
+            <h3>Delete alarm</h3>
+            <p>Permanently delete <strong>${this._deleteTarget.name}</strong>?</p>
+            <div class="confirm-actions">
+              <button class="btn" style="background: var(--secondary-background-color)" @click=${() => (this._deleteTarget = undefined)}>Cancel</button>
+              <button class="btn btn-danger" @click=${this._doDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
+      ` : ""}
+
+      ${this._toast ? html`<div class="toast">${this._toast}</div>` : ""}
     `;
   }
 }

@@ -58,12 +58,20 @@ export class AlarmDetailDialog extends LitElement {
         color: var(--primary-text-color);
       }
       .flag.active { background: var(--primary-color); color: white; }
+      .dialog-footer {
+        display: flex; gap: 8px; justify-content: flex-end; padding: 12px 20px;
+        border-top: 1px solid var(--divider-color, #e0e0e0);
+      }
     `,
   ];
 
   private _close() {
     this.open = false;
     this.dispatchEvent(new CustomEvent("close"));
+  }
+
+  private _emit(type: string, detail: Record<string, unknown> = {}) {
+    this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
   }
 
   render() {
@@ -164,6 +172,15 @@ export class AlarmDetailDialog extends LitElement {
                 <span class="field-label">Updated</span>
                 <span class="field-value">${new Date(a.updated_at).toLocaleString()}</span>
               </div>
+            </div>
+            <div class="dialog-footer">
+              ${r.state === "active_unacknowledged" || r.state === "returned_to_normal_unacknowledged"
+                ? html`<button class="btn btn-primary" @click=${() => { this._emit("ack-alarm", { id: a.id }); this._close(); }}>Acknowledge</button>`
+                : ""}
+              ${r.state !== "shelved" && r.state !== "disabled"
+                ? html`<button class="btn" style="background: var(--alarm-shelved, #9c27b0); color: white;" @click=${() => { this._emit("shelve-alarm", { alarm: a }); this._close(); }}>Shelve</button>`
+                : ""}
+              <button class="btn" style="background: var(--secondary-background-color, #f5f5f5);" @click=${() => { this._emit("edit-alarm", { id: a.id }); this._close(); }}>Edit</button>
             </div>
           </div>
         </div>
