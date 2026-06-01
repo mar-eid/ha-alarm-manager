@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.2] - 2026-06-01
+
+### Fixed
+
+- Channel save failing: schema validation rejected the new per-target priority objects. Updated websocket and service schemas to accept both plain strings and `{target, min_priority}` objects.
+
 ## [0.13.1] - 2026-05-31
 
 ### Fixed

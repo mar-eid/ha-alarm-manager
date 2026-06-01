@@ -440,7 +440,7 @@ async def ws_channel_get(
     {
         vol.Required("type"): "scada_alarm_manager/channel/create",
         vol.Required("name"): str,
-        vol.Optional("notification_targets", default=[]): [str],
+        vol.Optional("notification_targets", default=[]): list,
         vol.Optional("min_priority", default=0): vol.In([0, 1, 2, 3]),
         vol.Optional("persistent_notification", default=True): bool,
         vol.Optional("mobile_push", default=True): bool,

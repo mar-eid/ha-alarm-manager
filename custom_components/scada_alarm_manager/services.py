@@ -144,7 +144,7 @@ SCHEMA_GET_CHANNEL = vol.Schema({vol.Required("channel_id"): cv.string})
 SCHEMA_CREATE_CHANNEL = vol.Schema(
     {
         vol.Required("name"): cv.string,
-        vol.Optional("notification_targets", default=[]): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional("notification_targets", default=[]): cv.ensure_list,
         vol.Optional("min_priority", default=0): vol.In([0, 1, 2, 3]),
         vol.Optional("persistent_notification", default=True): cv.boolean,
         vol.Optional("mobile_push", default=True): cv.boolean,
@@ -158,7 +158,7 @@ SCHEMA_UPDATE_CHANNEL = vol.Schema(
     {
         vol.Required("channel_id"): cv.string,
         vol.Optional("name"): cv.string,
-        vol.Optional("notification_targets"): vol.All(cv.ensure_list, [cv.string]),
+        vol.Optional("notification_targets"): cv.ensure_list,
         vol.Optional("min_priority"): vol.In([0, 1, 2, 3]),
         vol.Optional("persistent_notification"): cv.boolean,
         vol.Optional("mobile_push"): cv.boolean,
