@@ -179,6 +179,59 @@ class TestAlarmEvents:
         assert count == 5
 
     @pytest.mark.asyncio
+    async def test_filter_by_start_time(self, db):
+        old = AlarmEvent(
+            alarm_id="a1",
+            event_type=AlarmEventType.TRIGGERED,
+            timestamp=datetime(2025, 1, 1, tzinfo=timezone.utc),
+        )
+        recent = AlarmEvent(
+            alarm_id="a2",
+            event_type=AlarmEventType.TRIGGERED,
+            timestamp=datetime(2026, 6, 1, tzinfo=timezone.utc),
+        )
+        await db.async_log_event(old)
+        await db.async_log_event(recent)
+
+        events = await db.async_get_events(start=datetime(2026, 1, 1, tzinfo=timezone.utc))
+        assert len(events) == 1
+        assert events[0].alarm_id == "a2"
+
+    @pytest.mark.asyncio
+    async def test_filter_by_end_time(self, db):
+        old = AlarmEvent(
+            alarm_id="a1",
+            event_type=AlarmEventType.TRIGGERED,
+            timestamp=datetime(2025, 1, 1, tzinfo=timezone.utc),
+        )
+        recent = AlarmEvent(
+            alarm_id="a2",
+            event_type=AlarmEventType.TRIGGERED,
+            timestamp=datetime(2026, 6, 1, tzinfo=timezone.utc),
+        )
+        await db.async_log_event(old)
+        await db.async_log_event(recent)
+
+        events = await db.async_get_events(end=datetime(2026, 1, 1, tzinfo=timezone.utc))
+        assert len(events) == 1
+        assert events[0].alarm_id == "a1"
+
+    @pytest.mark.asyncio
+    async def test_filter_by_start_and_end_time(self, db):
+        e1 = AlarmEvent(alarm_id="a1", event_type=AlarmEventType.TRIGGERED, timestamp=datetime(2025, 1, 1, tzinfo=timezone.utc))
+        e2 = AlarmEvent(alarm_id="a2", event_type=AlarmEventType.TRIGGERED, timestamp=datetime(2025, 6, 1, tzinfo=timezone.utc))
+        e3 = AlarmEvent(alarm_id="a3", event_type=AlarmEventType.TRIGGERED, timestamp=datetime(2026, 1, 1, tzinfo=timezone.utc))
+        for e in (e1, e2, e3):
+            await db.async_log_event(e)
+
+        events = await db.async_get_events(
+            start=datetime(2025, 3, 1, tzinfo=timezone.utc),
+            end=datetime(2025, 12, 1, tzinfo=timezone.utc),
+        )
+        assert len(events) == 1
+        assert events[0].alarm_id == "a2"
+
+    @pytest.mark.asyncio
     async def test_purge_events(self, db):
         old_event = AlarmEvent(
             alarm_id="a1",

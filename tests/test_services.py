@@ -340,13 +340,15 @@ class TestServiceRegistration:
 
         await async_register_services(hass)
 
-        # Verify all 19 services are registered (8 action + 11 CRUD)
+        # Verify all 22 services are registered (10 action + 11 CRUD + 1 maintenance)
         expected_services = [
             "acknowledge", "acknowledge_all", "shelve", "unshelve",
             "enable", "disable", "reset", "test_notification",
+            "trigger", "clear",
             "list_alarms", "get_alarm", "create_alarm", "update_alarm", "delete_alarm",
             "list_channels", "get_channel", "create_channel", "update_channel",
             "delete_channel", "list_events",
+            "export_alarms", "import_alarms", "maintenance_mode",
         ]
         for service_name in expected_services:
             assert hass.services.has_service(DOMAIN, service_name), (
@@ -374,3 +376,295 @@ class TestServiceRegistration:
         # All services should now be unregistered
         assert not hass.services.has_service(DOMAIN, "acknowledge")
         assert not hass.services.has_service(DOMAIN, "list_alarms")
+
+
+class TestCRUDHandlers:
+    """Test CRUD service handler execution and response data."""
+
+    @pytest.fixture
+    async def registered_hass(self, hass):
+        """Set up hass with services registered and a populated mock manager."""
+        from custom_components.scada_alarm_manager.services import async_register_services
+
+        alarm = _make_alarm("alarm1", "Test Alarm")
+        channel = _make_channel("ch1", "Test Channel")
+        runtime = _make_runtime("alarm1")
+
+        manager = MagicMock()
+        manager.alarms = {"alarm1": alarm}
+        manager.channels = {"ch1": channel}
+        manager.runtime_states = {"alarm1": runtime}
+        manager._notification_router = MagicMock()
+        manager._notification_router.maintenance_mode = False
+
+        # async CRUD methods
+        async def mock_create_alarm(a):
+            manager.alarms[a.id] = a
+            manager.runtime_states[a.id] = _make_runtime(a.id)
+            return a
+
+        async def mock_update_alarm(a):
+            manager.alarms[a.id] = a
+            return a
+
+        async def mock_delete_alarm(alarm_id):
+            manager.alarms.pop(alarm_id, None)
+            manager.runtime_states.pop(alarm_id, None)
+
+        async def mock_create_channel(c):
+            manager.channels[c.id] = c
+            return c
+
+        async def mock_update_channel(c):
+            manager.channels[c.id] = c
+            return c
+
+        async def mock_delete_channel(channel_id):
+            manager.channels.pop(channel_id, None)
+
+        manager.async_create_alarm = AsyncMock(side_effect=mock_create_alarm)
+        manager.async_update_alarm = AsyncMock(side_effect=mock_update_alarm)
+        manager.async_delete_alarm = AsyncMock(side_effect=mock_delete_alarm)
+        manager.async_create_channel = AsyncMock(side_effect=mock_create_channel)
+        manager.async_update_channel = AsyncMock(side_effect=mock_update_channel)
+        manager.async_delete_channel = AsyncMock(side_effect=mock_delete_channel)
+        manager.async_acknowledge = AsyncMock()
+        manager.async_acknowledge_all = AsyncMock()
+        manager.async_shelve = AsyncMock()
+        manager.async_unshelve = AsyncMock()
+        manager.async_enable = AsyncMock()
+        manager.async_disable = AsyncMock()
+        manager.async_reset = AsyncMock()
+        manager.async_trigger_external = AsyncMock()
+        manager.async_clear_external = AsyncMock()
+        manager._database = AsyncMock()
+        manager._database.async_get_events = AsyncMock(return_value=[])
+
+        hass.data[DOMAIN] = {"test_entry": {"manager": manager}}
+        await async_register_services(hass)
+        return hass, manager
+
+    async def test_list_alarms_returns_all(self, registered_hass):
+        hass, manager = registered_hass
+        result = await hass.services.async_call(
+            DOMAIN, "list_alarms", {}, blocking=True, return_response=True,
+        )
+        assert "alarms" in result
+        assert len(result["alarms"]) == 1
+        assert result["alarms"][0]["id"] == "alarm1"
+        assert "runtime" in result["alarms"][0]
+
+    async def test_get_alarm_returns_single(self, registered_hass):
+        hass, _ = registered_hass
+        result = await hass.services.async_call(
+            DOMAIN, "get_alarm", {"alarm_id": "alarm1"}, blocking=True, return_response=True,
+        )
+        assert result["id"] == "alarm1"
+        assert result["name"] == "Test Alarm"
+        assert "runtime" in result
+
+    async def test_get_alarm_raises_for_missing(self, registered_hass):
+        hass, _ = registered_hass
+        with pytest.raises(ValueError, match="Alarm not found"):
+            await hass.services.async_call(
+                DOMAIN, "get_alarm", {"alarm_id": "nonexistent"}, blocking=True, return_response=True,
+            )
+
+    async def test_create_alarm_returns_new(self, registered_hass):
+        hass, manager = registered_hass
+        result = await hass.services.async_call(
+            DOMAIN,
+            "create_alarm",
+            {
+                "name": "New Alarm",
+                "source_entity_id": "sensor.new",
+                "trigger_type": "digital",
+                "trigger_config": {"target_state": "on"},
+            },
+            blocking=True,
+            return_response=True,
+        )
+        assert result["name"] == "New Alarm"
+        assert "runtime" in result
+        manager.async_create_alarm.assert_called_once()
+
+    async def test_update_alarm_applies_changes(self, registered_hass):
+        hass, manager = registered_hass
+        result = await hass.services.async_call(
+            DOMAIN,
+            "update_alarm",
+            {"alarm_id": "alarm1", "name": "Updated Name", "priority": 3},
+            blocking=True,
+            return_response=True,
+        )
+        assert result["name"] == "Updated Name"
+        manager.async_update_alarm.assert_called_once()
+        updated_alarm = manager.async_update_alarm.call_args[0][0]
+        assert updated_alarm.name == "Updated Name"
+        assert updated_alarm.priority == AlarmPriority.CRITICAL
+
+    async def test_update_alarm_raises_for_missing(self, registered_hass):
+        hass, _ = registered_hass
+        with pytest.raises(ValueError, match="Alarm not found"):
+            await hass.services.async_call(
+                DOMAIN, "update_alarm", {"alarm_id": "nonexistent", "name": "X"}, blocking=True, return_response=True,
+            )
+
+    async def test_delete_alarm_returns_success(self, registered_hass):
+        hass, manager = registered_hass
+        result = await hass.services.async_call(
+            DOMAIN, "delete_alarm", {"alarm_id": "alarm1"}, blocking=True, return_response=True,
+        )
+        assert result == {"success": True}
+        manager.async_delete_alarm.assert_called_once_with("alarm1")
+
+    async def test_list_channels_returns_all(self, registered_hass):
+        hass, _ = registered_hass
+        result = await hass.services.async_call(
+            DOMAIN, "list_channels", {}, blocking=True, return_response=True,
+        )
+        assert "channels" in result
+        assert len(result["channels"]) == 1
+        assert result["channels"][0]["id"] == "ch1"
+
+    async def test_get_channel_returns_single(self, registered_hass):
+        hass, _ = registered_hass
+        result = await hass.services.async_call(
+            DOMAIN, "get_channel", {"channel_id": "ch1"}, blocking=True, return_response=True,
+        )
+        assert result["id"] == "ch1"
+        assert result["name"] == "Test Channel"
+
+    async def test_get_channel_raises_for_missing(self, registered_hass):
+        hass, _ = registered_hass
+        with pytest.raises(ValueError, match="Channel not found"):
+            await hass.services.async_call(
+                DOMAIN, "get_channel", {"channel_id": "nope"}, blocking=True, return_response=True,
+            )
+
+    async def test_create_channel_returns_new(self, registered_hass):
+        hass, manager = registered_hass
+        result = await hass.services.async_call(
+            DOMAIN,
+            "create_channel",
+            {"name": "New Channel", "mobile_push": False},
+            blocking=True,
+            return_response=True,
+        )
+        assert result["name"] == "New Channel"
+        manager.async_create_channel.assert_called_once()
+
+    async def test_update_channel_applies_changes(self, registered_hass):
+        hass, manager = registered_hass
+        result = await hass.services.async_call(
+            DOMAIN,
+            "update_channel",
+            {"channel_id": "ch1", "name": "Renamed Channel"},
+            blocking=True,
+            return_response=True,
+        )
+        assert result["name"] == "Renamed Channel"
+        manager.async_update_channel.assert_called_once()
+
+    async def test_update_channel_raises_for_missing(self, registered_hass):
+        hass, _ = registered_hass
+        with pytest.raises(ValueError, match="Channel not found"):
+            await hass.services.async_call(
+                DOMAIN, "update_channel", {"channel_id": "nope", "name": "X"}, blocking=True, return_response=True,
+            )
+
+    async def test_delete_channel_returns_success(self, registered_hass):
+        hass, manager = registered_hass
+        result = await hass.services.async_call(
+            DOMAIN, "delete_channel", {"channel_id": "ch1"}, blocking=True, return_response=True,
+        )
+        assert result == {"success": True}
+        manager.async_delete_channel.assert_called_once_with("ch1")
+
+    async def test_list_events_returns_events(self, registered_hass):
+        hass, manager = registered_hass
+        mock_event = AlarmEvent(
+            alarm_id="alarm1",
+            event_type=AlarmEventType.TRIGGERED,
+            old_state=AlarmState.NORMAL,
+            new_state=AlarmState.ACTIVE_UNACKED,
+        )
+        manager._database.async_get_events = AsyncMock(return_value=[mock_event])
+
+        result = await hass.services.async_call(
+            DOMAIN, "list_events", {}, blocking=True, return_response=True,
+        )
+        assert "events" in result
+        assert len(result["events"]) == 1
+        assert result["events"][0]["alarm_name"] == "Test Alarm"
+
+    async def test_list_events_with_filters(self, registered_hass):
+        hass, manager = registered_hass
+        manager._database.async_get_events = AsyncMock(return_value=[])
+
+        await hass.services.async_call(
+            DOMAIN,
+            "list_events",
+            {"alarm_id": "alarm1", "event_type": "triggered", "limit": 10, "offset": 5},
+            blocking=True,
+            return_response=True,
+        )
+        call_kwargs = manager._database.async_get_events.call_args[1]
+        assert call_kwargs["alarm_id"] == "alarm1"
+        assert call_kwargs["event_type"] == AlarmEventType.TRIGGERED
+        assert call_kwargs["limit"] == 10
+        assert call_kwargs["offset"] == 5
+
+    async def test_list_events_deleted_alarm_name(self, registered_hass):
+        hass, manager = registered_hass
+        mock_event = AlarmEvent(alarm_id="deleted_id", event_type=AlarmEventType.TRIGGERED)
+        manager._database.async_get_events = AsyncMock(return_value=[mock_event])
+
+        result = await hass.services.async_call(
+            DOMAIN, "list_events", {}, blocking=True, return_response=True,
+        )
+        assert result["events"][0]["alarm_name"] == "Deleted alarm"
+
+    async def test_export_alarms_returns_both(self, registered_hass):
+        hass, _ = registered_hass
+        result = await hass.services.async_call(
+            DOMAIN, "export_alarms", {}, blocking=True, return_response=True,
+        )
+        assert "alarms" in result
+        assert "channels" in result
+        assert len(result["alarms"]) == 1
+        assert len(result["channels"]) == 1
+
+    async def test_maintenance_mode_toggle(self, registered_hass):
+        hass, manager = registered_hass
+        result = await hass.services.async_call(
+            DOMAIN, "maintenance_mode", {"enabled": True}, blocking=True, return_response=True,
+        )
+        assert result == {"maintenance_mode": True}
+        assert manager._notification_router.maintenance_mode is True
+
+        result = await hass.services.async_call(
+            DOMAIN, "maintenance_mode", {"enabled": False}, blocking=True, return_response=True,
+        )
+        assert result == {"maintenance_mode": False}
+
+    async def test_acknowledge_calls_manager(self, registered_hass):
+        hass, manager = registered_hass
+        await hass.services.async_call(
+            DOMAIN, "acknowledge", {"alarm_id": "alarm1"}, blocking=True,
+        )
+        manager.async_acknowledge.assert_called_once()
+
+    async def test_trigger_calls_manager(self, registered_hass):
+        hass, manager = registered_hass
+        await hass.services.async_call(
+            DOMAIN, "trigger", {"alarm_id": "alarm1", "message": "test msg"}, blocking=True,
+        )
+        manager.async_trigger_external.assert_called_once()
+
+    async def test_clear_calls_manager(self, registered_hass):
+        hass, manager = registered_hass
+        await hass.services.async_call(
+            DOMAIN, "clear", {"alarm_id": "alarm1"}, blocking=True,
+        )
+        manager.async_clear_external.assert_called_once()

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.3] - 2026-06-02
+
+### Added
+
+- `export_alarms`, `import_alarms`, `maintenance_mode` services now described in `services.yaml` (were registered but undocumented)
+- `external` trigger type added to `create_alarm` / `update_alarm` service selectors
+- Handler execution tests for all CRUD services (list/get/create/update/delete for alarms, channels, events)
+- Datetime range filter tests for `async_get_events` (start/end)
+
 ## [0.13.2] - 2026-06-01
 
 ### Fixed
