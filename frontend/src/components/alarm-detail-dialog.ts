@@ -46,6 +46,16 @@ export class AlarmDetailDialog extends LitElement {
       .field { display: flex; justify-content: space-between; padding: 6px 0; }
       .field-label { color: var(--secondary-text-color); font-size: 0.9em; }
       .field-value { font-weight: 500; font-size: 0.9em; text-align: right; max-width: 60%; word-break: break-all; }
+      .entity-link {
+        color: var(--primary-color);
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 0.9em;
+        text-align: right;
+        max-width: 60%;
+        word-break: break-all;
+      }
+      .entity-link:hover { text-decoration: underline; }
       .priority-dot {
         display: inline-block; width: 10px; height: 10px;
         border-radius: 50%; margin-right: 6px; vertical-align: middle;
@@ -72,6 +82,16 @@ export class AlarmDetailDialog extends LitElement {
 
   private _emit(type: string, detail: Record<string, unknown> = {}) {
     this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
+  }
+
+  private _openEntityInfo() {
+    this.dispatchEvent(
+      new CustomEvent("hass-more-info", {
+        detail: { entityId: this.alarm?.source_entity_id },
+        bubbles: true,
+        composed: true,
+      }),
+    );
   }
 
   render() {
@@ -132,7 +152,7 @@ export class AlarmDetailDialog extends LitElement {
               </div>
               <div class="field">
                 <span class="field-label">Source Entity</span>
-                <span class="field-value">${a.source_entity_id}</span>
+                <span class="entity-link" @click=${this._openEntityInfo}>${a.source_entity_id}</span>
               </div>
               <div class="field">
                 <span class="field-label">Trigger Type</span>

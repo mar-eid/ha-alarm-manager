@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-06-03
+
+### Added
+
+- Clicking the source entity ID in the alarm detail modal now opens the Home Assistant entity info dialog
+- Notification titles now use priority emoji icons instead of `[Priority]` text prefix
+- Quick Start Guide dialog accessible via help button in the tab bar
+- Inline help hints on non-obvious form fields (source entity, channel, hysteresis, conditions) in alarm and channel editors
+
+### Fixed
+
+- Test helper referenced non-existent `_build_message` method (now uses `_render_message`)
+
 ## [0.13.4] - 2026-06-03
 
 ### Fixed

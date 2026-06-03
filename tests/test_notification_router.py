@@ -340,7 +340,7 @@ class TestMessageBuilding:
         router._hass = MagicMock()
         router._manager = manager
 
-        message = router._build_message(alarm, runtime)
+        message = router._render_message(alarm, runtime)
 
         assert "High temperature detected" in message
         assert "sensor.test" in message
@@ -367,12 +367,37 @@ class TestMessageBuilding:
         router._hass = MagicMock()
         router._manager = manager
 
-        message = router._build_message(alarm, runtime)
+        message = router._render_message(alarm, runtime)
 
         assert "sensor.test" in message
         # Empty fields should not appear
         assert "Area:" not in message
         assert "Equipment:" not in message
+
+    @pytest.mark.parametrize(
+        "priority, expected_icon",
+        [
+            (AlarmPriority.INFO, "\u2139\ufe0f"),
+            (AlarmPriority.WARNING, "\U0001f7e1"),
+            (AlarmPriority.HIGH, "\U0001f534"),
+            (AlarmPriority.CRITICAL, "\U0001f6a8"),
+        ],
+    )
+    def test_render_title_uses_priority_icon(self, priority, expected_icon):
+        """Test default title uses emoji icon instead of [Priority] text."""
+        alarm = _make_alarm(priority=priority)
+        runtime = _make_runtime()
+        manager = MagicMock()
+
+        router = NotificationRouter.__new__(NotificationRouter)
+        router._hass = MagicMock()
+        router._manager = manager
+
+        title = router._render_title(alarm, runtime)
+
+        assert title.startswith(expected_icon)
+        assert alarm.name in title
+        assert "[" not in title
 
     def test_get_channel_returns_channel(self):
         """Test _get_channel returns the channel for an alarm."""

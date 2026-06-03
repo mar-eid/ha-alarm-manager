@@ -243,19 +243,23 @@ export class CreateEditView extends LitElement {
         </div>
 
         <div class="form-row">
-          <ha-entity-picker
-            .hass=${this.hass}
-            .value=${this._sourceEntityId}
-            @value-changed=${(e: CustomEvent) => this._sourceEntityId = e.detail.value}
-            allow-custom-entity
-            .label=${"Source Entity *"}
-          ></ha-entity-picker>
+          <div>
+            <ha-entity-picker
+              .hass=${this.hass}
+              .value=${this._sourceEntityId}
+              @value-changed=${(e: CustomEvent) => this._sourceEntityId = e.detail.value}
+              allow-custom-entity
+              .label=${"Source Entity *"}
+            ></ha-entity-picker>
+            <div class="hint">The entity whose state is monitored by this alarm.</div>
+          </div>
           <div class="form-group">
             <label>Channel</label>
             <select title="Routes notifications to specific targets (mobile, persistent, etc.)" .value=${this._channelId ?? ""} @change=${(e: Event) => { const v = (e.target as HTMLSelectElement).value; this._channelId = v || null; }}>
               <option value="">No channel</option>
               ${this._channels.map((ch) => html`<option value=${ch.id}>${ch.name}</option>`)}
             </select>
+            <div class="hint">Channels define where notifications are sent. Create one in the Channels tab.</div>
           </div>
         </div>
 
@@ -310,6 +314,7 @@ export class CreateEditView extends LitElement {
               <div class="form-group">
                 <label>Hysteresis (deadband)</label>
                 <input type="number" step="any" title="Prevents chattering: alarm triggers at threshold but won't clear until value passes threshold +/- this value" .value=${this._hysteresis} @input=${(e: Event) => (this._hysteresis = (e.target as HTMLInputElement).value)} placeholder="e.g. 2" />
+                <div class="hint">Prevents rapid on/off. Alarm clears only when value moves past threshold +/- this value.</div>
               </div>
             </div>
           ` : ""}
@@ -339,6 +344,7 @@ export class CreateEditView extends LitElement {
           </div>
           <div class="form-group">
             <label>Condition (optional — alarm only fires when condition is true)</label>
+            <div class="hint" style="margin-bottom:8px">Use a condition to gate the alarm. Example: only alert on low battery when the device is at home.</div>
             <div style="display:flex;gap:4px;margin-bottom:8px">
               <button class="btn btn-small" style=${this._conditionMode === "none" ? "background:var(--primary-color);color:#fff" : "background:var(--secondary-background-color)"}
                 title="No additional condition — alarm triggers whenever the threshold is met"

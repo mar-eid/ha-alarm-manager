@@ -22,6 +22,13 @@ from .models import AlarmChannel, AlarmDefinition, AlarmRuntimeState
 
 _LOGGER = logging.getLogger(__name__)
 
+_PRIORITY_ICONS: dict[AlarmPriority, str] = {
+    AlarmPriority.INFO: "\u2139\ufe0f",
+    AlarmPriority.WARNING: "\U0001f7e1",
+    AlarmPriority.HIGH: "\U0001f534",
+    AlarmPriority.CRITICAL: "\U0001f6a8",
+}
+
 
 class NotificationRouter:
     """Routes alarm notifications through channels."""
@@ -168,8 +175,8 @@ class NotificationRouter:
         if alarm.notification_title_template:
             ctx = self._get_template_context(alarm, runtime)
             return self._render_template(alarm.notification_title_template, ctx)
-        priority_label = alarm.priority.name.capitalize()
-        return f"[{priority_label}] {alarm.name}"
+        icon = _PRIORITY_ICONS.get(alarm.priority, "")
+        return f"{icon} {alarm.name}"
 
     def _render_message(
         self, alarm: AlarmDefinition, runtime: AlarmRuntimeState
