@@ -445,6 +445,27 @@ class TestChannelCommandsWS:
         assert channel.name == "Updated"
         conn.send_result.assert_called_once()
 
+    async def test_channel_update_with_object_targets(self):
+        """Test updating a channel with object-typed notification targets (target + min_priority)."""
+        hass = MagicMock()
+        manager = _mock_manager()
+        channel = _make_channel()
+        manager.channels = {"ch1": channel}
+        manager.async_update_channel = AsyncMock(side_effect=lambda c: c)
+        hass.data = {DOMAIN: {"entry": {"manager": manager}}}
+        conn = _mock_connection()
+
+        targets = [
+            {"target": "notify.mobile_app_phone", "min_priority": 2},
+            {"target": "notify.mobile_app_tablet", "min_priority": 0},
+        ]
+        await _unwrap(ws_channel_update)(
+            hass, conn, {"id": 1, "channel_id": "ch1", "notification_targets": targets}
+        )
+
+        assert channel.notification_targets == targets
+        conn.send_result.assert_called_once()
+
     async def test_channel_update_not_found(self):
         """Test updating nonexistent channel."""
         hass = MagicMock()

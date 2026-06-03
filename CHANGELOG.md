@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.13.4] - 2026-06-03
+
+### Fixed
+
+- Channel update schema rejected object-typed notification targets (e.g. `{target, min_priority}`). The UPDATE endpoint used `[str]` while CREATE correctly used `list`. Now both accept any list items.
+- GitHub release notes showed auto-generated commit lists instead of curated CHANGELOG.md content. Release workflow now extracts the relevant version section from CHANGELOG.md.
+
 ## [0.13.3] - 2026-06-02
 
 ### Added

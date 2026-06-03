@@ -11,7 +11,7 @@ Domain: `scada_alarm_manager`
   - MAJOR: Breaking changes (config schema changes requiring migration, removed features)
   - MINOR: New features, backwards-compatible
   - PATCH: Bug fixes, backwards-compatible
-- **Current version**: 0.13.3
+- **Current version**: 0.13.4
 - Version is tracked in: `custom_components/scada_alarm_manager/manifest.json` and `pyproject.toml`
 - Both files MUST be updated together on version bumps
 - **Always bump the PATCH version** when making any code change (bug fix, refactor, etc.). Bump MINOR for new features, MAJOR for breaking changes.
@@ -180,6 +180,12 @@ ruff format --check custom_components/scada_alarm_manager/
 - Use conventional commit messages: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`
 - Reference issue numbers where applicable: `feat: add alarm shelving (#42)`
 - Keep commits atomic — one logical change per commit
+
+## Backlog
+
+- After completing any task, read `plan/backlog.md` for new manual input points.
+- Process input points into proper backlog items (bug/feature/task) with acceptance criteria and test points, then move them from the "Manual Input" section to the appropriate "Backlog items" section.
+- If a manual input point is unclear, ask the user for clarification before creating the item.
 
 ## Code Review Checklist
 
