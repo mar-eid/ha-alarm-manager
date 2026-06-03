@@ -25,12 +25,14 @@ import {
   mdiAlert,
   mdiAlertDecagram,
   mdiCheckCircle,
+  mdiHelpCircleOutline,
 } from "@mdi/js";
 import { sharedStyles } from "./styles/shared-styles";
 import { fetchAlarms, subscribeAlarmChanges } from "./data/websocket";
 import type { HomeAssistant, AlarmWithState } from "./types";
 
 import "./components/alarm-kpi-strip";
+import "./components/help-dialog";
 import "./views/active-alarms-view";
 import "./views/all-alarms-view";
 import "./views/history-view";
@@ -71,6 +73,7 @@ export class ScadaAlarmOverview extends LitElement {
   @state() private _editAlarmId?: string;
   @state() private _priorityFilter = "";
   @state() private _alarms: AlarmWithState[] = [];
+  @state() private _showHelp = false;
   private _unsub?: () => void;
 
   // --- Lovelace card API ---
@@ -191,6 +194,22 @@ export class ScadaAlarmOverview extends LitElement {
         flex: 1;
         overflow-y: auto;
       }
+      .help-btn {
+        margin-left: auto;
+        border: none;
+        background: none;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        color: var(--secondary-text-color, #727272);
+        --mdc-icon-size: 20px;
+        display: flex;
+        align-items: center;
+      }
+      .help-btn:hover {
+        color: var(--primary-color, #009ac7);
+        background: var(--secondary-background-color, #f5f5f5);
+      }
     `,
   ];
 
@@ -304,6 +323,9 @@ export class ScadaAlarmOverview extends LitElement {
             </button>
           `
         )}
+        <button class="help-btn" title="Quick start guide" @click=${() => (this._showHelp = true)}>
+          <ha-svg-icon .path=${mdiHelpCircleOutline}></ha-svg-icon>
+        </button>
       </div>
 
       <div class="content">
@@ -319,6 +341,7 @@ export class ScadaAlarmOverview extends LitElement {
           : nothing}
         ${this._renderView()}
       </div>
+      <help-dialog .open=${this._showHelp} @close=${() => (this._showHelp = false)}></help-dialog>
       </div>
     `;
   }

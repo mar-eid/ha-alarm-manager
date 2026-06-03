@@ -165,6 +165,13 @@ export const sharedStyles = css`
     gap: 8px;
     flex-wrap: wrap;
   }
+
+  .hint {
+    font-size: 0.8em;
+    color: var(--secondary-text-color, #727272);
+    margin-top: 4px;
+    line-height: 1.4;
+  }
 `;
 
 export const getPriorityColor = (priority: number): string => {

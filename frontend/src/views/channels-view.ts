@@ -182,6 +182,7 @@ export class ChannelsView extends LitElement {
             .targets=${this._notifyTargets}
             @value-changed=${(e: CustomEvent) => (this._formTargets = e.detail.value)}
           ></notify-target-picker>
+          <div class="hint">Select which notify services receive alerts. Each target can set a minimum priority to filter low-severity alarms.</div>
         </div>
         <div class="form-group">
           <label>Minimum Priority</label>
@@ -191,6 +192,7 @@ export class ChannelsView extends LitElement {
             <option value="2">High</option>
             <option value="3">Critical</option>
           </select>
+          <div class="hint">Only alarms at or above this priority will use this channel.</div>
         </div>
         <div class="checkbox-group">
           <label title="Show alarm in HA UI persistent notifications panel"><input type="checkbox" .checked=${this._formPersistent} @change=${(e: Event) => (this._formPersistent = (e.target as HTMLInputElement).checked)} /> Persistent Notifications</label>
