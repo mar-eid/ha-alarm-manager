@@ -120,15 +120,34 @@ class NotificationRouter:
             )
 
         if channel.mobile_push and channel.notification_targets:
-            for target in channel.notification_targets:
+            for entry in channel.notification_targets:
+                target = entry.get("target", "") if isinstance(entry, dict) else entry
+                if not target:
+                    continue
+                domain, service = self._split_target(target)
                 try:
                     await self._hass.services.async_call(
-                        "notify",
-                        target,
+                        domain,
+                        service,
                         {"title": title, "message": message},
                     )
                 except Exception:
                     _LOGGER.warning("Failed to send test to target: %s", target)
+
+    @staticmethod
+    def _split_target(raw: str) -> tuple[str, str]:
+        """Split a stored notify target into (domain, service).
+
+        The frontend's notify picker stores ids like ``notify.mobile_app_phone``;
+        older configs may store the bare service name ``mobile_app_phone``.
+        ``hass.services.async_call`` needs the domain and service separately, so
+        a prefixed id must not be passed through as the service name (doing so
+        invokes the non-existent ``notify.notify.mobile_app_phone``).
+        """
+        if "." in raw:
+            domain, service = raw.split(".", 1)
+            return domain, service
+        return "notify", raw
 
     def _get_channel(self, alarm: AlarmDefinition) -> AlarmChannel | None:
         """Get the alarm's channel."""
@@ -263,10 +282,11 @@ class NotificationRouter:
             if not target:
                 continue
 
+            domain, service = self._split_target(target)
             try:
                 await self._hass.services.async_call(
-                    "notify",
-                    target,
+                    domain,
+                    service,
                     {
                         "title": title,
                         "message": message,

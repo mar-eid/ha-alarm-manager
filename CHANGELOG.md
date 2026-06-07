@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.1] - 2026-06-07
+
+### Fixed
+
+- Mobile push notifications were silently dropped. The notify-target picker stores ids as `notify.<service>`, but the router passed that full string as the service name to `hass.services.async_call("notify", ...)`, invoking the non-existent `notify.notify.<service>`. The router now splits the target into domain + service. The channel "Test" button had the same bug plus did not handle the per-target `{target, min_priority}` dict form — both fixed.
+
 ## [0.15.0] - 2026-06-03
 
 ### Added

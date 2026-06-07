@@ -327,6 +327,66 @@ class TestTestNotification:
         # Only mobile should be called, not persistent
 
 
+class TestTargetSplitting:
+    """Test that stored notify targets are split into (domain, service)."""
+
+    def test_split_prefixed_target(self):
+        """A frontend-stored ``notify.<service>`` id splits into domain + service."""
+        assert NotificationRouter._split_target("notify.mobile_app_phone") == (
+            "notify",
+            "mobile_app_phone",
+        )
+
+    def test_split_bare_target_defaults_to_notify(self):
+        """A bare service name (legacy config) defaults to the notify domain."""
+        assert NotificationRouter._split_target("mobile_app_phone") == (
+            "notify",
+            "mobile_app_phone",
+        )
+
+    async def test_prefixed_target_reaches_real_service(self, hass: HomeAssistant):
+        """Regression: a ``notify.``-prefixed target must call the real service.
+
+        Previously the full id was passed as the service name, invoking the
+        non-existent ``notify.notify.mobile_app_phone`` and silently dropping
+        the push.
+        """
+        alarm = _make_alarm(priority=AlarmPriority.HIGH)
+        runtime = _make_runtime()
+        channel = _make_channel(
+            notification_targets=[{"target": "notify.mobile_app_phone", "min_priority": 0}]
+        )
+        manager = MagicMock()
+        manager.channels = {"ch1": channel}
+
+        persistent_mock = AsyncMock()
+        notify_mock = AsyncMock()
+        hass.services.async_register("persistent_notification", "create", persistent_mock)
+        hass.services.async_register("notify", "mobile_app_phone", notify_mock)
+
+        router = NotificationRouter(hass, manager)
+        await router.async_send_alarm_notification(alarm, runtime)
+
+        notify_mock.assert_awaited_once()
+
+    async def test_test_notification_prefixed_dict_target(self, hass: HomeAssistant):
+        """The channel test button must handle prefixed, dict-form targets."""
+        channel = _make_channel(
+            notification_targets=[{"target": "notify.mobile_app_phone", "min_priority": 0}]
+        )
+        manager = MagicMock()
+
+        persistent_mock = AsyncMock()
+        notify_mock = AsyncMock()
+        hass.services.async_register("persistent_notification", "create", persistent_mock)
+        hass.services.async_register("notify", "mobile_app_phone", notify_mock)
+
+        router = NotificationRouter(hass, manager)
+        await router.async_send_test_notification(channel)
+
+        notify_mock.assert_awaited_once()
+
+
 class TestMessageBuilding:
     """Test notification message content."""
 
