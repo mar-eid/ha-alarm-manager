@@ -738,3 +738,133 @@ class TestNotificationIntegration:
 
         mock_router.async_dismiss_alarm_notification.assert_awaited()
         await manager.async_stop()
+
+
+class TestReminderInterval:
+    """Tests for per-alarm remind interval (repeat notifications)."""
+
+    def _setup(
+        self,
+        hass,
+        mock_database,
+        mock_store,
+        *,
+        repeat_interval=None,
+        channel_cadence=None,
+        state=AlarmState.ACTIVE_UNACKED,
+        triggered_minutes_ago=10,
+        last_notif_minutes_ago=None,
+    ):
+        """Build a manager with one alarm + runtime state, ready for a periodic check."""
+        manager = AlarmManager(hass, mock_database, mock_store)
+        router = AsyncMock()
+        manager.set_notification_router(router)
+
+        channel_id = None
+        if channel_cadence is not None:
+            channel = AlarmChannel(name="C", repeat_cadence=channel_cadence, id="ch")
+            channel_id = channel.id
+            manager.channels[channel.id] = channel
+
+        alarm = AlarmDefinition(
+            id="a1",
+            name="A",
+            source_entity_id="sensor.x",
+            trigger_type=TriggerType.ANALOG,
+            trigger_config={"operator": ">", "threshold": 1},
+            priority=AlarmPriority.HIGH,
+            channel_id=channel_id,
+            repeat_interval=repeat_interval,
+        )
+        manager.alarms["a1"] = alarm
+
+        now = datetime.now(timezone.utc)
+        runtime = AlarmRuntimeState(
+            alarm_id="a1",
+            state=state,
+            triggered_at=now - timedelta(minutes=triggered_minutes_ago),
+            last_notification_at=(
+                now - timedelta(minutes=last_notif_minutes_ago)
+                if last_notif_minutes_ago is not None
+                else None
+            ),
+        )
+        manager.runtime_states["a1"] = runtime
+        return manager, router
+
+    async def test_reminder_sent_after_interval(self, hass, mock_database, mock_store):
+        manager, router = self._setup(
+            hass, mock_database, mock_store, repeat_interval=60, triggered_minutes_ago=10
+        )
+        await manager._async_periodic_check(datetime.now(timezone.utc))
+
+        router.async_send_alarm_notification.assert_awaited_once()
+        _, kwargs = router.async_send_alarm_notification.call_args
+        assert kwargs.get("is_repeat") is True
+        # Refreshed timestamp is persisted so the clock survives a restart.
+        mock_database.async_save_runtime_state.assert_awaited()
+        assert manager.runtime_states["a1"].last_notification_at is not None
+
+    async def test_no_reminder_before_interval(self, hass, mock_database, mock_store):
+        # elapsed ~60s < 600s interval
+        manager, router = self._setup(
+            hass, mock_database, mock_store, repeat_interval=600, triggered_minutes_ago=1
+        )
+        await manager._async_periodic_check(datetime.now(timezone.utc))
+        router.async_send_alarm_notification.assert_not_awaited()
+
+    async def test_no_reminder_when_acknowledged(self, hass, mock_database, mock_store):
+        manager, router = self._setup(
+            hass,
+            mock_database,
+            mock_store,
+            repeat_interval=60,
+            state=AlarmState.ACTIVE_ACKED,
+            triggered_minutes_ago=10,
+        )
+        await manager._async_periodic_check(datetime.now(timezone.utc))
+        router.async_send_alarm_notification.assert_not_awaited()
+
+    async def test_no_reminder_returned_to_normal(self, hass, mock_database, mock_store):
+        manager, router = self._setup(
+            hass,
+            mock_database,
+            mock_store,
+            repeat_interval=60,
+            state=AlarmState.RTN_UNACKED,
+            triggered_minutes_ago=10,
+        )
+        await manager._async_periodic_check(datetime.now(timezone.utc))
+        router.async_send_alarm_notification.assert_not_awaited()
+
+    async def test_no_reminder_without_interval_or_cadence(self, hass, mock_database, mock_store):
+        manager, router = self._setup(
+            hass, mock_database, mock_store, repeat_interval=None, channel_cadence=None
+        )
+        await manager._async_periodic_check(datetime.now(timezone.utc))
+        router.async_send_alarm_notification.assert_not_awaited()
+
+    async def test_alarm_interval_overrides_channel_cadence(self, hass, mock_database, mock_store):
+        # 60s alarm interval fires even though the channel cadence is far larger.
+        manager, router = self._setup(
+            hass,
+            mock_database,
+            mock_store,
+            repeat_interval=60,
+            channel_cadence=99999,
+            triggered_minutes_ago=5,
+        )
+        await manager._async_periodic_check(datetime.now(timezone.utc))
+        router.async_send_alarm_notification.assert_awaited_once()
+
+    async def test_channel_cadence_used_when_no_alarm_interval(self, hass, mock_database, mock_store):
+        manager, router = self._setup(
+            hass,
+            mock_database,
+            mock_store,
+            repeat_interval=None,
+            channel_cadence=60,
+            triggered_minutes_ago=5,
+        )
+        await manager._async_periodic_check(datetime.now(timezone.utc))
+        router.async_send_alarm_notification.assert_awaited_once()

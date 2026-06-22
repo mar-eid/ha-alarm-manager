@@ -41,6 +41,7 @@ export class CreateEditView extends LitElement {
   @state() private _notificationTitleTemplate = "";
   @state() private _notificationTextTemplate = "";
   @state() private _conditionState = "";
+  @state() private _remindIntervalMin = "";
 
   // Trigger config
   @state() private _analogOperator = ">";
@@ -116,6 +117,9 @@ export class CreateEditView extends LitElement {
         }
         this._notificationTitleTemplate = alarm.notification_title_template || "";
         this._notificationTextTemplate = alarm.notification_text_template || "";
+        // repeat_interval is stored in seconds; the form edits minutes.
+        this._remindIntervalMin =
+          alarm.repeat_interval != null ? String(alarm.repeat_interval / 60) : "";
 
         if (alarm.trigger_type === "analog") {
           this._analogOperator = alarm.trigger_config.operator ?? ">";
@@ -154,6 +158,7 @@ export class CreateEditView extends LitElement {
     this._conditionState = "";
     this._notificationTitleTemplate = "";
     this._notificationTextTemplate = "";
+    this._remindIntervalMin = "";
     this._analogOperator = ">"; this._hysteresis = "";
     this._analogThreshold = "0";
     this._digitalTargetState = "on";
@@ -197,6 +202,10 @@ export class CreateEditView extends LitElement {
         notification_title_template: this._notificationTitleTemplate || null,
         notification_text_template: this._notificationTextTemplate || null,
         hysteresis: this._hysteresis ? parseFloat(this._hysteresis) : null,
+        // Form edits minutes; repeat_interval is persisted in seconds.
+        repeat_interval: this._remindIntervalMin
+          ? Math.round(parseFloat(this._remindIntervalMin) * 60)
+          : null,
       };
 
       if (this.alarmId) {
@@ -341,6 +350,15 @@ export class CreateEditView extends LitElement {
             <label title="Latching alarms stay active until manually reset, even if condition clears"><input type="checkbox" .checked=${this._latching} @change=${(e: Event) => (this._latching = (e.target as HTMLInputElement).checked)} /> Latching</label>
             <label title="Require user to acknowledge alarm before it can return to normal"><input type="checkbox" .checked=${this._ackRequired} @change=${(e: Event) => (this._ackRequired = (e.target as HTMLInputElement).checked)} /> Acknowledge Required</label>
             <label title="Automatically clear alarm when the trigger condition is no longer met"><input type="checkbox" .checked=${this._autoClear} @change=${(e: Event) => (this._autoClear = (e.target as HTMLInputElement).checked)} /> Auto Clear</label>
+          </div>
+          <div class="form-group">
+            <label>Remind interval (minutes)</label>
+            <input type="number" min="0" step="any"
+              title="Re-send the notification this often while the alarm stays active and unacknowledged"
+              .value=${this._remindIntervalMin}
+              @input=${(e: Event) => (this._remindIntervalMin = (e.target as HTMLInputElement).value)}
+              placeholder="e.g. 30" />
+            <div class="hint">Leave empty for no reminders. Reminders repeat only while the alarm is active and unacknowledged, and stop on acknowledge or return to normal.</div>
           </div>
           <div class="form-group">
             <label>Condition (optional — alarm only fires when condition is true)</label>

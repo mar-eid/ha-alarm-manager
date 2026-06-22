@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-06-22
+
+### Added
+
+- Per-alarm **remind interval**: an unacknowledged alarm now re-sends its notification at a configurable interval until it is acknowledged or returns to normal. Editable (in minutes) in the alarm create/edit form; takes precedence over the channel's repeat cadence when set. Reminder notifications are prefixed with a 🔁 marker so they read differently from the initial alarm. This wires up the previously unused `repeat_interval` field end-to-end.
+
+### Fixed
+
+- The reminder clock (`last_notification_at`) is now persisted after each repeat, so reminders survive a restart instead of stalling; it also falls back to the alarm's trigger time as a baseline when no notification timestamp is stored yet.
+
 ## [0.15.3] - 2026-06-07
 
 ### Fixed

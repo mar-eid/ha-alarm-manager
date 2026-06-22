@@ -42,6 +42,7 @@ class NotificationRouter:
         self,
         alarm: AlarmDefinition,
         runtime: AlarmRuntimeState,
+        is_repeat: bool = False,
     ) -> None:
         """Send notifications for an alarm activation.
 
@@ -53,6 +54,10 @@ class NotificationRouter:
 
         Channel config can further restrict (via min_priority) but cannot
         lower the floor set by alarm priority.
+
+        When ``is_repeat`` is True the notification is a reminder for an alarm
+        still active and unacknowledged; the title is prefixed with a reminder
+        marker so it is distinguishable from the initial notification.
         """
         # Maintenance mode — suppress all notifications
         if self.maintenance_mode:
@@ -77,6 +82,10 @@ class NotificationRouter:
             return
 
         title = self._render_title(alarm, runtime)
+        if is_repeat:
+            # Reminder marker (repeat emoji) so a re-notification reads
+            # differently from the initial alarm, even with a custom template.
+            title = f"\U0001f501 {title}"
         message = self._render_message(alarm, runtime)
 
         # Persistent notification: WARNING and above, or if channel opts in

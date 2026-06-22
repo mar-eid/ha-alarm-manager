@@ -654,9 +654,9 @@ class AlarmManager:
                 _LOGGER.info("Shelve expired for alarm %s", alarm_id)
                 await self.async_unshelve(alarm_id, user="system")
 
-        # Check notification repeats
+        # Check notification repeats (reminders for unacknowledged alarms)
         if self._notification_router:
-            for alarm_id, runtime in self._runtime_states.items():
+            for alarm_id, runtime in list(self._runtime_states.items()):
                 if runtime.state != AlarmState.ACTIVE_UNACKED:
                     continue
 
@@ -664,27 +664,41 @@ class AlarmManager:
                 if alarm is None:
                     continue
 
+                # The alarm's own remind interval takes precedence over the
+                # channel's repeat cadence; both are expressed in seconds.
                 channel = self._channels.get(alarm.channel_id) if alarm.channel_id else None
                 repeat_cadence = (
                     channel.repeat_cadence if channel and channel.repeat_cadence else None
                 )
-                if repeat_cadence and runtime.last_notification_at:
-                    elapsed = (utc_now - runtime.last_notification_at).total_seconds()
-                    if elapsed >= repeat_cadence:
-                        await self._notification_router.async_send_alarm_notification(
-                            alarm, runtime
-                        )
-                        self._runtime_states[alarm_id] = AlarmRuntimeState(
-                            alarm_id=runtime.alarm_id,
-                            state=runtime.state,
-                            triggered_at=runtime.triggered_at,
-                            acked_at=runtime.acked_at,
-                            acked_by=runtime.acked_by,
-                            shelved_until=runtime.shelved_until,
-                            previous_state=runtime.previous_state,
-                            last_notification_at=utc_now,
-                            last_value=runtime.last_value,
-                        )
+                interval = alarm.repeat_interval or repeat_cadence
+                if not interval:
+                    continue
+
+                # last_notification_at is not persisted at initial send time, so
+                # fall back to triggered_at to keep the reminder clock ticking
+                # across restarts.
+                baseline = runtime.last_notification_at or runtime.triggered_at
+                if baseline is None:
+                    continue
+
+                elapsed = (utc_now - baseline).total_seconds()
+                if elapsed >= interval:
+                    await self._notification_router.async_send_alarm_notification(
+                        alarm, runtime, is_repeat=True
+                    )
+                    updated = AlarmRuntimeState(
+                        alarm_id=runtime.alarm_id,
+                        state=runtime.state,
+                        triggered_at=runtime.triggered_at,
+                        acked_at=runtime.acked_at,
+                        acked_by=runtime.acked_by,
+                        shelved_until=runtime.shelved_until,
+                        previous_state=runtime.previous_state,
+                        last_notification_at=utc_now,
+                        last_value=runtime.last_value,
+                    )
+                    self._runtime_states[alarm_id] = updated
+                    await self._database.async_save_runtime_state(updated)
 
     @callback
     def _notify_entity_updates(self) -> None:

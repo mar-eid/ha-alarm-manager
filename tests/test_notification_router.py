@@ -494,3 +494,45 @@ class TestMessageBuilding:
 
         result = router._get_channel(alarm)
         assert result is None
+
+
+class TestRepeatNotification:
+    """Test the is_repeat reminder marker that distinguishes re-notifications."""
+
+    _MARKER = "\U0001f501"
+
+    async def test_repeat_prefixes_title(self, hass: HomeAssistant):
+        """A reminder (is_repeat=True) prefixes the title with a marker."""
+        alarm = _make_alarm(priority=AlarmPriority.HIGH)
+        runtime = _make_runtime()
+        channel = _make_channel(notification_targets=["mobile_app_phone"])
+        manager = MagicMock()
+        manager.channels = {"ch1": channel}
+
+        persistent_mock = AsyncMock()
+        hass.services.async_register("persistent_notification", "create", persistent_mock)
+        hass.services.async_register("notify", "mobile_app_phone", AsyncMock())
+
+        router = NotificationRouter(hass, manager)
+        await router.async_send_alarm_notification(alarm, runtime, is_repeat=True)
+
+        title = persistent_mock.call_args.args[0].data["title"]
+        assert title.startswith(self._MARKER)
+
+    async def test_initial_title_not_prefixed(self, hass: HomeAssistant):
+        """The initial notification (default) is not prefixed."""
+        alarm = _make_alarm(priority=AlarmPriority.HIGH)
+        runtime = _make_runtime()
+        channel = _make_channel(notification_targets=["mobile_app_phone"])
+        manager = MagicMock()
+        manager.channels = {"ch1": channel}
+
+        persistent_mock = AsyncMock()
+        hass.services.async_register("persistent_notification", "create", persistent_mock)
+        hass.services.async_register("notify", "mobile_app_phone", AsyncMock())
+
+        router = NotificationRouter(hass, manager)
+        await router.async_send_alarm_notification(alarm, runtime)
+
+        title = persistent_mock.call_args.args[0].data["title"]
+        assert not title.startswith(self._MARKER)
