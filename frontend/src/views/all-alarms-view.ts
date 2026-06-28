@@ -1,7 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { sharedStyles, getStateColor } from "../styles/shared-styles";
-import { fetchAlarms, fetchChannels, deleteAlarm, shelveAlarm, unshelveAlarm } from "../data/websocket";
+import { fetchAlarms, fetchChannels, deleteAlarm, shelveAlarm, unshelveAlarm, acknowledgeAlarm } from "../data/websocket";
 import { STATE_LABELS, PRIORITY_LABELS, type HomeAssistant, type AlarmWithState, type AlarmChannel } from "../types";
 import "../components/severity-badge";
 import "../components/alarm-detail-dialog";
@@ -24,6 +24,7 @@ export class AllAlarmsView extends LitElement {
   @state() private _filterEntity = "";
   @state() private _filterTrigger = "";
   @state() private _filterChannel = "";
+  @state() private _filterTag = "";
   @state() private _filterEnabled = "";
 
   static styles = [
@@ -93,10 +94,8 @@ export class AllAlarmsView extends LitElement {
       if (this._filterState && a.runtime.state !== this._filterState) return false;
       if (this._filterEntity && !a.source_entity_id.toLowerCase().includes(this._filterEntity.toLowerCase())) return false;
       if (this._filterTrigger && a.trigger_type !== this._filterTrigger) return false;
-      if (this._filterChannel) {
-        const chName = this._getChannelName(a.channel_id);
-        if (!chName.toLowerCase().includes(this._filterChannel.toLowerCase())) return false;
-      }
+      if (this._filterChannel && a.channel_id !== this._filterChannel) return false;
+      if (this._filterTag && !(a.tag ?? "").toLowerCase().includes(this._filterTag.toLowerCase())) return false;
       if (this._filterEnabled === "yes" && !a.enabled) return false;
       if (this._filterEnabled === "no" && a.enabled) return false;
       return true;
@@ -141,6 +140,13 @@ export class AllAlarmsView extends LitElement {
     this._shelveTarget = alarm;
   }
 
+  private async _ack(alarmId: string) {
+    if (!this.hass) return;
+    await acknowledgeAlarm(this.hass, alarmId);
+    this._showToast("Alarm acknowledged");
+    this._load();
+  }
+
   private async _unshelve(alarmId: string) {
     if (!this.hass) return;
     await unshelveAlarm(this.hass, alarmId);
@@ -165,6 +171,7 @@ export class AllAlarmsView extends LitElement {
             <th>Source Entity</th>
             <th>Trigger</th>
             <th>Channel</th>
+            <th>Tag</th>
             <th>Enabled</th>
             <th>Actions</th>
           </tr>
@@ -191,7 +198,13 @@ export class AllAlarmsView extends LitElement {
                 <option value="custom_state">Custom</option>
               </select>
             </th>
-            <th><input type="text" placeholder="Filter..." .value=${this._filterChannel} @input=${(e: Event) => this._filterChannel = (e.target as HTMLInputElement).value} /></th>
+            <th>
+              <select @change=${(e: Event) => this._filterChannel = (e.target as HTMLSelectElement).value}>
+                <option value="">All</option>
+                ${this._channels.map((ch) => html`<option value=${ch.id}>${ch.name}</option>`)}
+              </select>
+            </th>
+            <th><input type="text" placeholder="Filter..." .value=${this._filterTag} @input=${(e: Event) => this._filterTag = (e.target as HTMLInputElement).value} /></th>
             <th>
               <select @change=${(e: Event) => this._filterEnabled = (e.target as HTMLSelectElement).value}>
                 <option value="">All</option>
@@ -217,6 +230,7 @@ export class AllAlarmsView extends LitElement {
                 <td>${alarm.source_entity_id}</td>
                 <td>${alarm.trigger_type}</td>
                 <td>${this._getChannelName(alarm.channel_id)}</td>
+                <td>${alarm.tag || "-"}</td>
                 <td>${alarm.enabled ? "Yes" : "No"}</td>
                 <td class="actions">
                   ${alarm.runtime.state === "shelved"
@@ -237,6 +251,9 @@ export class AllAlarmsView extends LitElement {
         .alarm=${this._detailAlarm}
         .open=${!!this._detailAlarm}
         @close=${() => this._detailAlarm = undefined}
+        @edit-alarm=${(e: CustomEvent) => this._edit(e.detail.id)}
+        @ack-alarm=${(e: CustomEvent) => this._ack(e.detail.id)}
+        @shelve-alarm=${(e: CustomEvent) => this._shelve(e.detail.alarm)}
       ></alarm-detail-dialog>
 
       <shelve-dialog

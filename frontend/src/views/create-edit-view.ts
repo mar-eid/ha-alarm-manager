@@ -81,10 +81,30 @@ export class CreateEditView extends LitElement {
     }
   }
 
+  /**
+   * Ensure HA's form components (ha-entity-picker, ha-area-picker) are registered.
+   *
+   * These are loaded automatically inside HA's card-editor dialog, but the Alarm Center
+   * panel does not run in that context, so the pickers can render blank. Forcing the
+   * built-in `entities` card's config element to load pulls in those components.
+   */
+  private async _ensureHaPickersLoaded() {
+    if (customElements.get("ha-entity-picker")) return;
+    const helpers = await (window as any).loadCardHelpers?.();
+    if (!helpers) return;
+    const card = await helpers.createCardElement({ type: "entities", entities: [] });
+    // Triggers HA's lazy import of the entities-card editor, which registers
+    // ha-entity-picker / ha-area-picker. The pickers upgrade automatically once
+    // defined, so there is no need to await their registration (awaiting could
+    // hang the form indefinitely if a future HA build stops registering them here).
+    await card?.constructor?.getConfigElement?.();
+  }
+
   private async _load() {
     if (!this.hass) return;
     this._loading = true;
     try {
+      await this._ensureHaPickersLoaded();
       this._channels = await fetchChannels(this.hass);
       if (this.alarmId) {
         const alarm = await fetchAlarm(this.hass, this.alarmId);

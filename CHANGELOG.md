@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-06-28
+
+### Added
+
+- **Tag and channel filters** on the Active Alarms and All Alarms views. Active Alarms gains a tag dropdown and a channel dropdown in the toolbar (applies to both table and card layouts); All Alarms gains a tag column filter, and its channel filter is now a dropdown instead of a free-text box.
+
+### Fixed
+
+- **Edit / Acknowledge / Shelve from the alarm detail modal did nothing.** The modal emitted `edit-alarm`/`ack-alarm`/`shelve-alarm` events that no component listened for, so only the per-row Edit button on the All Alarms table worked. Both views now handle these events on the dialog: Edit opens the populated Create/Edit form, Acknowledge acknowledges the alarm, and Shelve opens the shelve dialog.
+- **Entity picker could render blank in the Create/Edit form.** `ha-entity-picker`/`ha-area-picker` are auto-loaded inside HA's card-editor dialog but not inside the Alarm Center panel; the form now force-loads HA's form components before rendering so the source-entity and condition-entity pickers always appear.
+
 ## [0.16.0] - 2026-06-22
 
 ### Added

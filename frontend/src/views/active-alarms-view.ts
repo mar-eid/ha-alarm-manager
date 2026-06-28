@@ -8,8 +8,8 @@ import {
   mdiViewGrid,
 } from "@mdi/js";
 import { sharedStyles, getPriorityColor, getStateColor } from "../styles/shared-styles";
-import { fetchAlarms, acknowledgeAlarm, acknowledgeAllAlarms, shelveAlarm, subscribeAlarmChanges } from "../data/websocket";
-import { STATE_LABELS, PRIORITY_LABELS, type HomeAssistant, type AlarmWithState } from "../types";
+import { fetchAlarms, fetchChannels, acknowledgeAlarm, acknowledgeAllAlarms, shelveAlarm, subscribeAlarmChanges } from "../data/websocket";
+import { STATE_LABELS, PRIORITY_LABELS, type HomeAssistant, type AlarmWithState, type AlarmChannel } from "../types";
 import "../components/severity-badge";
 import "../components/alarm-detail-dialog";
 import "../components/shelve-dialog";
@@ -34,6 +34,9 @@ export class ActiveAlarmsView extends LitElement {
   // Column filters
   @state() private _filterPriority = "";
   @state() private _filterState = "";
+  @state() private _filterTag = "";
+  @state() private _filterChannel = "";
+  @state() private _channels: AlarmChannel[] = [];
 
   static styles = [
     sharedStyles,
@@ -55,6 +58,11 @@ export class ActiveAlarmsView extends LitElement {
       .search-box input {
         border: none; background: transparent; outline: none; font: inherit; font-size: 13px;
         color: var(--primary-text-color); flex: 1; min-width: 0;
+      }
+      .toolbar-filter {
+        height: 34px; padding: 0 8px; border-radius: 8px; font: inherit; font-size: 13px;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        background: var(--card-background-color, #fff); color: var(--primary-text-color);
       }
       .search-box .clear {
         cursor: pointer; --mdc-icon-size: 16px; display: flex; align-items: center;
@@ -108,7 +116,17 @@ export class ActiveAlarmsView extends LitElement {
   connectedCallback() {
     super.connectedCallback();
     this._loadAlarms();
+    this._loadChannels();
     this._subscribe();
+  }
+
+  private async _loadChannels() {
+    if (!this.hass) return;
+    this._channels = await fetchChannels(this.hass);
+  }
+
+  private get _tags(): string[] {
+    return [...new Set(this._alarms.map((a) => a.tag).filter(Boolean))].sort();
   }
 
   disconnectedCallback() {
@@ -142,6 +160,8 @@ export class ActiveAlarmsView extends LitElement {
         const pf = this.priorityFilter || this._filterPriority;
         if (pf && String(a.priority) !== pf) return false;
         if (this._filterState && a.runtime.state !== this._filterState) return false;
+        if (this._filterTag && a.tag !== this._filterTag) return false;
+        if (this._filterChannel && a.channel_id !== this._filterChannel) return false;
         if (this._search) {
           const q = this._search.toLowerCase();
           if (!a.name.toLowerCase().includes(q) &&
@@ -174,6 +194,16 @@ export class ActiveAlarmsView extends LitElement {
 
   private _shelve(alarm: AlarmWithState) {
     this._shelveTarget = alarm;
+  }
+
+  private _edit(alarmId: string) {
+    this.dispatchEvent(
+      new CustomEvent("navigate", {
+        detail: { view: "create-edit", alarmId },
+        bubbles: true,
+        composed: true,
+      })
+    );
   }
 
   render() {
@@ -210,6 +240,20 @@ export class ActiveAlarmsView extends LitElement {
             ? html`<span class="clear" @click=${() => (this._search = "")}><ha-svg-icon .path=${mdiClose}></ha-svg-icon></span>`
             : nothing}
         </div>
+
+        <select class="toolbar-filter" title="Filter by tag"
+          .value=${this._filterTag}
+          @change=${(e: Event) => (this._filterTag = (e.target as HTMLSelectElement).value)}>
+          <option value="">All tags</option>
+          ${this._tags.map((t) => html`<option value=${t}>${t}</option>`)}
+        </select>
+
+        <select class="toolbar-filter" title="Filter by channel"
+          .value=${this._filterChannel}
+          @change=${(e: Event) => (this._filterChannel = (e.target as HTMLSelectElement).value)}>
+          <option value="">All channels</option>
+          ${this._channels.map((ch) => html`<option value=${ch.id}>${ch.name}</option>`)}
+        </select>
 
         <button class="ack-all" ?disabled=${unackedCount === 0} @click=${this._ackAll} title="Acknowledge all unacknowledged alarms">
           <ha-svg-icon .path=${mdiCheckAll}></ha-svg-icon>
@@ -295,6 +339,9 @@ export class ActiveAlarmsView extends LitElement {
         .alarm=${this._detailAlarm}
         .open=${!!this._detailAlarm}
         @close=${() => (this._detailAlarm = undefined)}
+        @edit-alarm=${(e: CustomEvent) => this._edit(e.detail.id)}
+        @ack-alarm=${(e: CustomEvent) => this._ack(e.detail.id)}
+        @shelve-alarm=${(e: CustomEvent) => this._shelve(e.detail.alarm)}
       ></alarm-detail-dialog>
 
       <shelve-dialog
