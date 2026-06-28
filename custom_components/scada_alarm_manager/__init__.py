@@ -14,6 +14,7 @@ from .alarm_manager import AlarmManager
 from .const import (
     DOMAIN,
     NOTIFICATION_ACTION_ACK,
+    NOTIFICATION_ACTION_CUSTOM,
     NOTIFICATION_ACTION_SHELVE,
     PLATFORMS,
 )
@@ -110,6 +111,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             alarm_id = action[len(NOTIFICATION_ACTION_SHELVE):]
             hass.async_create_task(
                 manager.async_shelve(alarm_id, duration_minutes=15, user="mobile")
+            )
+        elif action.startswith(NOTIFICATION_ACTION_CUSTOM):
+            alarm_id = action[len(NOTIFICATION_ACTION_CUSTOM):]
+            hass.async_create_task(
+                manager.async_trigger_custom_action(alarm_id)
             )
 
     hass.bus.async_listen(

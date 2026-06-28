@@ -5,6 +5,7 @@ import { sharedStyles } from "../styles/shared-styles";
 @customElement("help-dialog")
 export class HelpDialog extends LitElement {
   @property({ type: Boolean }) open = false;
+  @property({ type: String }) version = "";
 
   static styles = [
     sharedStyles,
@@ -43,6 +44,11 @@ export class HelpDialog extends LitElement {
       .dialog-body p { margin: 0 0 8px 0; font-size: 0.9em; line-height: 1.5; }
       .dialog-body ol, .dialog-body ul { margin: 0 0 8px 0; padding-left: 20px; font-size: 0.9em; line-height: 1.6; }
       .key { font-weight: 600; color: var(--primary-text-color); }
+      .version-line {
+        margin-top: 20px; padding-top: 12px;
+        border-top: 1px solid var(--divider-color, #e0e0e0);
+        font-size: 0.8em; color: var(--secondary-text-color);
+      }
     `,
   ];
 
@@ -84,6 +90,10 @@ export class HelpDialog extends LitElement {
             <h3>Notification Templates</h3>
             <p>Override default notification text with Jinja2 templates. Available variables:</p>
             <p><span class="key">{{ name }}</span>, <span class="key">{{ value }}</span>, <span class="key">{{ unit }}</span>, <span class="key">{{ area }}</span>, <span class="key">{{ equipment }}</span>, <span class="key">{{ friendly_name }}</span>, <span class="key">{{ threshold }}</span>, <span class="key">{{ operator }}</span>, <span class="key">{{ priority }}</span></p>
+
+            ${this.version
+              ? html`<div class="version-line">SCADA Alarm Manager v${this.version}</div>`
+              : ""}
           </div>
         </div>
       </div>

@@ -44,6 +44,10 @@ export class CreateEditView extends LitElement {
   @state() private _remindIntervalMin = "";
   @state() private _triggerDelaySec = "";
   @state() private _clearDelaySec = "";
+  @state() private _actionLabel = "";
+  @state() private _actionService = "";
+  @state() private _actionEntity = "";
+  @state() private _linkPagePath = "";
 
   // Trigger config
   @state() private _analogOperator = ">";
@@ -144,6 +148,10 @@ export class CreateEditView extends LitElement {
           alarm.repeat_interval != null ? String(alarm.repeat_interval / 60) : "";
         this._triggerDelaySec = alarm.trigger_delay != null ? String(alarm.trigger_delay) : "";
         this._clearDelaySec = alarm.clear_delay != null ? String(alarm.clear_delay) : "";
+        this._actionLabel = alarm.action_label || "";
+        this._actionService = alarm.action_service || "";
+        this._actionEntity = alarm.action_entity || "";
+        this._linkPagePath = alarm.link_page_path || "";
 
         if (alarm.trigger_type === "analog") {
           this._analogOperator = alarm.trigger_config.operator ?? ">";
@@ -185,10 +193,21 @@ export class CreateEditView extends LitElement {
     this._remindIntervalMin = "";
     this._triggerDelaySec = "";
     this._clearDelaySec = "";
+    this._actionLabel = "";
+    this._actionService = "";
+    this._actionEntity = "";
+    this._linkPagePath = "";
     this._analogOperator = ">"; this._hysteresis = "";
     this._analogThreshold = "0";
     this._digitalTargetState = "on";
     this._customMatchValues = "";
+  }
+
+  private get _dashboards(): { url_path: string; title?: string }[] {
+    const panels = this.hass?.panels ?? {};
+    return Object.values(panels)
+      .filter((p) => p.component_name === "lovelace")
+      .sort((a, b) => (a.title || a.url_path).localeCompare(b.title || b.url_path));
   }
 
   private _buildTriggerConfig(): Record<string, unknown> {
@@ -237,6 +256,10 @@ export class CreateEditView extends LitElement {
           : null,
         trigger_delay: this._triggerDelaySec ? Math.round(parseFloat(this._triggerDelaySec)) : null,
         clear_delay: this._clearDelaySec ? Math.round(parseFloat(this._clearDelaySec)) : null,
+        action_label: this._actionLabel.trim() || null,
+        action_service: this._actionService.trim() || null,
+        action_entity: this._actionEntity.trim() || null,
+        link_page_path: this._linkPagePath || null,
       };
 
       if (this.alarmId) {
@@ -458,6 +481,42 @@ export class CreateEditView extends LitElement {
           </div>
           <div style="font-size: 0.8em; color: var(--secondary-text-color); margin-top: -8px;">
             Variables: {{ name }}, {{ value }}, {{ unit }}, {{ area }}, {{ equipment }}, {{ friendly_name }}, {{ threshold }}, {{ operator }}, {{ priority }}
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Notification Action &amp; Link (optional)</h3>
+          <div class="form-group">
+            <label>Link page</label>
+            <select title="Tapping the notification opens this dashboard; the persistent notification links to it"
+              @change=${(e: Event) => { this._linkPagePath = (e.target as HTMLSelectElement).value; }}>
+              <option value="" ?selected=${!this._linkPagePath}>Alarm Center (default)</option>
+              ${this._dashboards.map(
+                (p) => html`<option value=${p.url_path} ?selected=${p.url_path === this._linkPagePath}>${p.title || p.url_path}</option>`
+              )}
+            </select>
+            <div class="hint">Where the alarm's notifications link to. Defaults to the Alarm Center.</div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Action button label</label>
+              <input type="text" .value=${this._actionLabel} @input=${(e: Event) => (this._actionLabel = (e.target as HTMLInputElement).value)} placeholder="e.g. Open door" />
+            </div>
+            <div class="form-group">
+              <label>Action service</label>
+              <input type="text" .value=${this._actionService} @input=${(e: Event) => (this._actionService = (e.target as HTMLInputElement).value)} placeholder="e.g. lock.unlock" />
+            </div>
+          </div>
+          <div>
+            <ha-entity-picker
+              .hass=${this.hass}
+              .value=${this._actionEntity}
+              @value-changed=${(e: CustomEvent) => (this._actionEntity = e.detail.value || "")}
+              allow-custom-entity
+              .label=${"Action target entity"}
+            ></ha-entity-picker>
+            <div class="hint">Optional actionable button on the mobile push. Set a label + service (and target entity) — tapping it runs that service. Leave blank for no extra button.</div>
           </div>
         </div>
 

@@ -276,6 +276,30 @@ create_alarm:
         number:
           min: 0
           unit_of_measurement: s
+    action_label:
+      name: Action Button Label
+      description: Optional label for an actionable button on the mobile push (e.g. "Open"). Requires action_service.
+      required: false
+      selector:
+        text:
+    action_service:
+      name: Action Service
+      description: HA service to call when the action button is tapped, as domain.service (e.g. lock.unlock).
+      required: false
+      selector:
+        text:
+    action_entity:
+      name: Action Target Entity
+      description: Entity the action service targets (e.g. lock.front_door).
+      required: false
+      selector:
+        entity:
+    link_page_path:
+      name: Notification Link Page
+      description: Dashboard path the notification links to (e.g. lovelace-alarms). Defaults to the Alarm Center if unset.
+      required: false
+      selector:
+        text:
 
 update_alarm:
   name: Update Alarm
@@ -411,6 +435,30 @@ update_alarm:
         number:
           min: 0
           unit_of_measurement: s
+    action_label:
+      name: Action Button Label
+      description: Label for an actionable button on the mobile push (requires action_service).
+      required: false
+      selector:
+        text:
+    action_service:
+      name: Action Service
+      description: HA service to call when the action button is tapped (domain.service).
+      required: false
+      selector:
+        text:
+    action_entity:
+      name: Action Target Entity
+      description: Entity the action service targets.
+      required: false
+      selector:
+        entity:
+    link_page_path:
+      name: Notification Link Page
+      description: Dashboard path the notification links to. Defaults to the Alarm Center if unset.
+      required: false
+      selector:
+        text:
 
 delete_alarm:
   name: Delete Alarm

@@ -238,7 +238,9 @@ class TestMigrationV6:
             assert got.clear_delay == 15
             await db.async_close()
 
-    async def test_migrate_v5_to_v6_preserves_rows(self):
+    async def test_migrate_v5_forward_preserves_rows(self):
+        from custom_components.scada_alarm_manager.database import SCHEMA_VERSION
+
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "v5.db"
             conn = await aiosqlite.connect(str(path))
@@ -247,16 +249,22 @@ class TestMigrationV6:
             await conn.close()
 
             db = AlarmDatabase(path)
-            await db.async_init()  # runs the v6 migration
+            await db.async_init()  # runs every migration from v5 forward
 
             async with db._db.execute("SELECT version FROM schema_version") as cur:
                 version = (await cur.fetchone())[0]
-            assert version == 6
+            assert version == SCHEMA_VERSION  # currently 7
 
             async with db._db.execute("PRAGMA table_info(alarm_definitions)") as cur:
                 columns = {row[1] for row in await cur.fetchall()}
+            # v6 columns
             assert "trigger_delay" in columns
             assert "clear_delay" in columns
+            # v7 columns
+            assert "action_label" in columns
+            assert "action_service" in columns
+            assert "action_entity" in columns
+            assert "link_page_path" in columns
 
             # Existing row survives, new columns default to NULL.
             got = await db.async_get_alarm("old1")
@@ -264,4 +272,6 @@ class TestMigrationV6:
             assert got.name == "Old Alarm"
             assert got.trigger_delay is None
             assert got.clear_delay is None
+            assert got.action_label is None
+            assert got.link_page_path is None
             await db.async_close()

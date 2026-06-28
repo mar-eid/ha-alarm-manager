@@ -15,9 +15,12 @@ from homeassistant.helpers.template import Template
 from .const import (
     DOMAIN,
     NOTIFICATION_ACTION_ACK,
+    NOTIFICATION_ACTION_CUSTOM,
     NOTIFICATION_ACTION_SHELVE,
     AlarmPriority,
 )
+
+DEFAULT_PAGE_URL = "/scada-alarm-manager"
 from .models import AlarmChannel, AlarmDefinition, AlarmRuntimeState
 
 _LOGGER = logging.getLogger(__name__)
@@ -193,6 +196,16 @@ class NotificationRouter:
             return None
         return self._manager.channels.get(alarm.channel_id)
 
+    def _page_url(self, alarm: AlarmDefinition) -> str:
+        """Resolve the in-app link target for an alarm's notifications (F10).
+
+        Returns the configured dashboard path (normalised to a leading slash) or
+        the Alarm Center panel when none is set.
+        """
+        if alarm.link_page_path:
+            return "/" + alarm.link_page_path.lstrip("/")
+        return DEFAULT_PAGE_URL
+
     def _get_template_context(
         self, alarm: AlarmDefinition, runtime: AlarmRuntimeState
     ) -> dict[str, Any]:
@@ -262,6 +275,8 @@ class NotificationRouter:
     ) -> None:
         """Send a persistent notification."""
         notification_id = f"scada_alarm_{alarm.id}"
+        # Append an in-app link (F10); persistent notifications render markdown.
+        message = f"{message}\n\n[Open]({self._page_url(alarm)})"
         await self._hass.services.async_call(
             "persistent_notification",
             "create",
@@ -280,18 +295,29 @@ class NotificationRouter:
         message: str,
     ) -> None:
         """Send mobile push notifications with actionable buttons."""
+        actions: list[dict[str, Any]] = [
+            {
+                "action": f"{NOTIFICATION_ACTION_ACK}{alarm.id}",
+                "title": "Acknowledge",
+            },
+            {
+                "action": f"{NOTIFICATION_ACTION_SHELVE}{alarm.id}",
+                "title": "Shelve 15m",
+            },
+        ]
+        # Optional per-alarm action button (F9): runs a configured HA service on tap.
+        if alarm.action_label and alarm.action_service:
+            actions.append(
+                {
+                    "action": f"{NOTIFICATION_ACTION_CUSTOM}{alarm.id}",
+                    "title": alarm.action_label,
+                }
+            )
+
         action_data: dict[str, Any] = {
-            "actions": [
-                {
-                    "action": f"{NOTIFICATION_ACTION_ACK}{alarm.id}",
-                    "title": "Acknowledge",
-                },
-                {
-                    "action": f"{NOTIFICATION_ACTION_SHELVE}{alarm.id}",
-                    "title": "Shelve 15m",
-                },
-            ],
-            "url": "/scada-alarm-manager",
+            "actions": actions,
+            # Tapping the notification opens the configured page (F10), else the panel.
+            "url": self._page_url(alarm),
             "group": "scada-alarms",
             "tag": f"scada-alarm-{alarm.id}",
         }

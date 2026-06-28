@@ -108,6 +108,10 @@ SCHEMA_CREATE_ALARM = vol.Schema(
         vol.Optional("escalation_delay"): vol.Any(vol.Coerce(int), None),
         vol.Optional("trigger_delay"): vol.Any(vol.Coerce(int), None),
         vol.Optional("clear_delay"): vol.Any(vol.Coerce(int), None),
+        vol.Optional("action_label"): vol.Any(cv.string, None),
+        vol.Optional("action_service"): vol.Any(cv.string, None),
+        vol.Optional("action_entity"): vol.Any(cv.string, None),
+        vol.Optional("link_page_path"): vol.Any(cv.string, None),
     }
 )
 
@@ -136,6 +140,10 @@ SCHEMA_UPDATE_ALARM = vol.Schema(
         vol.Optional("escalation_delay"): vol.Any(vol.Coerce(int), None),
         vol.Optional("trigger_delay"): vol.Any(vol.Coerce(int), None),
         vol.Optional("clear_delay"): vol.Any(vol.Coerce(int), None),
+        vol.Optional("action_label"): vol.Any(cv.string, None),
+        vol.Optional("action_service"): vol.Any(cv.string, None),
+        vol.Optional("action_entity"): vol.Any(cv.string, None),
+        vol.Optional("link_page_path"): vol.Any(cv.string, None),
     }
 )
 
@@ -310,6 +318,10 @@ async def async_register_services(hass: HomeAssistant) -> None:
             escalation_delay=call.data.get("escalation_delay"),
             trigger_delay=call.data.get("trigger_delay"),
             clear_delay=call.data.get("clear_delay"),
+            action_label=call.data.get("action_label"),
+            action_service=call.data.get("action_service"),
+            action_entity=call.data.get("action_entity"),
+            link_page_path=call.data.get("link_page_path"),
         )
         alarm = await manager.async_create_alarm(alarm)
         return _alarm_with_state(manager, alarm.id)
@@ -341,6 +353,10 @@ async def async_register_services(hass: HomeAssistant) -> None:
             "escalation_delay",
             "trigger_delay",
             "clear_delay",
+            "action_label",
+            "action_service",
+            "action_entity",
+            "link_page_path",
         ):
             if field in call.data:
                 setattr(alarm, field, call.data[field])
@@ -485,6 +501,10 @@ async def async_register_services(hass: HomeAssistant) -> None:
                 escalation_delay=d.get("escalation_delay"),
                 trigger_delay=d.get("trigger_delay"),
                 clear_delay=d.get("clear_delay"),
+                action_label=d.get("action_label"),
+                action_service=d.get("action_service"),
+                action_entity=d.get("action_entity"),
+                link_page_path=d.get("link_page_path"),
             )
             await manager.async_create_alarm(alarm)
             created += 1

@@ -607,5 +607,5 @@ class TestRegisterCommands:
         hass = MagicMock()
         with patch("custom_components.scada_alarm_manager.websocket_api.websocket_api") as mock_ws_api:
             async_register_websocket_commands(hass)
-            # 19 commands total (17 original + trigger + clear)
-            assert mock_ws_api.async_register_command.call_count == 19
+            # 20 commands total (17 original + trigger + clear + version)
+            assert mock_ws_api.async_register_command.call_count == 20

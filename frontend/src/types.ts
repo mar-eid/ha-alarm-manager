@@ -19,6 +19,7 @@ export interface HomeAssistant {
   ): Promise<void>;
   language: string;
   user: { id: string; name: string; is_admin: boolean };
+  panels?: Record<string, { title?: string; url_path: string; component_name?: string }>;
 }
 
 export interface HassState {
@@ -84,6 +85,10 @@ export interface AlarmDefinition {
   escalation_delay: number | null;
   trigger_delay: number | null;
   clear_delay: number | null;
+  action_label: string | null;
+  action_service: string | null;
+  action_entity: string | null;
+  link_page_path: string | null;
   source_entity_id: string;
   trigger_type: TriggerType;
   trigger_config: Record<string, any>;

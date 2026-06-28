@@ -10,6 +10,7 @@ import voluptuous as vol
 
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.loader import async_get_integration
 
 from .alarm_manager import AlarmManager
 from .const import DOMAIN, EVENT_ALARM_STATE_CHANGED, AlarmEventType, AlarmPriority, TriggerType
@@ -47,6 +48,21 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_channel_delete)
     websocket_api.async_register_command(hass, ws_event_list)
     websocket_api.async_register_command(hass, ws_subscribe)
+    websocket_api.async_register_command(hass, ws_version)
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "scada_alarm_manager/version"}
+)
+@websocket_api.async_response
+async def ws_version(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Return the installed integration version."""
+    integration = await async_get_integration(hass, DOMAIN)
+    connection.send_result(msg["id"], {"version": str(integration.version or "0")})
 
 
 def _alarm_with_state(manager: AlarmManager, alarm_id: str) -> dict[str, Any] | None:
@@ -127,6 +143,10 @@ async def ws_alarm_get(
         vol.Optional("escalation_delay"): vol.Any(int, None),
         vol.Optional("trigger_delay"): vol.Any(int, None),
         vol.Optional("clear_delay"): vol.Any(int, None),
+        vol.Optional("action_label"): vol.Any(str, None),
+        vol.Optional("action_service"): vol.Any(str, None),
+        vol.Optional("action_entity"): vol.Any(str, None),
+        vol.Optional("link_page_path"): vol.Any(str, None),
     }
 )
 @websocket_api.async_response
@@ -160,6 +180,10 @@ async def ws_alarm_create(
         escalation_delay=msg.get("escalation_delay"),
         trigger_delay=msg.get("trigger_delay"),
         clear_delay=msg.get("clear_delay"),
+        action_label=msg.get("action_label"),
+        action_service=msg.get("action_service"),
+        action_entity=msg.get("action_entity"),
+        link_page_path=msg.get("link_page_path"),
     )
     alarm = await manager.async_create_alarm(alarm)
     connection.send_result(msg["id"], _alarm_with_state(manager, alarm.id))
@@ -191,6 +215,10 @@ async def ws_alarm_create(
         vol.Optional("escalation_delay"): vol.Any(int, None),
         vol.Optional("trigger_delay"): vol.Any(int, None),
         vol.Optional("clear_delay"): vol.Any(int, None),
+        vol.Optional("action_label"): vol.Any(str, None),
+        vol.Optional("action_service"): vol.Any(str, None),
+        vol.Optional("action_entity"): vol.Any(str, None),
+        vol.Optional("link_page_path"): vol.Any(str, None),
     }
 )
 @websocket_api.async_response
@@ -214,6 +242,7 @@ async def ws_alarm_update(
         "notification_title_template", "notification_text_template",
         "hysteresis", "repeat_interval", "escalation_delay",
         "trigger_delay", "clear_delay",
+        "action_label", "action_service", "action_entity", "link_page_path",
     ):
         if field in msg:
             setattr(alarm, field, msg[field])

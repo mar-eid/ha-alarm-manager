@@ -28,7 +28,7 @@ import {
   mdiHelpCircleOutline,
 } from "@mdi/js";
 import { sharedStyles } from "./styles/shared-styles";
-import { fetchAlarms, subscribeAlarmChanges } from "./data/websocket";
+import { fetchAlarms, fetchVersion, subscribeAlarmChanges } from "./data/websocket";
 import type { HomeAssistant, AlarmWithState } from "./types";
 
 import "./components/alarm-kpi-strip";
@@ -74,6 +74,7 @@ export class ScadaAlarmOverview extends LitElement {
   @state() private _priorityFilter = "";
   @state() private _alarms: AlarmWithState[] = [];
   @state() private _showHelp = false;
+  @state() private _version = "";
   private _unsub?: () => void;
 
   // --- Lovelace card API ---
@@ -219,7 +220,17 @@ export class ScadaAlarmOverview extends LitElement {
     super.connectedCallback();
     this.addEventListener("navigate", this._handleNavigate as EventListener);
     this._loadAlarms();
+    this._loadVersion();
     this._subscribe();
+  }
+
+  private async _loadVersion() {
+    if (!this.hass) return;
+    try {
+      this._version = await fetchVersion(this.hass);
+    } catch (_e) {
+      // Non-critical — leave version blank if the command isn't available yet.
+    }
   }
 
   disconnectedCallback() {
@@ -231,6 +242,7 @@ export class ScadaAlarmOverview extends LitElement {
   updated(changed: PropertyValues) {
     if (changed.has("hass") && !changed.get("hass")) {
       this._loadAlarms();
+      this._loadVersion();
       this._subscribe();
     }
   }
@@ -341,7 +353,7 @@ export class ScadaAlarmOverview extends LitElement {
           : nothing}
         ${this._renderView()}
       </div>
-      <help-dialog .open=${this._showHelp} @close=${() => (this._showHelp = false)}></help-dialog>
+      <help-dialog .open=${this._showHelp} .version=${this._version} @close=${() => (this._showHelp = false)}></help-dialog>
       </div>
     `;
   }

@@ -15,7 +15,7 @@ from .models import AlarmChannel, AlarmDefinition, AlarmEvent
 
 _LOGGER = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 
 CREATE_TABLES_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -43,6 +43,10 @@ CREATE TABLE IF NOT EXISTS alarm_definitions (
     escalation_delay INTEGER,
     trigger_delay INTEGER,
     clear_delay INTEGER,
+    action_label TEXT,
+    action_service TEXT,
+    action_entity TEXT,
+    link_page_path TEXT,
     source_entity_id TEXT NOT NULL,
     trigger_type TEXT NOT NULL,
     trigger_config TEXT NOT NULL DEFAULT '{}',
@@ -207,6 +211,26 @@ class AlarmDatabase:
             _LOGGER.info(
                 "Migrated database to schema v6: added trigger_delay/clear_delay columns"
             )
+            current = 6
+
+        if current < 7:
+            # v7: notification action button (F9) + page link (F10) columns
+            for col in (
+                "action_label",
+                "action_service",
+                "action_entity",
+                "link_page_path",
+            ):
+                try:
+                    await self._db.execute(
+                        f"ALTER TABLE alarm_definitions ADD COLUMN {col} TEXT"
+                    )
+                except Exception:
+                    pass
+            await self._db.execute("UPDATE schema_version SET version = ?", (7,))
+            _LOGGER.info(
+                "Migrated database to schema v7: added notification action + page link columns"
+            )
 
     async def async_close(self) -> None:
         """Close database connection."""
@@ -230,9 +254,10 @@ class AlarmDatabase:
              enabled, latching, ack_required, auto_clear, condition_template,
              notification_title_template, notification_text_template,
              hysteresis, repeat_interval, escalation_delay, trigger_delay, clear_delay,
+             action_label, action_service, action_entity, link_page_path,
              source_entity_id,
              trigger_type, trigger_config, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 alarm.id,
                 alarm.name,
@@ -254,6 +279,10 @@ class AlarmDatabase:
                 alarm.escalation_delay,
                 alarm.trigger_delay,
                 alarm.clear_delay,
+                alarm.action_label,
+                alarm.action_service,
+                alarm.action_entity,
+                alarm.link_page_path,
                 alarm.source_entity_id,
                 alarm.trigger_type.value,
                 json.dumps(alarm.trigger_config),
@@ -273,6 +302,7 @@ class AlarmDatabase:
             condition_template=?, notification_title_template=?,
             notification_text_template=?, hysteresis=?,
             repeat_interval=?, escalation_delay=?, trigger_delay=?, clear_delay=?,
+            action_label=?, action_service=?, action_entity=?, link_page_path=?,
             source_entity_id=?, trigger_type=?, trigger_config=?, updated_at=?
             WHERE id=?""",
             (
@@ -295,6 +325,10 @@ class AlarmDatabase:
                 alarm.escalation_delay,
                 alarm.trigger_delay,
                 alarm.clear_delay,
+                alarm.action_label,
+                alarm.action_service,
+                alarm.action_entity,
+                alarm.link_page_path,
                 alarm.source_entity_id,
                 alarm.trigger_type.value,
                 json.dumps(alarm.trigger_config),
@@ -350,6 +384,10 @@ class AlarmDatabase:
             escalation_delay=row["escalation_delay"],
             trigger_delay=row["trigger_delay"],
             clear_delay=row["clear_delay"],
+            action_label=row["action_label"],
+            action_service=row["action_service"],
+            action_entity=row["action_entity"],
+            link_page_path=row["link_page_path"],
             source_entity_id=row["source_entity_id"],
             trigger_type=TriggerType(row["trigger_type"]),
             trigger_config=json.loads(row["trigger_config"]),

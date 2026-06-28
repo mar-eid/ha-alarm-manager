@@ -336,6 +336,27 @@ class AlarmManager:
 
         return count
 
+    async def async_trigger_custom_action(self, alarm_id: str) -> None:
+        """Run an alarm's optional configured action service (F9).
+
+        Invoked when the user taps the custom action button on the Companion
+        push. Calls the alarm's `action_service` (``domain.service``), targeting
+        `action_entity` when set. No-ops if the alarm or its action is unconfigured.
+        """
+        alarm = self._alarms.get(alarm_id)
+        if alarm is None or not alarm.action_service or "." not in alarm.action_service:
+            return
+        domain, service = alarm.action_service.split(".", 1)
+        data = {"entity_id": alarm.action_entity} if alarm.action_entity else {}
+        try:
+            await self.hass.services.async_call(domain, service, data)
+        except Exception:
+            _LOGGER.warning(
+                "Failed to run custom action %s for alarm %s",
+                alarm.action_service,
+                alarm_id,
+            )
+
     async def async_shelve(
         self,
         alarm_id: str,

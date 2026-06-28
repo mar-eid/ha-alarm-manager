@@ -10,6 +10,15 @@ import type {
   HomeAssistant,
 } from "../types";
 
+// --- Integration metadata ---
+
+export const fetchVersion = async (hass: HomeAssistant): Promise<string> => {
+  const result = await hass.connection.sendMessagePromise({
+    type: "scada_alarm_manager/version",
+  });
+  return result.version;
+};
+
 // --- Alarm CRUD ---
 
 export const fetchAlarms = async (

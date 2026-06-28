@@ -44,6 +44,10 @@ class AlarmDefinition:
     escalation_delay: int | None = None
     trigger_delay: int | None = None
     clear_delay: int | None = None
+    action_label: str | None = None
+    action_service: str | None = None
+    action_entity: str | None = None
+    link_page_path: str | None = None
     id: str = field(default_factory=_new_id)
     created_at: datetime = field(default_factory=_now)
     updated_at: datetime = field(default_factory=_now)
@@ -71,6 +75,10 @@ class AlarmDefinition:
             "escalation_delay": self.escalation_delay,
             "trigger_delay": self.trigger_delay,
             "clear_delay": self.clear_delay,
+            "action_label": self.action_label,
+            "action_service": self.action_service,
+            "action_entity": self.action_entity,
+            "link_page_path": self.link_page_path,
             "source_entity_id": self.source_entity_id,
             "trigger_type": self.trigger_type.value,
             "trigger_config": self.trigger_config,
@@ -102,6 +110,10 @@ class AlarmDefinition:
             escalation_delay=data.get("escalation_delay"),
             trigger_delay=data.get("trigger_delay"),
             clear_delay=data.get("clear_delay"),
+            action_label=data.get("action_label"),
+            action_service=data.get("action_service"),
+            action_entity=data.get("action_entity"),
+            link_page_path=data.get("link_page_path"),
             source_entity_id=data["source_entity_id"],
             trigger_type=TriggerType(data["trigger_type"]),
             trigger_config=data["trigger_config"],

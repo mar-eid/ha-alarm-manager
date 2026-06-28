@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.20.0] - 2026-06-28
+
+### Added
+
+- **F8 — version in the Help modal.** The Help dialog now shows the installed integration version (fetched via a new `scada_alarm_manager/version` WebSocket command), so it's easy to confirm whether the latest UI actually loaded after an update.
+- **F9 — optional actionable notification button.** An alarm can define a button label + an HA service + a target entity; the Companion push then shows that button and tapping it runs the service (e.g. "Open" → `lock.unlock` → `lock.front_door`). Alarms without an action are unchanged. Configurable in the editor and via the create/update services.
+- **F10 — link to a dashboard from notifications.** An alarm can be linked to a chosen dashboard (picked from a dropdown in the editor). The mobile push opens that page on tap and the persistent notification gets an "Open" link; defaults to the Alarm Center when unset.
+
+### Database
+
+- Schema migrated to **v7**: adds nullable `action_label`, `action_service`, `action_entity`, and `link_page_path` columns to `alarm_definitions` (existing rows preserved; all default to NULL).
+
 ## [0.19.1] - 2026-06-28
 
 ### Fixed
