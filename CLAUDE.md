@@ -11,7 +11,7 @@ Domain: `scada_alarm_manager`
   - MAJOR: Breaking changes (config schema changes requiring migration, removed features)
   - MINOR: New features, backwards-compatible
   - PATCH: Bug fixes, backwards-compatible
-- **Current version**: 0.17.0
+- **Current version**: 0.17.1
 - Version is tracked in: `custom_components/scada_alarm_manager/manifest.json` and `pyproject.toml`
 - Both files MUST be updated together on version bumps
 - **Always bump the PATCH version** when making any code change (bug fix, refactor, etc.). Bump MINOR for new features, MAJOR for breaking changes.
@@ -186,6 +186,7 @@ ruff format --check custom_components/scada_alarm_manager/
 - After completing any task, read `plan/backlog.md` for new manual input points.
 - Process input points into proper backlog items (bug/feature/task) with acceptance criteria and test points, then move them from the "Manual Input" section to the appropriate "Backlog items" section.
 - If a manual input point is unclear, ask the user for clarification before creating the item.
+- After completing any task, also groom the backlog: move every item that is now closed/done out of the active "Backlog items" sections (Epics/Features/Tasks/Bugs) into the "## Closed items" section, and add a one-line entry to its quick index. The active sections should contain only open or in-progress work.
 
 ## Code Review Checklist
 

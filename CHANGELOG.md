@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.1] - 2026-06-28
+
+### Changed
+
+- Internal/dev only (no shipped-code change): added a CLAUDE.md instruction to groom the backlog after every task — closed items are moved out of the active sections into the Closed items archive.
+
 ## [0.17.0] - 2026-06-28
 
 ### Added
