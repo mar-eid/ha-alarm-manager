@@ -890,3 +890,79 @@ class TestReminderInterval:
         )
         await manager._async_periodic_check(datetime.now(timezone.utc))
         router.async_send_alarm_notification.assert_awaited_once()
+
+
+class TestConditionGateClear:
+    """B9: an acked/active alarm whose condition_template gate is false should clear."""
+
+    def _gated_alarm(self) -> AlarmDefinition:
+        return AlarmDefinition(
+            id="gated_1",
+            name="Gated Temp",
+            priority=AlarmPriority.HIGH,
+            source_entity_id="sensor.temperature",
+            trigger_type=TriggerType.ANALOG,
+            trigger_config={"operator": ">", "threshold": 50.0},
+            condition_template="{{ is_state('input_boolean.gate', 'on') }}",
+            ack_required=True,
+            auto_clear=True,
+            latching=False,
+            enabled=True,
+        )
+
+    def _manager(self, hass, mock_database, mock_store, gate: str, state):
+        manager = AlarmManager(hass, mock_database, mock_store)
+        alarm = self._gated_alarm()
+        manager._alarms[alarm.id] = alarm
+        manager._runtime_states[alarm.id] = AlarmRuntimeState(
+            alarm_id=alarm.id, state=state, last_value="60"
+        )
+        hass.states.async_set("input_boolean.gate", gate)
+        return manager, alarm
+
+    async def test_gate_false_clears_when_source_available(
+        self, hass: HomeAssistant, mock_database, mock_store
+    ):
+        manager, alarm = self._manager(hass, mock_database, mock_store, "off", AlarmState.ACTIVE_ACKED)
+        hass.states.async_set("sensor.temperature", "60")  # above threshold → trigger active
+        await manager._async_evaluate_alarm(alarm, hass.states.get("sensor.temperature"))
+        assert manager.runtime_states["gated_1"].state == AlarmState.NORMAL
+
+    async def test_gate_false_clears_when_source_unavailable(
+        self, hass: HomeAssistant, mock_database, mock_store
+    ):
+        manager, alarm = self._manager(hass, mock_database, mock_store, "off", AlarmState.ACTIVE_ACKED)
+        # Source entity unavailable — the B9 fix lets a closed gate clear anyway.
+        await manager._async_evaluate_alarm(alarm, None)
+        assert manager.runtime_states["gated_1"].state == AlarmState.NORMAL
+
+    async def test_gate_true_does_not_clear_on_source_dropout(
+        self, hass: HomeAssistant, mock_database, mock_store
+    ):
+        manager, alarm = self._manager(hass, mock_database, mock_store, "on", AlarmState.ACTIVE_ACKED)
+        await manager._async_evaluate_alarm(alarm, None)  # brief source dropout, gate still open
+        assert manager.runtime_states["gated_1"].state == AlarmState.ACTIVE_ACKED
+
+    async def test_setup_listeners_watches_gate_entity(
+        self, hass: HomeAssistant, mock_database, mock_store
+    ):
+        manager = AlarmManager(hass, mock_database, mock_store)
+        alarm = self._gated_alarm()
+        manager._alarms[alarm.id] = alarm
+        manager._setup_entity_listeners()
+        assert "input_boolean.gate" in manager._condition_entities.get("gated_1", set())
+
+    async def test_gate_referencing_source_does_not_clear_on_dropout(
+        self, hass: HomeAssistant, mock_database, mock_store
+    ):
+        # Gate references the SOURCE entity; when the source is unavailable the gate reads
+        # false only because of the dropout, so the alarm must NOT clear (no regression).
+        manager = AlarmManager(hass, mock_database, mock_store)
+        alarm = self._gated_alarm()
+        alarm.condition_template = "{{ states('sensor.temperature') | float(0) > 0 }}"
+        manager._alarms[alarm.id] = alarm
+        manager._runtime_states[alarm.id] = AlarmRuntimeState(
+            alarm_id=alarm.id, state=AlarmState.ACTIVE_ACKED, last_value="60"
+        )
+        await manager._async_evaluate_alarm(alarm, None)  # source unavailable
+        assert manager.runtime_states["gated_1"].state == AlarmState.ACTIVE_ACKED

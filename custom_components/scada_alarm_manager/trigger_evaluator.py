@@ -151,3 +151,28 @@ class TriggerEvaluator:
                 alarm_def.condition_template,
             )
             return False
+
+    def extract_condition_template_entities(
+        self,
+        hass: HomeAssistant,
+        alarm_def: AlarmDefinition,
+    ) -> set[str]:
+        """Return the entity_ids referenced by an alarm's condition_template.
+
+        Used so a change to a gate entity re-evaluates the alarm (B9). Returns an
+        empty set when there is no template or the entities can't be determined.
+        """
+        if not alarm_def.condition_template:
+            return set()
+        try:
+            tpl = Template(alarm_def.condition_template, hass)
+            tpl.hass = hass
+            info = tpl.async_render_to_info()
+            return set(info.entities or set())
+        except Exception:
+            _LOGGER.warning(
+                "Alarm %s: could not extract condition_template entities: %s",
+                alarm_def.name,
+                alarm_def.condition_template,
+            )
+            return set()

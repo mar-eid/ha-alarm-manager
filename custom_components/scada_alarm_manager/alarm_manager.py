@@ -58,6 +58,10 @@ class AlarmManager:
         # Value is (kind, cancel) where kind is "activate" or "clear".
         self._pending_delays: dict[str, tuple[str, CALLBACK_TYPE]] = {}
 
+        # Entities referenced by each alarm's condition_template gate (B9),
+        # alarm_id -> set of entity_ids, rebuilt by _setup_entity_listeners.
+        self._condition_entities: dict[str, set[str]] = {}
+
         # Callbacks for entity updates
         self._entity_update_callbacks: list[Any] = []
 
@@ -577,10 +581,33 @@ class AlarmManager:
             return
 
         # Don't clear active alarms based on unavailable/unknown entity state
-        # — the entity may just be temporarily offline during startup
+        # — the entity may just be temporarily offline during startup.
+        # Exception (B9): if a condition_template gate is configured and now evaluates
+        # false, the alarm is suppressed and must clear even while the source is offline.
         if entity_state is None or entity_state.state in ("unavailable", "unknown"):
             if runtime.state != AlarmState.NORMAL:
-                return  # Keep current state, don't clear
+                # Only trust a "gate closed" verdict when the gate does NOT reference the
+                # offline source entity — otherwise the gate reads false merely because the
+                # source is unavailable, which would wrongly clear on a transient dropout.
+                gate_entities = (
+                    self._trigger_evaluator.extract_condition_template_entities(self.hass, alarm)
+                    if alarm.condition_template
+                    else set()
+                )
+                gate_independent = alarm.source_entity_id not in gate_entities
+                gate_closed = (
+                    bool(alarm.condition_template)
+                    and gate_independent
+                    and not self._trigger_evaluator.evaluate_condition_template(self.hass, alarm)
+                )
+                if not gate_closed:
+                    return  # Keep current state — gate open/absent, or can't be trusted while source is offline
+                # Gate deliberately closed → clear now (bypasses clear-delay; a gate close
+                # should suppress immediately).
+                self._cancel_pending_delay(alarm.id)
+                new_runtime, events = sm.condition_cleared(runtime, alarm, runtime.last_value)
+                await self._async_apply_transition(alarm.id, new_runtime, events)
+                return
 
         is_active = runtime.state in (
             AlarmState.ACTIVE_UNACKED, AlarmState.ACTIVE_ACKED, AlarmState.RTN_UNACKED
@@ -671,22 +698,46 @@ class AlarmManager:
 
     @callback
     def _async_handle_state_change(self, event: Event[EventStateChangedData]) -> None:
-        """Handle entity state change event."""
+        """Handle entity state change event.
+
+        Re-evaluates an alarm when its source entity OR one of its condition_template
+        gate entities (B9) changes. The alarm is always evaluated against its *source*
+        entity's current state, so a gate change still passes the source state.
+        """
         entity_id = event.data["entity_id"]
         new_state = event.data.get("new_state")
 
         for alarm in self._alarms.values():
-            if alarm.source_entity_id == entity_id and alarm.enabled:
+            if not alarm.enabled:
+                continue
+            is_source = alarm.source_entity_id == entity_id
+            is_gate = entity_id in self._condition_entities.get(alarm.id, ())
+            if is_source or is_gate:
+                source_state = new_state if is_source else self.hass.states.get(alarm.source_entity_id)
                 self.hass.async_create_task(
-                    self._async_evaluate_alarm(alarm, new_state)
+                    self._async_evaluate_alarm(alarm, source_state)
                 )
 
     def _setup_entity_listeners(self) -> None:
-        """Set up state change listeners for all watched entities."""
+        """Set up state change listeners for all watched entities.
+
+        Watches each alarm's source entity plus any entities referenced by its
+        `condition_template` gate, so a gate change re-evaluates the alarm (B9).
+        """
         entity_ids: set[str] = set()
+        self._condition_entities = {}
         for alarm in self._alarms.values():
-            if alarm.enabled and alarm.trigger_type != TriggerType.EXTERNAL:
+            if not alarm.enabled:
+                continue
+            if alarm.trigger_type != TriggerType.EXTERNAL:
                 entity_ids.add(alarm.source_entity_id)
+            if alarm.condition_template:
+                gate_entities = self._trigger_evaluator.extract_condition_template_entities(
+                    self.hass, alarm
+                )
+                if gate_entities:
+                    self._condition_entities[alarm.id] = gate_entities
+                    entity_ids |= gate_entities
 
         if entity_ids:
             unsub = async_track_state_change_event(

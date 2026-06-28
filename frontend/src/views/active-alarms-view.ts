@@ -8,7 +8,7 @@ import {
   mdiViewGrid,
 } from "@mdi/js";
 import { sharedStyles, getPriorityColor, getStateColor } from "../styles/shared-styles";
-import { fetchAlarms, fetchChannels, acknowledgeAlarm, acknowledgeAllAlarms, shelveAlarm, subscribeAlarmChanges } from "../data/websocket";
+import { fetchAlarms, fetchChannels, acknowledgeAlarm, acknowledgeAllAlarms, shelveAlarm, unshelveAlarm, subscribeAlarmChanges } from "../data/websocket";
 import { STATE_LABELS, PRIORITY_LABELS, type HomeAssistant, type AlarmWithState, type AlarmChannel } from "../types";
 import "../components/severity-badge";
 import "../components/alarm-detail-dialog";
@@ -196,6 +196,13 @@ export class ActiveAlarmsView extends LitElement {
     this._shelveTarget = alarm;
   }
 
+  private async _unshelve(alarmId: string) {
+    if (!this.hass) return;
+    await unshelveAlarm(this.hass, alarmId);
+    this._showToast("Alarm unshelved");
+    this._loadAlarms();
+  }
+
   private _edit(alarmId: string) {
     this.dispatchEvent(
       new CustomEvent("navigate", {
@@ -342,6 +349,7 @@ export class ActiveAlarmsView extends LitElement {
         @edit-alarm=${(e: CustomEvent) => this._edit(e.detail.id)}
         @ack-alarm=${(e: CustomEvent) => this._ack(e.detail.id)}
         @shelve-alarm=${(e: CustomEvent) => this._shelve(e.detail.alarm)}
+        @unshelve-alarm=${(e: CustomEvent) => this._unshelve(e.detail.id)}
       ></alarm-detail-dialog>
 
       <shelve-dialog

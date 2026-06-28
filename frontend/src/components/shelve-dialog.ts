@@ -28,7 +28,7 @@ import { mdiBellSleep, mdiClose } from "@mdi/js";
 import { sharedStyles } from "../styles/shared-styles";
 
 const SHELVE_COLOR = unsafeCSS("#9c27b0");
-const PRESETS = [15, 30, 60, 240, 480];
+const PRESETS = [15, 30, 60, 240, 480, 1440, 2880, 7200, 20160, 43200];
 
 @customElement("shelve-dialog")
 export class ShelveDialog extends LitElement {
@@ -152,7 +152,9 @@ export class ShelveDialog extends LitElement {
   ];
 
   private _fmt(m: number) {
-    return m < 60 ? `${m} min` : `${m / 60} h`;
+    if (m < 60) return `${m} min`;
+    if (m < 1440) return `${m / 60} h`;
+    return `${m / 1440} d`;
   }
 
   private _close() {

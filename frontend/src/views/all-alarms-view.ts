@@ -257,6 +257,7 @@ export class AllAlarmsView extends LitElement {
         @edit-alarm=${(e: CustomEvent) => this._edit(e.detail.id)}
         @ack-alarm=${(e: CustomEvent) => this._ack(e.detail.id)}
         @shelve-alarm=${(e: CustomEvent) => this._shelve(e.detail.alarm)}
+        @unshelve-alarm=${(e: CustomEvent) => this._unshelve(e.detail.id)}
       ></alarm-detail-dialog>
 
       <shelve-dialog

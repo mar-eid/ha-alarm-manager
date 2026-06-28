@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.21.0] - 2026-06-28
+
+### Added
+
+- **F11 — more shelve durations.** The shelve dialog now offers 1d, 2d, 5d, 14d, and 30d presets in addition to the existing minute/hour options.
+- **F12 — unshelve from the detail modal.** A shelved alarm's detail modal now shows an **Unshelve** button (wired in both the Active and All Alarms views).
+
+### Fixed
+
+- **B9 — condition-gated alarms now clear when the gate closes.** An acknowledged/active alarm whose `condition_template` gate becomes false now returns to normal, even when its source entity is unavailable (the "offline"-type alarm case). The integration now watches the entities referenced by each `condition_template` (so toggling a gate re-evaluates the alarm), and the unavailable-source guard no longer blocks a deliberate gate close. Guard against regressions: a gate that references the source entity does **not** clear on a transient source dropout.
+
 ## [0.20.0] - 2026-06-28
 
 ### Added
