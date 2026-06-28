@@ -125,6 +125,8 @@ async def ws_alarm_get(
         vol.Optional("hysteresis"): vol.Any(vol.Coerce(float), None),
         vol.Optional("repeat_interval"): vol.Any(int, None),
         vol.Optional("escalation_delay"): vol.Any(int, None),
+        vol.Optional("trigger_delay"): vol.Any(int, None),
+        vol.Optional("clear_delay"): vol.Any(int, None),
     }
 )
 @websocket_api.async_response
@@ -156,6 +158,8 @@ async def ws_alarm_create(
         hysteresis=msg.get("hysteresis"),
         repeat_interval=msg.get("repeat_interval"),
         escalation_delay=msg.get("escalation_delay"),
+        trigger_delay=msg.get("trigger_delay"),
+        clear_delay=msg.get("clear_delay"),
     )
     alarm = await manager.async_create_alarm(alarm)
     connection.send_result(msg["id"], _alarm_with_state(manager, alarm.id))
@@ -185,6 +189,8 @@ async def ws_alarm_create(
         vol.Optional("hysteresis"): vol.Any(vol.Coerce(float), None),
         vol.Optional("repeat_interval"): vol.Any(int, None),
         vol.Optional("escalation_delay"): vol.Any(int, None),
+        vol.Optional("trigger_delay"): vol.Any(int, None),
+        vol.Optional("clear_delay"): vol.Any(int, None),
     }
 )
 @websocket_api.async_response
@@ -207,6 +213,7 @@ async def ws_alarm_update(
         "ack_required", "auto_clear", "condition_template",
         "notification_title_template", "notification_text_template",
         "hysteresis", "repeat_interval", "escalation_delay",
+        "trigger_delay", "clear_delay",
     ):
         if field in msg:
             setattr(alarm, field, msg[field])

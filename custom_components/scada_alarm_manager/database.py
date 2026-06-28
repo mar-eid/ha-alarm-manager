@@ -15,7 +15,7 @@ from .models import AlarmChannel, AlarmDefinition, AlarmEvent
 
 _LOGGER = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 CREATE_TABLES_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS alarm_definitions (
     hysteresis REAL,
     repeat_interval INTEGER,
     escalation_delay INTEGER,
+    trigger_delay INTEGER,
+    clear_delay INTEGER,
     source_entity_id TEXT NOT NULL,
     trigger_type TEXT NOT NULL,
     trigger_config TEXT NOT NULL DEFAULT '{}',
@@ -190,6 +192,21 @@ class AlarmDatabase:
                 pass
             await self._db.execute("UPDATE schema_version SET version = ?", (5,))
             _LOGGER.info("Migrated database to schema v5: added hysteresis column")
+            current = 5
+
+        if current < 6:
+            # v6: trigger on-delay / clear-delay columns (debounce)
+            for col in ("trigger_delay", "clear_delay"):
+                try:
+                    await self._db.execute(
+                        f"ALTER TABLE alarm_definitions ADD COLUMN {col} INTEGER"
+                    )
+                except Exception:
+                    pass
+            await self._db.execute("UPDATE schema_version SET version = ?", (6,))
+            _LOGGER.info(
+                "Migrated database to schema v6: added trigger_delay/clear_delay columns"
+            )
 
     async def async_close(self) -> None:
         """Close database connection."""
@@ -212,9 +229,10 @@ class AlarmDatabase:
             (id, name, description, priority, area, equipment, tag, channel_id,
              enabled, latching, ack_required, auto_clear, condition_template,
              notification_title_template, notification_text_template,
-             hysteresis, repeat_interval, escalation_delay, source_entity_id,
+             hysteresis, repeat_interval, escalation_delay, trigger_delay, clear_delay,
+             source_entity_id,
              trigger_type, trigger_config, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 alarm.id,
                 alarm.name,
@@ -234,6 +252,8 @@ class AlarmDatabase:
                 alarm.hysteresis,
                 alarm.repeat_interval,
                 alarm.escalation_delay,
+                alarm.trigger_delay,
+                alarm.clear_delay,
                 alarm.source_entity_id,
                 alarm.trigger_type.value,
                 json.dumps(alarm.trigger_config),
@@ -252,7 +272,7 @@ class AlarmDatabase:
             channel_id=?, enabled=?, latching=?, ack_required=?, auto_clear=?,
             condition_template=?, notification_title_template=?,
             notification_text_template=?, hysteresis=?,
-            repeat_interval=?, escalation_delay=?,
+            repeat_interval=?, escalation_delay=?, trigger_delay=?, clear_delay=?,
             source_entity_id=?, trigger_type=?, trigger_config=?, updated_at=?
             WHERE id=?""",
             (
@@ -273,6 +293,8 @@ class AlarmDatabase:
                 alarm.hysteresis,
                 alarm.repeat_interval,
                 alarm.escalation_delay,
+                alarm.trigger_delay,
+                alarm.clear_delay,
                 alarm.source_entity_id,
                 alarm.trigger_type.value,
                 json.dumps(alarm.trigger_config),
@@ -326,6 +348,8 @@ class AlarmDatabase:
             hysteresis=row["hysteresis"],
             repeat_interval=row["repeat_interval"],
             escalation_delay=row["escalation_delay"],
+            trigger_delay=row["trigger_delay"],
+            clear_delay=row["clear_delay"],
             source_entity_id=row["source_entity_id"],
             trigger_type=TriggerType(row["trigger_type"]),
             trigger_config=json.loads(row["trigger_config"]),

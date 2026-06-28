@@ -260,6 +260,22 @@ create_alarm:
         number:
           min: 1
           unit_of_measurement: s
+    trigger_delay:
+      name: Trigger On-Delay
+      description: Seconds the condition must hold continuously before the alarm activates. Leave empty or 0 for no delay.
+      required: false
+      selector:
+        number:
+          min: 0
+          unit_of_measurement: s
+    clear_delay:
+      name: Clear Delay
+      description: Seconds the condition must stay cleared before the alarm returns to normal. Leave empty or 0 for no delay.
+      required: false
+      selector:
+        number:
+          min: 0
+          unit_of_measurement: s
 
 update_alarm:
   name: Update Alarm
@@ -378,6 +394,22 @@ update_alarm:
       selector:
         number:
           min: 1
+          unit_of_measurement: s
+    trigger_delay:
+      name: Trigger On-Delay
+      description: Updated trigger on-delay in seconds (0 for no delay).
+      required: false
+      selector:
+        number:
+          min: 0
+          unit_of_measurement: s
+    clear_delay:
+      name: Clear Delay
+      description: Updated clear delay in seconds (0 for no delay).
+      required: false
+      selector:
+        number:
+          min: 0
           unit_of_measurement: s
 
 delete_alarm:

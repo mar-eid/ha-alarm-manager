@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.18.0] - 2026-06-28
+
+### Added
+
+- **Trigger on-delay and clear-delay (debounce)** for all trigger types. Two new optional per-alarm fields (seconds): `trigger_delay` — the condition must hold continuously for N seconds before the alarm activates; and `clear_delay` — the condition must stay cleared for N seconds before the alarm returns to normal. Suppresses transient spikes and flapping. Editable in the alarm create/edit form and via the `create_alarm`/`update_alarm` services; included in export/import. Pending timers are cancelled cleanly on acknowledge-path changes, shelve, disable, alarm update/delete, and shutdown.
+
+### Changed
+
+- The alarm **Edit** button is now disabled (with an explanatory tooltip) for **external**-trigger alarms in both the detail modal and the All Alarms row — these are managed by automations/blueprints and can't be represented by the edit form. The All Alarms trigger-type filter gains an **External** option.
+
+### Database
+
+- Schema migrated to **v6**: adds nullable `trigger_delay` and `clear_delay` columns to `alarm_definitions` (existing rows are preserved; both default to NULL).
+
 ## [0.17.1] - 2026-06-28
 
 ### Changed

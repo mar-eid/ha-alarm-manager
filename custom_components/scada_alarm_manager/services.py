@@ -106,6 +106,8 @@ SCHEMA_CREATE_ALARM = vol.Schema(
         vol.Optional("hysteresis"): vol.Any(vol.Coerce(float), None),
         vol.Optional("repeat_interval"): vol.Any(vol.Coerce(int), None),
         vol.Optional("escalation_delay"): vol.Any(vol.Coerce(int), None),
+        vol.Optional("trigger_delay"): vol.Any(vol.Coerce(int), None),
+        vol.Optional("clear_delay"): vol.Any(vol.Coerce(int), None),
     }
 )
 
@@ -132,6 +134,8 @@ SCHEMA_UPDATE_ALARM = vol.Schema(
         vol.Optional("hysteresis"): vol.Any(vol.Coerce(float), None),
         vol.Optional("repeat_interval"): vol.Any(vol.Coerce(int), None),
         vol.Optional("escalation_delay"): vol.Any(vol.Coerce(int), None),
+        vol.Optional("trigger_delay"): vol.Any(vol.Coerce(int), None),
+        vol.Optional("clear_delay"): vol.Any(vol.Coerce(int), None),
     }
 )
 
@@ -304,6 +308,8 @@ async def async_register_services(hass: HomeAssistant) -> None:
             hysteresis=call.data.get("hysteresis"),
             repeat_interval=call.data.get("repeat_interval"),
             escalation_delay=call.data.get("escalation_delay"),
+            trigger_delay=call.data.get("trigger_delay"),
+            clear_delay=call.data.get("clear_delay"),
         )
         alarm = await manager.async_create_alarm(alarm)
         return _alarm_with_state(manager, alarm.id)
@@ -333,6 +339,8 @@ async def async_register_services(hass: HomeAssistant) -> None:
             "hysteresis",
             "repeat_interval",
             "escalation_delay",
+            "trigger_delay",
+            "clear_delay",
         ):
             if field in call.data:
                 setattr(alarm, field, call.data[field])
@@ -475,6 +483,8 @@ async def async_register_services(hass: HomeAssistant) -> None:
                 hysteresis=d.get("hysteresis"),
                 repeat_interval=d.get("repeat_interval"),
                 escalation_delay=d.get("escalation_delay"),
+                trigger_delay=d.get("trigger_delay"),
+                clear_delay=d.get("clear_delay"),
             )
             await manager.async_create_alarm(alarm)
             created += 1

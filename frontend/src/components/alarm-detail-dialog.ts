@@ -200,7 +200,9 @@ export class AlarmDetailDialog extends LitElement {
               ${r.state !== "shelved" && r.state !== "disabled"
                 ? html`<button class="btn" style="background: var(--alarm-shelved, #9c27b0); color: white;" @click=${() => { this._emit("shelve-alarm", { alarm: a }); this._close(); }}>Shelve</button>`
                 : ""}
-              <button class="btn" style="background: var(--secondary-background-color, #f5f5f5);" @click=${() => { this._emit("edit-alarm", { id: a.id }); this._close(); }}>Edit</button>
+              ${a.trigger_type === "external"
+                ? html`<button class="btn" style="background: var(--secondary-background-color, #f5f5f5); opacity: 0.5; cursor: not-allowed;" disabled title="External alarms are managed by automations/blueprints and can't be edited here">Edit</button>`
+                : html`<button class="btn" style="background: var(--secondary-background-color, #f5f5f5);" @click=${() => { this._emit("edit-alarm", { id: a.id }); this._close(); }}>Edit</button>`}
             </div>
           </div>
         </div>

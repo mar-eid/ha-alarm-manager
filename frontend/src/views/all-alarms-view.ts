@@ -196,6 +196,7 @@ export class AllAlarmsView extends LitElement {
                 <option value="analog">Analog</option>
                 <option value="digital">Digital</option>
                 <option value="custom_state">Custom</option>
+                <option value="external">External</option>
               </select>
             </th>
             <th>
@@ -239,7 +240,9 @@ export class AllAlarmsView extends LitElement {
                       ? html`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" title="Temporarily suppress this alarm" @click=${(e: Event) => { e.stopPropagation(); this._shelve(alarm); }}>Shelve</button>`
                       : ""}
                   ${alarm.channel_id ? html`<button class="btn btn-small" style="background: #607D8B; color: white;" title="Send a test notification through this alarm's channel" @click=${(e: Event) => { e.stopPropagation(); this._testNotification(alarm); }}>Test</button>` : ""}
-                  <button class="btn btn-small btn-primary" title="Edit alarm definition" @click=${(e: Event) => { e.stopPropagation(); this._edit(alarm.id); }}>Edit</button>
+                  ${alarm.trigger_type === "external"
+                    ? html`<button class="btn btn-small btn-primary" disabled style="opacity: 0.5; cursor: not-allowed;" title="External alarms are managed by automations/blueprints and can't be edited here" @click=${(e: Event) => e.stopPropagation()}>Edit</button>`
+                    : html`<button class="btn btn-small btn-primary" title="Edit alarm definition" @click=${(e: Event) => { e.stopPropagation(); this._edit(alarm.id); }}>Edit</button>`}
                   <button class="btn btn-small btn-danger" title="Permanently delete this alarm" @click=${(e: Event) => { e.stopPropagation(); this._confirmDelete(alarm); }}>Delete</button>
                 </td>
               </tr>

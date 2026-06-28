@@ -42,6 +42,8 @@ export class CreateEditView extends LitElement {
   @state() private _notificationTextTemplate = "";
   @state() private _conditionState = "";
   @state() private _remindIntervalMin = "";
+  @state() private _triggerDelaySec = "";
+  @state() private _clearDelaySec = "";
 
   // Trigger config
   @state() private _analogOperator = ">";
@@ -140,6 +142,8 @@ export class CreateEditView extends LitElement {
         // repeat_interval is stored in seconds; the form edits minutes.
         this._remindIntervalMin =
           alarm.repeat_interval != null ? String(alarm.repeat_interval / 60) : "";
+        this._triggerDelaySec = alarm.trigger_delay != null ? String(alarm.trigger_delay) : "";
+        this._clearDelaySec = alarm.clear_delay != null ? String(alarm.clear_delay) : "";
 
         if (alarm.trigger_type === "analog") {
           this._analogOperator = alarm.trigger_config.operator ?? ">";
@@ -179,6 +183,8 @@ export class CreateEditView extends LitElement {
     this._notificationTitleTemplate = "";
     this._notificationTextTemplate = "";
     this._remindIntervalMin = "";
+    this._triggerDelaySec = "";
+    this._clearDelaySec = "";
     this._analogOperator = ">"; this._hysteresis = "";
     this._analogThreshold = "0";
     this._digitalTargetState = "on";
@@ -193,6 +199,9 @@ export class CreateEditView extends LitElement {
         return { target_state: this._digitalTargetState };
       case "custom_state":
         return { match_values: this._customMatchValues.split(",").map((v) => v.trim()).filter(Boolean) };
+      default:
+        // "external" triggers are managed outside the form; preserve an empty config.
+        return {};
     }
   }
 
@@ -226,6 +235,8 @@ export class CreateEditView extends LitElement {
         repeat_interval: this._remindIntervalMin
           ? Math.round(parseFloat(this._remindIntervalMin) * 60)
           : null,
+        trigger_delay: this._triggerDelaySec ? Math.round(parseFloat(this._triggerDelaySec)) : null,
+        clear_delay: this._clearDelaySec ? Math.round(parseFloat(this._clearDelaySec)) : null,
       };
 
       if (this.alarmId) {
@@ -284,9 +295,9 @@ export class CreateEditView extends LitElement {
           </div>
           <div class="form-group">
             <label>Channel</label>
-            <select title="Routes notifications to specific targets (mobile, persistent, etc.)" .value=${this._channelId ?? ""} @change=${(e: Event) => { const v = (e.target as HTMLSelectElement).value; this._channelId = v || null; }}>
-              <option value="">No channel</option>
-              ${this._channels.map((ch) => html`<option value=${ch.id}>${ch.name}</option>`)}
+            <select title="Routes notifications to specific targets (mobile, persistent, etc.)" @change=${(e: Event) => { const v = (e.target as HTMLSelectElement).value; this._channelId = v || null; }}>
+              <option value="" ?selected=${!this._channelId}>No channel</option>
+              ${this._channels.map((ch) => html`<option value=${ch.id} ?selected=${ch.id === this._channelId}>${ch.name}</option>`)}
             </select>
             <div class="hint">Channels define where notifications are sent. Create one in the Channels tab.</div>
           </div>
@@ -361,6 +372,27 @@ export class CreateEditView extends LitElement {
               <input type="text" .value=${this._customMatchValues} @input=${(e: Event) => (this._customMatchValues = (e.target as HTMLInputElement).value)} placeholder="error, fault, offline" />
             </div>
           ` : ""}
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Trigger on-delay (seconds)</label>
+              <input type="number" min="0" step="1"
+                title="The condition must hold continuously for this many seconds before the alarm activates"
+                .value=${this._triggerDelaySec}
+                @input=${(e: Event) => (this._triggerDelaySec = (e.target as HTMLInputElement).value)}
+                placeholder="0 = no delay" />
+              <div class="hint">If the condition clears before the delay elapses, no alarm is raised.</div>
+            </div>
+            <div class="form-group">
+              <label>Clear delay (seconds)</label>
+              <input type="number" min="0" step="1"
+                title="The condition must stay cleared for this many seconds before the alarm returns to normal"
+                .value=${this._clearDelaySec}
+                @input=${(e: Event) => (this._clearDelaySec = (e.target as HTMLInputElement).value)}
+                placeholder="0 = no delay" />
+              <div class="hint">If the condition re-triggers before the delay elapses, the alarm stays active.</div>
+            </div>
+          </div>
         </div>
 
         <div class="section">

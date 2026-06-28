@@ -42,6 +42,8 @@ class AlarmDefinition:
     hysteresis: float | None = None
     repeat_interval: int | None = None
     escalation_delay: int | None = None
+    trigger_delay: int | None = None
+    clear_delay: int | None = None
     id: str = field(default_factory=_new_id)
     created_at: datetime = field(default_factory=_now)
     updated_at: datetime = field(default_factory=_now)
@@ -67,6 +69,8 @@ class AlarmDefinition:
             "hysteresis": self.hysteresis,
             "repeat_interval": self.repeat_interval,
             "escalation_delay": self.escalation_delay,
+            "trigger_delay": self.trigger_delay,
+            "clear_delay": self.clear_delay,
             "source_entity_id": self.source_entity_id,
             "trigger_type": self.trigger_type.value,
             "trigger_config": self.trigger_config,
@@ -96,6 +100,8 @@ class AlarmDefinition:
             hysteresis=data.get("hysteresis"),
             repeat_interval=data.get("repeat_interval"),
             escalation_delay=data.get("escalation_delay"),
+            trigger_delay=data.get("trigger_delay"),
+            clear_delay=data.get("clear_delay"),
             source_entity_id=data["source_entity_id"],
             trigger_type=TriggerType(data["trigger_type"]),
             trigger_config=data["trigger_config"],

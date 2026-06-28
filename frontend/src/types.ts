@@ -61,7 +61,7 @@ export const STATE_LABELS: Record<AlarmState, string> = {
   disabled: "Disabled",
 };
 
-export type TriggerType = "analog" | "digital" | "custom_state";
+export type TriggerType = "analog" | "digital" | "custom_state" | "external";
 
 export interface AlarmDefinition {
   id: string;
@@ -82,6 +82,8 @@ export interface AlarmDefinition {
   hysteresis: number | null;
   repeat_interval: number | null;
   escalation_delay: number | null;
+  trigger_delay: number | null;
+  clear_delay: number | null;
   source_entity_id: string;
   trigger_type: TriggerType;
   trigger_config: Record<string, any>;

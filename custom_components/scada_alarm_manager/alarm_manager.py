@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, State, callback
-from homeassistant.helpers.event import async_track_state_change_event
+from homeassistant.helpers.event import async_call_later, async_track_state_change_event
 
 from . import state_machine as sm
 from .const import (
@@ -53,6 +53,10 @@ class AlarmManager:
         self._state_listeners: dict[str, CALLBACK_TYPE] = {}
         self._periodic_task: CALLBACK_TYPE | None = None
         self._notification_router: Any = None
+
+        # Pending trigger on-delay / clear-delay timers, keyed by alarm id.
+        # Value is (kind, cancel) where kind is "activate" or "clear".
+        self._pending_delays: dict[str, tuple[str, CALLBACK_TYPE]] = {}
 
         # Callbacks for entity updates
         self._entity_update_callbacks: list[Any] = []
@@ -153,6 +157,11 @@ class AlarmManager:
             self._periodic_task()
             self._periodic_task = None
 
+        # Cancel any pending debounce timers
+        for _kind, cancel in self._pending_delays.values():
+            cancel()
+        self._pending_delays.clear()
+
         _LOGGER.info("Alarm manager stopped")
 
     # --- Alarm CRUD ---
@@ -197,6 +206,10 @@ class AlarmManager:
         await self._database.async_update_alarm(alarm)
         self._alarms[alarm.id] = alarm
 
+        # The definition may have changed entity/trigger/delays — drop any pending
+        # debounce timer; the re-evaluation below re-arms it if still applicable.
+        self._cancel_pending_delay(alarm.id)
+
         # If source entity changed, update listener
         if old_alarm and old_alarm.source_entity_id != alarm.source_entity_id:
             self._remove_entity_listener(old_alarm)
@@ -237,6 +250,9 @@ class AlarmManager:
 
         # Remove listener
         self._remove_entity_listener(alarm)
+
+        # Cancel any pending debounce timer
+        self._cancel_pending_delay(alarm_id)
 
         # Remove from runtime
         self._alarms.pop(alarm_id, None)
@@ -331,6 +347,8 @@ class AlarmManager:
         if runtime is None:
             return
 
+        # Drop any pending debounce timer — shelving overrides a pending activation.
+        self._cancel_pending_delay(alarm_id)
         new_runtime, events = sm.shelve(runtime, duration_minutes, user)
         await self._async_apply_transition(alarm_id, new_runtime, events)
 
@@ -386,6 +404,8 @@ class AlarmManager:
         if alarm is None:
             return
 
+        # Drop any pending debounce timer — a disabled alarm must not activate later.
+        self._cancel_pending_delay(alarm_id)
         new_runtime, events = sm.disable(runtime, user)
         await self._async_apply_transition(alarm_id, new_runtime, events)
 
@@ -551,12 +571,79 @@ class AlarmManager:
                 self.hass, alarm
             )
 
+        # Debounce: gate the transition behind a configurable delay.
+        #   - on-delay  (trigger_delay): condition must hold for N s before activating
+        #   - clear-delay (clear_delay): condition must stay cleared for N s before normalizing
+        pending = self._pending_delays.get(alarm.id)
+
+        if condition_met and not is_active and alarm.trigger_delay:
+            # Want to activate; start (or keep) the on-delay timer.
+            if pending is None or pending[0] != "activate":
+                self._start_pending_delay(alarm.id, "activate", alarm.trigger_delay)
+            return
+        if not condition_met and is_active and alarm.clear_delay:
+            # Want to clear; start (or keep) the clear-delay timer.
+            if pending is None or pending[0] != "clear":
+                self._start_pending_delay(alarm.id, "clear", alarm.clear_delay)
+            return
+
+        # No delay applies (or the condition reverted before a pending timer fired):
+        # drop any stale timer and apply the transition immediately.
+        self._cancel_pending_delay(alarm.id)
         if condition_met:
             new_runtime, events = sm.condition_met(runtime, alarm, value)
         else:
             new_runtime, events = sm.condition_cleared(runtime, alarm, value)
 
         await self._async_apply_transition(alarm.id, new_runtime, events)
+
+    def _start_pending_delay(self, alarm_id: str, kind: str, delay_s: int) -> None:
+        """Start (replacing any existing) a debounce timer for an alarm."""
+        self._cancel_pending_delay(alarm_id)
+
+        @callback
+        def _fire(_now: datetime) -> None:
+            self._pending_delays.pop(alarm_id, None)
+            self.hass.async_create_task(self._async_delay_fired(alarm_id, kind))
+
+        cancel = async_call_later(self.hass, float(delay_s), _fire)
+        self._pending_delays[alarm_id] = (kind, cancel)
+
+    def _cancel_pending_delay(self, alarm_id: str) -> None:
+        """Cancel and forget any pending debounce timer for an alarm."""
+        pending = self._pending_delays.pop(alarm_id, None)
+        if pending is not None:
+            pending[1]()
+
+    async def _async_delay_fired(self, alarm_id: str, kind: str) -> None:
+        """Apply a debounced transition, but only if its premise still holds."""
+        alarm = self._alarms.get(alarm_id)
+        runtime = self._runtime_states.get(alarm_id)
+        if alarm is None or runtime is None or runtime.state == AlarmState.DISABLED:
+            return
+
+        entity_state = self.hass.states.get(alarm.source_entity_id)
+        # Mirror the main guard: never act on an unavailable/unknown entity.
+        if entity_state is None or entity_state.state in ("unavailable", "unknown"):
+            return
+
+        is_active = runtime.state in (
+            AlarmState.ACTIVE_UNACKED, AlarmState.ACTIVE_ACKED, AlarmState.RTN_UNACKED
+        )
+        trigger_active = self._trigger_evaluator.evaluate(alarm, entity_state, is_active=is_active)
+        value = entity_state.state
+        condition_met = trigger_active
+        if trigger_active and alarm.condition_template:
+            condition_met = self._trigger_evaluator.evaluate_condition_template(
+                self.hass, alarm
+            )
+
+        if kind == "activate" and condition_met and not is_active:
+            new_runtime, events = sm.condition_met(runtime, alarm, value)
+            await self._async_apply_transition(alarm_id, new_runtime, events)
+        elif kind == "clear" and not condition_met and is_active:
+            new_runtime, events = sm.condition_cleared(runtime, alarm, value)
+            await self._async_apply_transition(alarm_id, new_runtime, events)
 
     @callback
     def _async_handle_state_change(self, event: Event[EventStateChangedData]) -> None:
