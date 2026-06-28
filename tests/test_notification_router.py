@@ -85,6 +85,52 @@ def _make_runtime(
     )
 
 
+class TestDismiss:
+    """Dismissing an alarm clears both persistent and mobile push (F7)."""
+
+    async def test_dismiss_clears_persistent_and_mobile(self, hass: HomeAssistant):
+        alarm = _make_alarm(priority=AlarmPriority.HIGH)
+        channel = _make_channel(notification_targets=["mobile_app_phone"])
+        manager = MagicMock()
+        manager.channels = {"ch1": channel}
+        router = NotificationRouter(hass, manager)
+
+        calls: list = []
+
+        async def fake_call(domain, service, data=None, **kwargs):
+            calls.append((domain, service, data))
+
+        with patch.object(hass.services, "async_call", side_effect=fake_call):
+            await router.async_dismiss_alarm_notification(alarm)
+
+        assert (
+            "persistent_notification",
+            "dismiss",
+            {"notification_id": "scada_alarm_alarm1"},
+        ) in calls
+        mobile = [c for c in calls if c[0] == "notify" and c[1] == "mobile_app_phone"]
+        assert mobile, "mobile clear_notification was not sent"
+        assert mobile[0][2]["message"] == "clear_notification"
+        assert mobile[0][2]["data"]["tag"] == "scada-alarm-alarm1"
+
+    async def test_dismiss_without_channel_only_persistent(self, hass: HomeAssistant):
+        alarm = _make_alarm(channel_id=None)
+        manager = MagicMock()
+        manager.channels = {}
+        router = NotificationRouter(hass, manager)
+
+        calls: list = []
+
+        async def fake_call(domain, service, data=None, **kwargs):
+            calls.append((domain, service, data))
+
+        with patch.object(hass.services, "async_call", side_effect=fake_call):
+            await router.async_dismiss_alarm_notification(alarm)
+
+        assert any(c[0] == "persistent_notification" and c[1] == "dismiss" for c in calls)
+        assert not any(c[0] == "notify" for c in calls)
+
+
 class TestPriorityRouting:
     """Test priority-aware notification routing."""
 

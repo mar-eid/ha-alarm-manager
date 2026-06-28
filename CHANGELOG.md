@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-06-28
+
+### Changed
+
+- **Acknowledging an alarm now clears its notifications** (F7). Any ack path — the panel, the `acknowledge`/`acknowledge_all` services, the WebSocket API, or the Companion App **Acknowledge** action button — both acknowledges the alarm and dismisses its persistent notification *and* clears its mobile push (via the Companion `clear_notification` command matched by tag). Previously notifications were only cleared when an alarm returned fully to normal, so acknowledged-but-still-active alarms left their notifications behind.
+
+### Known limitation
+
+- Swiping/dismissing a push or persistent notification does **not** acknowledge the alarm — Home Assistant fires no event for a plain dismissal. Use the notification's **Acknowledge** action button (which acks and clears) instead.
+
 ## [0.18.0] - 2026-06-28
 
 ### Added

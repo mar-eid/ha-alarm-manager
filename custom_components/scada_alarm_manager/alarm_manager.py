@@ -535,11 +535,14 @@ class AlarmManager:
 
         # Handle notifications (suppressed during initial evaluation on startup)
         if self._notification_router and alarm and not self._suppress_notifications:
+            # States in which an alarm carries no outstanding notification — once
+            # acknowledged or back to normal, every notification it raised is cleared.
+            cleared_states = (AlarmState.NORMAL, AlarmState.ACTIVE_ACKED)
             if new_runtime.state == AlarmState.ACTIVE_UNACKED and old_runtime.state != AlarmState.ACTIVE_UNACKED:
                 await self._notification_router.async_send_alarm_notification(
                     alarm, new_runtime
                 )
-            elif new_runtime.state == AlarmState.NORMAL and old_runtime.state != AlarmState.NORMAL:
+            elif new_runtime.state in cleared_states and old_runtime.state not in cleared_states:
                 await self._notification_router.async_dismiss_alarm_notification(
                     alarm
                 )

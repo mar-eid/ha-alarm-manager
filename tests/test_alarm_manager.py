@@ -270,6 +270,28 @@ class TestAlarmActions:
         assert manager.runtime_states["alarm_1"].acked_by == "operator"
         await manager.async_stop()
 
+    async def test_acknowledge_dismisses_notifications(
+        self, hass: HomeAssistant, mock_database: AsyncMock, mock_store: AsyncMock, sample_alarm
+    ):
+        """Acknowledging an active alarm clears its notifications (F7)."""
+        mock_database.async_list_alarms.return_value = [sample_alarm]
+        mock_database.async_list_channels.return_value = []
+
+        manager = AlarmManager(hass, mock_database, mock_store)
+        await manager.async_start()
+        router = AsyncMock()
+        manager.set_notification_router(router)
+
+        manager._runtime_states["alarm_1"] = AlarmRuntimeState(
+            alarm_id="alarm_1", state=AlarmState.ACTIVE_UNACKED
+        )
+
+        await manager.async_acknowledge("alarm_1", user="operator")
+
+        assert manager.runtime_states["alarm_1"].state == AlarmState.ACTIVE_ACKED
+        router.async_dismiss_alarm_notification.assert_awaited_once()
+        await manager.async_stop()
+
     async def test_acknowledge_nonexistent_alarm(
         self, hass: HomeAssistant, mock_database: AsyncMock, mock_store: AsyncMock
     ):

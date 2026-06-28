@@ -102,13 +102,42 @@ class NotificationRouter:
     async def async_dismiss_alarm_notification(
         self, alarm: AlarmDefinition
     ) -> None:
-        """Dismiss notifications for a cleared alarm."""
+        """Dismiss all notifications for an alarm (persistent + mobile push).
+
+        Called whenever an alarm is acknowledged or returns to normal, so any
+        ack path clears every notification it raised. Clearing the mobile push
+        uses the Companion App ``clear_notification`` command matched by the same
+        ``tag`` the original push was sent with.
+        """
         notification_id = f"scada_alarm_{alarm.id}"
         await self._hass.services.async_call(
             "persistent_notification",
             "dismiss",
             {"notification_id": notification_id},
         )
+
+        # Clear the mobile push on each of the channel's targets, if any.
+        channel = self._get_channel(alarm)
+        if not channel or not channel.notification_targets:
+            return
+        tag = f"scada-alarm-{alarm.id}"
+        for entry in channel.notification_targets:
+            target = entry.get("target", "") if isinstance(entry, dict) else entry
+            if not target:
+                continue
+            domain, service = self._split_target(target)
+            try:
+                await self._hass.services.async_call(
+                    domain,
+                    service,
+                    {"message": "clear_notification", "data": {"tag": tag}},
+                )
+            except Exception:
+                _LOGGER.warning(
+                    "Failed to clear mobile notification on %s for alarm %s",
+                    target,
+                    alarm.name,
+                )
 
     async def async_send_test_notification(
         self, channel: AlarmChannel
