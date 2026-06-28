@@ -8,6 +8,7 @@ from homeassistant.components.http import StaticPathConfig
 from homeassistant.components.lovelace.resources import ResourceStorageCollection
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
+from homeassistant.loader import async_get_integration
 
 from .alarm_manager import AlarmManager
 from .const import (
@@ -169,11 +170,11 @@ async def _async_register_card_resources(hass: HomeAssistant) -> None:
             )
             return
 
-        import json
-
-        manifest_path = hass.config.path("custom_components", DOMAIN, "manifest.json")
-        with open(manifest_path) as f:
-            version = json.load(f).get("version", "0")
+        # Read the integration version without blocking the event loop (the manifest
+        # is already cached by HA's loader). The version is the cache-buster appended
+        # to each resource URL so a release forces browsers to fetch the new bundle.
+        integration = await async_get_integration(hass, DOMAIN)
+        version = str(integration.version or "0")
 
         resources: ResourceStorageCollection = lovelace_data["resources"]
         if not resources.loaded:

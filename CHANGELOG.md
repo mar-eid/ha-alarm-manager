@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.1] - 2026-06-28
+
+### Fixed
+
+- Hardened the Lovelace card-resource registration: the integration version (used as the `?v=` cache-buster on the card JS URLs) is now read via Home Assistant's non-blocking loader instead of a blocking file `open()` in the event loop. Cache-busting itself was already in place — the card is registered as `…/alarm-overview.js?v=<version>` and stale/unversioned entries are pruned on startup. Note: stale UI after an update is usually Home Assistant's frontend service worker; a one-time hard refresh (Ctrl+Shift+R) clears it.
+
 ## [0.19.0] - 2026-06-28
 
 ### Changed
