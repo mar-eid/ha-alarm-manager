@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-06-29
+
+### Added
+
+- **F13 — link to a dashboard view.** The notification link picker can now target a specific **view** within a dashboard (new optional `link_view_path`); the notification opens `/{dashboard}/{view}`.
+- **F14 — service picker.** The action service is now chosen with HA's service selector instead of free text.
+- **F15 — target picker.** The action can target an entity, **device, or area** (new `action_target`); the action service is called with that target. The legacy single `action_entity` still works.
+- **F17 — trigger the action from the UI.** The custom action button now appears in the alarm list row and the detail modal (new `scada_alarm_manager/alarm/trigger_action` WS command), not just on the push.
+- **F18 — Test sends the real notification.** The per-alarm **Test** button now sends that alarm's actual rendered notification (title/body/actions/link) via a new `test_alarm_notification` service, instead of a generic test message.
+
+### Database
+
+- Schema migrated to **v8**: adds nullable `action_target` and `link_view_path` columns (existing rows preserved).
+
+### Notes
+
+- A test notification (F18) uses the same notification id/tag as a real alarm, so for a currently-active alarm it re-renders the live notification; for an INFO-priority alarm (panel-only) it sends nothing by design.
+
 ## [0.21.0] - 2026-06-28
 
 ### Added

@@ -1,7 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { sharedStyles } from "../styles/shared-styles";
-import { fetchAlarm, fetchChannels, createAlarm, updateAlarm } from "../data/websocket";
+import { fetchAlarm, fetchChannels, createAlarm, updateAlarm, fetchDashboardConfig } from "../data/websocket";
 import type { HomeAssistant, AlarmChannel, AlarmPriority, TriggerType } from "../types";
 
 // HA native components - available globally in HA frontend
@@ -9,6 +9,7 @@ declare global {
   interface HTMLElementTagNameMap {
     "ha-entity-picker": any;
     "ha-area-picker": any;
+    "ha-selector": any;
   }
 }
 
@@ -47,7 +48,10 @@ export class CreateEditView extends LitElement {
   @state() private _actionLabel = "";
   @state() private _actionService = "";
   @state() private _actionEntity = "";
+  @state() private _actionTarget: Record<string, unknown> = {};
   @state() private _linkPagePath = "";
+  @state() private _linkViewPath = "";
+  @state() private _views: { path: string; title: string }[] = [];
 
   // Trigger config
   @state() private _analogOperator = ">";
@@ -151,7 +155,15 @@ export class CreateEditView extends LitElement {
         this._actionLabel = alarm.action_label || "";
         this._actionService = alarm.action_service || "";
         this._actionEntity = alarm.action_entity || "";
+        // Seed the target picker from action_target, falling back to the legacy single entity.
+        this._actionTarget = alarm.action_target
+          ? { ...alarm.action_target }
+          : alarm.action_entity
+          ? { entity_id: [alarm.action_entity] }
+          : {};
         this._linkPagePath = alarm.link_page_path || "";
+        this._linkViewPath = alarm.link_view_path || "";
+        if (this._linkPagePath) await this._loadViews(this._linkPagePath);
 
         if (alarm.trigger_type === "analog") {
           this._analogOperator = alarm.trigger_config.operator ?? ">";
@@ -196,7 +208,10 @@ export class CreateEditView extends LitElement {
     this._actionLabel = "";
     this._actionService = "";
     this._actionEntity = "";
+    this._actionTarget = {};
     this._linkPagePath = "";
+    this._linkViewPath = "";
+    this._views = [];
     this._analogOperator = ">"; this._hysteresis = "";
     this._analogThreshold = "0";
     this._digitalTargetState = "on";
@@ -208,6 +223,25 @@ export class CreateEditView extends LitElement {
     return Object.values(panels)
       .filter((p) => p.component_name === "lovelace")
       .sort((a, b) => (a.title || a.url_path).localeCompare(b.title || b.url_path));
+  }
+
+  private async _loadViews(urlPath: string) {
+    this._views = [];
+    if (!this.hass || !urlPath) return;
+    try {
+      const config = await fetchDashboardConfig(this.hass, urlPath);
+      this._views = (config?.views ?? [])
+        .filter((v: any) => v.path)
+        .map((v: any) => ({ path: v.path, title: v.title || v.path }));
+    } catch (_e) {
+      // Dashboard config not fetchable (e.g. YAML-mode) — leave views empty.
+    }
+  }
+
+  private async _onDashboardChange(urlPath: string) {
+    this._linkPagePath = urlPath;
+    this._linkViewPath = "";
+    await this._loadViews(urlPath);
   }
 
   private _buildTriggerConfig(): Record<string, unknown> {
@@ -259,7 +293,11 @@ export class CreateEditView extends LitElement {
         action_label: this._actionLabel.trim() || null,
         action_service: this._actionService.trim() || null,
         action_entity: this._actionEntity.trim() || null,
+        action_target: this._actionTarget && Object.keys(this._actionTarget).length > 0
+          ? this._actionTarget
+          : null,
         link_page_path: this._linkPagePath || null,
+        link_view_path: this._linkViewPath || null,
       };
 
       if (this.alarmId) {
@@ -486,37 +524,55 @@ export class CreateEditView extends LitElement {
 
         <div class="section">
           <h3>Notification Action &amp; Link (optional)</h3>
-          <div class="form-group">
-            <label>Link page</label>
-            <select title="Tapping the notification opens this dashboard; the persistent notification links to it"
-              @change=${(e: Event) => { this._linkPagePath = (e.target as HTMLSelectElement).value; }}>
-              <option value="" ?selected=${!this._linkPagePath}>Alarm Center (default)</option>
-              ${this._dashboards.map(
-                (p) => html`<option value=${p.url_path} ?selected=${p.url_path === this._linkPagePath}>${p.title || p.url_path}</option>`
-              )}
-            </select>
-            <div class="hint">Where the alarm's notifications link to. Defaults to the Alarm Center.</div>
-          </div>
-
           <div class="form-row">
             <div class="form-group">
-              <label>Action button label</label>
-              <input type="text" .value=${this._actionLabel} @input=${(e: Event) => (this._actionLabel = (e.target as HTMLInputElement).value)} placeholder="e.g. Open door" />
+              <label>Link page</label>
+              <select title="Tapping the notification opens this dashboard; the persistent notification links to it"
+                @change=${(e: Event) => this._onDashboardChange((e.target as HTMLSelectElement).value)}>
+                <option value="" ?selected=${!this._linkPagePath}>Alarm Center (default)</option>
+                ${this._dashboards.map(
+                  (p) => html`<option value=${p.url_path} ?selected=${p.url_path === this._linkPagePath}>${p.title || p.url_path}</option>`
+                )}
+              </select>
+              <div class="hint">Where the alarm's notifications link to. Defaults to the Alarm Center.</div>
             </div>
-            <div class="form-group">
-              <label>Action service</label>
-              <input type="text" .value=${this._actionService} @input=${(e: Event) => (this._actionService = (e.target as HTMLInputElement).value)} placeholder="e.g. lock.unlock" />
-            </div>
+            ${this._linkPagePath && this._views.length
+              ? html`<div class="form-group">
+                  <label>View</label>
+                  <select @change=${(e: Event) => { this._linkViewPath = (e.target as HTMLSelectElement).value; }}>
+                    <option value="" ?selected=${!this._linkViewPath}>Entire dashboard</option>
+                    ${this._views.map(
+                      (v) => html`<option value=${v.path} ?selected=${v.path === this._linkViewPath}>${v.title}</option>`
+                    )}
+                  </select>
+                  <div class="hint">Optionally link to a specific view.</div>
+                </div>`
+              : ""}
           </div>
-          <div>
-            <ha-entity-picker
+
+          <div class="form-group">
+            <label>Action button label</label>
+            <input type="text" .value=${this._actionLabel} @input=${(e: Event) => (this._actionLabel = (e.target as HTMLInputElement).value)} placeholder="e.g. Open door" />
+            <div class="hint">Optional actionable button (push + alarm list/modal). Set a label, a service and a target; leave blank for none.</div>
+          </div>
+          <div class="form-group">
+            <label>Action service</label>
+            <ha-selector
               .hass=${this.hass}
-              .value=${this._actionEntity}
-              @value-changed=${(e: CustomEvent) => (this._actionEntity = e.detail.value || "")}
-              allow-custom-entity
-              .label=${"Action target entity"}
-            ></ha-entity-picker>
-            <div class="hint">Optional actionable button on the mobile push. Set a label + service (and target entity) — tapping it runs that service. Leave blank for no extra button.</div>
+              .selector=${{ service: {} }}
+              .value=${this._actionService}
+              @value-changed=${(e: CustomEvent) => (this._actionService = e.detail.value || "")}
+            ></ha-selector>
+          </div>
+          <div class="form-group">
+            <label>Action target</label>
+            <ha-selector
+              .hass=${this.hass}
+              .selector=${{ target: {} }}
+              .value=${this._actionTarget}
+              @value-changed=${(e: CustomEvent) => (this._actionTarget = e.detail.value || {})}
+            ></ha-selector>
+            <div class="hint">Entity, device, or area the action runs against.</div>
           </div>
         </div>
 

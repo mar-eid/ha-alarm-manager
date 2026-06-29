@@ -1,7 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { sharedStyles, getStateColor } from "../styles/shared-styles";
-import { fetchAlarms, fetchChannels, deleteAlarm, shelveAlarm, unshelveAlarm, acknowledgeAlarm } from "../data/websocket";
+import { fetchAlarms, fetchChannels, deleteAlarm, shelveAlarm, unshelveAlarm, acknowledgeAlarm, triggerAlarmAction } from "../data/websocket";
 import { STATE_LABELS, PRIORITY_LABELS, type HomeAssistant, type AlarmWithState, type AlarmChannel } from "../types";
 import "../components/severity-badge";
 import "../components/alarm-detail-dialog";
@@ -130,10 +130,17 @@ export class AllAlarmsView extends LitElement {
   }
 
   private async _testNotification(alarm: AlarmWithState) {
-    if (!this.hass || !alarm.channel_id) return;
-    await this.hass.callService("scada_alarm_manager", "test_notification", {
-      channel_id: alarm.channel_id,
+    if (!this.hass) return;
+    await this.hass.callService("scada_alarm_manager", "test_alarm_notification", {
+      alarm_id: alarm.id,
     });
+    this._showToast(`Test notification sent: ${alarm.name}`);
+  }
+
+  private async _triggerAction(alarmId: string) {
+    if (!this.hass) return;
+    await triggerAlarmAction(this.hass, alarmId);
+    this._showToast("Action triggered");
   }
 
   private _shelve(alarm: AlarmWithState) {
@@ -239,7 +246,8 @@ export class AllAlarmsView extends LitElement {
                     : alarm.runtime.state !== "disabled"
                       ? html`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" title="Temporarily suppress this alarm" @click=${(e: Event) => { e.stopPropagation(); this._shelve(alarm); }}>Shelve</button>`
                       : ""}
-                  ${alarm.channel_id ? html`<button class="btn btn-small" style="background: #607D8B; color: white;" title="Send a test notification through this alarm's channel" @click=${(e: Event) => { e.stopPropagation(); this._testNotification(alarm); }}>Test</button>` : ""}
+                  ${alarm.action_service ? html`<button class="btn btn-small btn-primary" title=${alarm.action_label || "Run this alarm's action"} @click=${(e: Event) => { e.stopPropagation(); this._triggerAction(alarm.id); }}>${alarm.action_label || "Action"}</button>` : ""}
+                  ${alarm.channel_id ? html`<button class="btn btn-small" style="background: #607D8B; color: white;" title="Send this alarm's real notification as a test" @click=${(e: Event) => { e.stopPropagation(); this._testNotification(alarm); }}>Test</button>` : ""}
                   ${alarm.trigger_type === "external"
                     ? html`<button class="btn btn-small btn-primary" disabled style="opacity: 0.5; cursor: not-allowed;" title="External alarms are managed by automations/blueprints and can't be edited here" @click=${(e: Event) => e.stopPropagation()}>Edit</button>`
                     : html`<button class="btn btn-small btn-primary" title="Edit alarm definition" @click=${(e: Event) => { e.stopPropagation(); this._edit(alarm.id); }}>Edit</button>`}
@@ -258,6 +266,8 @@ export class AllAlarmsView extends LitElement {
         @ack-alarm=${(e: CustomEvent) => this._ack(e.detail.id)}
         @shelve-alarm=${(e: CustomEvent) => this._shelve(e.detail.alarm)}
         @unshelve-alarm=${(e: CustomEvent) => this._unshelve(e.detail.id)}
+        @trigger-action=${(e: CustomEvent) => this._triggerAction(e.detail.id)}
+        @test-alarm=${(e: CustomEvent) => { const a = this._alarms.find((x) => x.id === e.detail.id); if (a) this._testNotification(a); }}
       ></alarm-detail-dialog>
 
       <shelve-dialog

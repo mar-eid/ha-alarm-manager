@@ -49,6 +49,25 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_event_list)
     websocket_api.async_register_command(hass, ws_subscribe)
     websocket_api.async_register_command(hass, ws_version)
+    websocket_api.async_register_command(hass, ws_alarm_trigger_action)
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "scada_alarm_manager/alarm/trigger_action",
+        vol.Required("alarm_id"): str,
+    }
+)
+@websocket_api.async_response
+async def ws_alarm_trigger_action(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Run an alarm's configured custom action (F17)."""
+    manager = _get_manager(hass)
+    await manager.async_trigger_custom_action(msg["alarm_id"])
+    connection.send_result(msg["id"], {})
 
 
 @websocket_api.websocket_command(
@@ -146,7 +165,9 @@ async def ws_alarm_get(
         vol.Optional("action_label"): vol.Any(str, None),
         vol.Optional("action_service"): vol.Any(str, None),
         vol.Optional("action_entity"): vol.Any(str, None),
+        vol.Optional("action_target"): vol.Any(dict, None),
         vol.Optional("link_page_path"): vol.Any(str, None),
+        vol.Optional("link_view_path"): vol.Any(str, None),
     }
 )
 @websocket_api.async_response
@@ -183,7 +204,9 @@ async def ws_alarm_create(
         action_label=msg.get("action_label"),
         action_service=msg.get("action_service"),
         action_entity=msg.get("action_entity"),
+        action_target=msg.get("action_target"),
         link_page_path=msg.get("link_page_path"),
+        link_view_path=msg.get("link_view_path"),
     )
     alarm = await manager.async_create_alarm(alarm)
     connection.send_result(msg["id"], _alarm_with_state(manager, alarm.id))
@@ -218,7 +241,9 @@ async def ws_alarm_create(
         vol.Optional("action_label"): vol.Any(str, None),
         vol.Optional("action_service"): vol.Any(str, None),
         vol.Optional("action_entity"): vol.Any(str, None),
+        vol.Optional("action_target"): vol.Any(dict, None),
         vol.Optional("link_page_path"): vol.Any(str, None),
+        vol.Optional("link_view_path"): vol.Any(str, None),
     }
 )
 @websocket_api.async_response
@@ -242,7 +267,8 @@ async def ws_alarm_update(
         "notification_title_template", "notification_text_template",
         "hysteresis", "repeat_interval", "escalation_delay",
         "trigger_delay", "clear_delay",
-        "action_label", "action_service", "action_entity", "link_page_path",
+        "action_label", "action_service", "action_entity", "action_target",
+        "link_page_path", "link_view_path",
     ):
         if field in msg:
             setattr(alarm, field, msg[field])

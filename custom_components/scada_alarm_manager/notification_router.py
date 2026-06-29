@@ -203,7 +203,10 @@ class NotificationRouter:
         the Alarm Center panel when none is set.
         """
         if alarm.link_page_path:
-            return "/" + alarm.link_page_path.lstrip("/")
+            base = "/" + alarm.link_page_path.lstrip("/")
+            if alarm.link_view_path:
+                return f"{base}/{alarm.link_view_path.lstrip('/')}"
+            return base
         return DEFAULT_PAGE_URL
 
     def _get_template_context(

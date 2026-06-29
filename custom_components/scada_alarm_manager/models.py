@@ -47,7 +47,9 @@ class AlarmDefinition:
     action_label: str | None = None
     action_service: str | None = None
     action_entity: str | None = None
+    action_target: dict[str, Any] | None = None
     link_page_path: str | None = None
+    link_view_path: str | None = None
     id: str = field(default_factory=_new_id)
     created_at: datetime = field(default_factory=_now)
     updated_at: datetime = field(default_factory=_now)
@@ -78,7 +80,9 @@ class AlarmDefinition:
             "action_label": self.action_label,
             "action_service": self.action_service,
             "action_entity": self.action_entity,
+            "action_target": self.action_target,
             "link_page_path": self.link_page_path,
+            "link_view_path": self.link_view_path,
             "source_entity_id": self.source_entity_id,
             "trigger_type": self.trigger_type.value,
             "trigger_config": self.trigger_config,
@@ -113,7 +117,9 @@ class AlarmDefinition:
             action_label=data.get("action_label"),
             action_service=data.get("action_service"),
             action_entity=data.get("action_entity"),
+            action_target=data.get("action_target"),
             link_page_path=data.get("link_page_path"),
+            link_view_path=data.get("link_view_path"),
             source_entity_id=data["source_entity_id"],
             trigger_type=TriggerType(data["trigger_type"]),
             trigger_config=data["trigger_config"],

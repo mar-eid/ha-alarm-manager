@@ -88,7 +88,9 @@ export interface AlarmDefinition {
   action_label: string | null;
   action_service: string | null;
   action_entity: string | null;
+  action_target: Record<string, unknown> | null;
   link_page_path: string | null;
+  link_view_path: string | null;
   source_entity_id: string;
   trigger_type: TriggerType;
   trigger_config: Record<string, any>;

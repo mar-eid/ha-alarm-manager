@@ -104,6 +104,17 @@ test_notification:
       selector:
         text:
 
+test_alarm_notification:
+  name: Test Alarm Notification
+  description: Send a specific alarm's actual rendered notification (title, body, actions, link) as a test.
+  fields:
+    alarm_id:
+      name: Alarm ID
+      description: The ID of the alarm whose real notification to send.
+      required: true
+      selector:
+        text:
+
 trigger:
   name: Trigger Alarm
   description: Externally trigger an alarm. Use for alarms with trigger_type "external" where HA automations/blueprints handle the trigger logic.
@@ -290,13 +301,25 @@ create_alarm:
         text:
     action_entity:
       name: Action Target Entity
-      description: Entity the action service targets (e.g. lock.front_door).
+      description: (Legacy) single entity the action service targets. Prefer action_target.
       required: false
       selector:
         entity:
+    action_target:
+      name: Action Target
+      description: Target for the action service as a dict, e.g. {entity_id: [...], device_id: [...], area_id: [...]}.
+      required: false
+      selector:
+        object:
     link_page_path:
       name: Notification Link Page
       description: Dashboard path the notification links to (e.g. lovelace-alarms). Defaults to the Alarm Center if unset.
+      required: false
+      selector:
+        text:
+    link_view_path:
+      name: Notification Link View
+      description: Optional view path within the linked dashboard (e.g. overview). Combined as /{dashboard}/{view}.
       required: false
       selector:
         text:
@@ -449,13 +472,25 @@ update_alarm:
         text:
     action_entity:
       name: Action Target Entity
-      description: Entity the action service targets.
+      description: (Legacy) single entity the action service targets. Prefer action_target.
       required: false
       selector:
         entity:
+    action_target:
+      name: Action Target
+      description: Target for the action service as a dict (entity_id / device_id / area_id).
+      required: false
+      selector:
+        object:
     link_page_path:
       name: Notification Link Page
       description: Dashboard path the notification links to. Defaults to the Alarm Center if unset.
+      required: false
+      selector:
+        text:
+    link_view_path:
+      name: Notification Link View
+      description: Optional view path within the linked dashboard.
       required: false
       selector:
         text:

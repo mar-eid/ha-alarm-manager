@@ -8,7 +8,7 @@ import {
   mdiViewGrid,
 } from "@mdi/js";
 import { sharedStyles, getPriorityColor, getStateColor } from "../styles/shared-styles";
-import { fetchAlarms, fetchChannels, acknowledgeAlarm, acknowledgeAllAlarms, shelveAlarm, unshelveAlarm, subscribeAlarmChanges } from "../data/websocket";
+import { fetchAlarms, fetchChannels, acknowledgeAlarm, acknowledgeAllAlarms, shelveAlarm, unshelveAlarm, triggerAlarmAction, subscribeAlarmChanges } from "../data/websocket";
 import { STATE_LABELS, PRIORITY_LABELS, type HomeAssistant, type AlarmWithState, type AlarmChannel } from "../types";
 import "../components/severity-badge";
 import "../components/alarm-detail-dialog";
@@ -203,6 +203,20 @@ export class ActiveAlarmsView extends LitElement {
     this._loadAlarms();
   }
 
+  private async _triggerAction(alarmId: string) {
+    if (!this.hass) return;
+    await triggerAlarmAction(this.hass, alarmId);
+    this._showToast("Action triggered");
+  }
+
+  private async _testAlarm(alarmId: string) {
+    if (!this.hass) return;
+    await this.hass.callService("scada_alarm_manager", "test_alarm_notification", {
+      alarm_id: alarmId,
+    });
+    this._showToast("Test notification sent");
+  }
+
   private _edit(alarmId: string) {
     this.dispatchEvent(
       new CustomEvent("navigate", {
@@ -350,6 +364,8 @@ export class ActiveAlarmsView extends LitElement {
         @ack-alarm=${(e: CustomEvent) => this._ack(e.detail.id)}
         @shelve-alarm=${(e: CustomEvent) => this._shelve(e.detail.alarm)}
         @unshelve-alarm=${(e: CustomEvent) => this._unshelve(e.detail.id)}
+        @trigger-action=${(e: CustomEvent) => this._triggerAction(e.detail.id)}
+        @test-alarm=${(e: CustomEvent) => this._testAlarm(e.detail.id)}
       ></alarm-detail-dialog>
 
       <shelve-dialog

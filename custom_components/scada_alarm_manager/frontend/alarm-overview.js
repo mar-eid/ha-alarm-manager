@@ -4,39 +4,39 @@ function t(t,e,i,a){var s,o=arguments.length,r=o<3?e:null===a?a=Object.getOwnPro
  * Copyright 2019 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const e=globalThis,i=e.ShadowRoot&&(void 0===e.ShadyCSS||e.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,a=Symbol(),s=new WeakMap;let o=class{constructor(t,e,i){if(this._$cssResult$=!0,i!==a)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e}get styleSheet(){let t=this.o;const e=this.t;if(i&&void 0===t){const i=void 0!==e&&1===e.length;i&&(t=s.get(e)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),i&&s.set(e,t))}return t}toString(){return this.cssText}};const r=t=>new o("string"==typeof t?t:t+"",void 0,a),n=(t,...e)=>{const i=1===t.length?t[0]:e.reduce((e,i,a)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(i)+t[a+1],t[0]);return new o(i,t,a)},l=i?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const i of t.cssRules)e+=i.cssText;return r(e)})(t):t,{is:d,defineProperty:c,getOwnPropertyDescriptor:h,getOwnPropertyNames:p,getOwnPropertySymbols:u,getPrototypeOf:g}=Object,v=globalThis,m=v.trustedTypes,_=m?m.emptyScript:"",f=v.reactiveElementPolyfillSupport,b=(t,e)=>t,y={toAttribute(t,e){switch(e){case Boolean:t=t?_:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t)}return t},fromAttribute(t,e){let i=t;switch(e){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t)}catch(t){i=null}}return i}},x=(t,e)=>!d(t,e),$={attribute:!0,type:String,converter:y,reflect:!1,useDefault:!1,hasChanged:x};
+const e=globalThis,i=e.ShadowRoot&&(void 0===e.ShadyCSS||e.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,a=Symbol(),s=new WeakMap;let o=class{constructor(t,e,i){if(this._$cssResult$=!0,i!==a)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e}get styleSheet(){let t=this.o;const e=this.t;if(i&&void 0===t){const i=void 0!==e&&1===e.length;i&&(t=s.get(e)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),i&&s.set(e,t))}return t}toString(){return this.cssText}};const r=t=>new o("string"==typeof t?t:t+"",void 0,a),n=(t,...e)=>{const i=1===t.length?t[0]:e.reduce((e,i,a)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(i)+t[a+1],t[0]);return new o(i,t,a)},l=i?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const i of t.cssRules)e+=i.cssText;return r(e)})(t):t,{is:c,defineProperty:d,getOwnPropertyDescriptor:h,getOwnPropertyNames:p,getOwnPropertySymbols:g,getPrototypeOf:u}=Object,v=globalThis,m=v.trustedTypes,_=m?m.emptyScript:"",f=v.reactiveElementPolyfillSupport,b=(t,e)=>t,y={toAttribute(t,e){switch(e){case Boolean:t=t?_:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t)}return t},fromAttribute(t,e){let i=t;switch(e){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t)}catch(t){i=null}}return i}},x=(t,e)=>!c(t,e),$={attribute:!0,type:String,converter:y,reflect:!1,useDefault:!1,hasChanged:x};
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */Symbol.metadata??=Symbol("metadata"),v.litPropertyMetadata??=new WeakMap;let w=class extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,e=$){if(e.state&&(e.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((e=Object.create(e)).wrapped=!0),this.elementProperties.set(t,e),!e.noAccessor){const i=Symbol(),a=this.getPropertyDescriptor(t,i,e);void 0!==a&&c(this.prototype,t,a)}}static getPropertyDescriptor(t,e,i){const{get:a,set:s}=h(this.prototype,t)??{get(){return this[e]},set(t){this[e]=t}};return{get:a,set(e){const o=a?.call(this);s?.call(this,e),this.requestUpdate(t,o,i)},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??$}static _$Ei(){if(this.hasOwnProperty(b("elementProperties")))return;const t=g(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties)}static finalize(){if(this.hasOwnProperty(b("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(b("properties"))){const t=this.properties,e=[...p(t),...u(t)];for(const i of e)this.createProperty(i,t[i])}const t=this[Symbol.metadata];if(null!==t){const e=litPropertyMetadata.get(t);if(void 0!==e)for(const[t,i]of e)this.elementProperties.set(t,i)}this._$Eh=new Map;for(const[t,e]of this.elementProperties){const i=this._$Eu(t,e);void 0!==i&&this._$Eh.set(i,t)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(t){const e=[];if(Array.isArray(t)){const i=new Set(t.flat(1/0).reverse());for(const t of i)e.unshift(l(t))}else void 0!==t&&e.push(l(t));return e}static _$Eu(t,e){const i=e.attribute;return!1===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(t=>this.enableUpdating=t),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(t=>t(this))}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.()}removeController(t){this._$EO?.delete(t)}_$E_(){const t=new Map,e=this.constructor.elementProperties;for(const i of e.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t)}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return((t,a)=>{if(i)t.adoptedStyleSheets=a.map(t=>t instanceof CSSStyleSheet?t:t.styleSheet);else for(const i of a){const a=document.createElement("style"),s=e.litNonce;void 0!==s&&a.setAttribute("nonce",s),a.textContent=i.cssText,t.appendChild(a)}})(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach(t=>t.hostConnected?.())}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach(t=>t.hostDisconnected?.())}attributeChangedCallback(t,e,i){this._$AK(t,i)}_$ET(t,e){const i=this.constructor.elementProperties.get(t),a=this.constructor._$Eu(t,i);if(void 0!==a&&!0===i.reflect){const s=(void 0!==i.converter?.toAttribute?i.converter:y).toAttribute(e,i.type);this._$Em=t,null==s?this.removeAttribute(a):this.setAttribute(a,s),this._$Em=null}}_$AK(t,e){const i=this.constructor,a=i._$Eh.get(t);if(void 0!==a&&this._$Em!==a){const t=i.getPropertyOptions(a),s="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:y;this._$Em=a;const o=s.fromAttribute(e,t.type);this[a]=o??this._$Ej?.get(a)??o,this._$Em=null}}requestUpdate(t,e,i,a=!1,s){if(void 0!==t){const o=this.constructor;if(!1===a&&(s=this[t]),i??=o.getPropertyOptions(t),!((i.hasChanged??x)(s,e)||i.useDefault&&i.reflect&&s===this._$Ej?.get(t)&&!this.hasAttribute(o._$Eu(t,i))))return;this.C(t,e,i)}!1===this.isUpdatePending&&(this._$ES=this._$EP())}C(t,e,{useDefault:i,reflect:a,wrapped:s},o){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,o??e??this[t]),!0!==s||void 0!==o)||(this._$AL.has(t)||(this.hasUpdated||i||(e=void 0),this._$AL.set(t,e)),!0===a&&this._$Em!==t&&(this._$Eq??=new Set).add(t))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(t){Promise.reject(t)}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,e]of this._$Ep)this[t]=e;this._$Ep=void 0}const t=this.constructor.elementProperties;if(t.size>0)for(const[e,i]of t){const{wrapped:t}=i,a=this[e];!0!==t||this._$AL.has(e)||void 0===a||this.C(e,void 0,i,a)}}let t=!1;const e=this._$AL;try{t=this.shouldUpdate(e),t?(this.willUpdate(e),this._$EO?.forEach(t=>t.hostUpdate?.()),this.update(e)):this._$EM()}catch(e){throw t=!1,this._$EM(),e}t&&this._$AE(e)}willUpdate(t){}_$AE(t){this._$EO?.forEach(t=>t.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return!0}update(t){this._$Eq&&=this._$Eq.forEach(t=>this._$ET(t,this[t])),this._$EM()}updated(t){}firstUpdated(t){}};w.elementStyles=[],w.shadowRootOptions={mode:"open"},w[b("elementProperties")]=new Map,w[b("finalized")]=new Map,f?.({ReactiveElement:w}),(v.reactiveElementVersions??=[]).push("2.1.2");
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const k=globalThis,A=t=>t,C=k.trustedTypes,T=C?C.createPolicy("lit-html",{createHTML:t=>t}):void 0,E="$lit$",S=`lit$${Math.random().toFixed(9).slice(2)}$`,M="?"+S,L=`<${M}>`,P=document,H=()=>P.createComment(""),V=t=>null===t||"object"!=typeof t&&"function"!=typeof t,z=Array.isArray,N="[ \t\n\f\r]",D=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,I=/-->/g,O=/>/g,U=RegExp(`>|${N}(?:([^\\s"'>=/]+)(${N}*=${N}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),q=/'/g,j=/"/g,F=/^(?:script|style|textarea|title)$/i,R=(t=>(e,...i)=>({_$litType$:t,strings:e,values:i}))(1),Z=Symbol.for("lit-noChange"),B=Symbol.for("lit-nothing"),W=new WeakMap,K=P.createTreeWalker(P,129);function Y(t,e){if(!z(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==T?T.createHTML(e):e}const J=(t,e)=>{const i=t.length-1,a=[];let s,o=2===e?"<svg>":3===e?"<math>":"",r=D;for(let e=0;e<i;e++){const i=t[e];let n,l,d=-1,c=0;for(;c<i.length&&(r.lastIndex=c,l=r.exec(i),null!==l);)c=r.lastIndex,r===D?"!--"===l[1]?r=I:void 0!==l[1]?r=O:void 0!==l[2]?(F.test(l[2])&&(s=RegExp("</"+l[2],"g")),r=U):void 0!==l[3]&&(r=U):r===U?">"===l[0]?(r=s??D,d=-1):void 0===l[1]?d=-2:(d=r.lastIndex-l[2].length,n=l[1],r=void 0===l[3]?U:'"'===l[3]?j:q):r===j||r===q?r=U:r===I||r===O?r=D:(r=U,s=void 0);const h=r===U&&t[e+1].startsWith("/>")?" ":"";o+=r===D?i+L:d>=0?(a.push(n),i.slice(0,d)+E+i.slice(d)+S+h):i+S+(-2===d?e:h)}return[Y(t,o+(t[i]||"<?>")+(2===e?"</svg>":3===e?"</math>":"")),a]};class G{constructor({strings:t,_$litType$:e},i){let a;this.parts=[];let s=0,o=0;const r=t.length-1,n=this.parts,[l,d]=J(t,e);if(this.el=G.createElement(l,i),K.currentNode=this.el.content,2===e||3===e){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes)}for(;null!==(a=K.nextNode())&&n.length<r;){if(1===a.nodeType){if(a.hasAttributes())for(const t of a.getAttributeNames())if(t.endsWith(E)){const e=d[o++],i=a.getAttribute(t).split(S),r=/([.?@])?(.*)/.exec(e);n.push({type:1,index:s,name:r[2],strings:i,ctor:"."===r[1]?it:"?"===r[1]?at:"@"===r[1]?st:et}),a.removeAttribute(t)}else t.startsWith(S)&&(n.push({type:6,index:s}),a.removeAttribute(t));if(F.test(a.tagName)){const t=a.textContent.split(S),e=t.length-1;if(e>0){a.textContent=C?C.emptyScript:"";for(let i=0;i<e;i++)a.append(t[i],H()),K.nextNode(),n.push({type:2,index:++s});a.append(t[e],H())}}}else if(8===a.nodeType)if(a.data===M)n.push({type:2,index:s});else{let t=-1;for(;-1!==(t=a.data.indexOf(S,t+1));)n.push({type:7,index:s}),t+=S.length-1}s++}}static createElement(t,e){const i=P.createElement("template");return i.innerHTML=t,i}}function X(t,e,i=t,a){if(e===Z)return e;let s=void 0!==a?i._$Co?.[a]:i._$Cl;const o=V(e)?void 0:e._$litDirective$;return s?.constructor!==o&&(s?._$AO?.(!1),void 0===o?s=void 0:(s=new o(t),s._$AT(t,i,a)),void 0!==a?(i._$Co??=[])[a]=s:i._$Cl=s),void 0!==s&&(e=X(t,s._$AS(t,e.values),s,a)),e}class Q{constructor(t,e){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=e}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:e},parts:i}=this._$AD,a=(t?.creationScope??P).importNode(e,!0);K.currentNode=a;let s=K.nextNode(),o=0,r=0,n=i[0];for(;void 0!==n;){if(o===n.index){let e;2===n.type?e=new tt(s,s.nextSibling,this,t):1===n.type?e=new n.ctor(s,n.name,n.strings,this,t):6===n.type&&(e=new ot(s,this,t)),this._$AV.push(e),n=i[++r]}o!==n?.index&&(s=K.nextNode(),o++)}return K.currentNode=P,a}p(t){let e=0;for(const i of this._$AV)void 0!==i&&(void 0!==i.strings?(i._$AI(t,i,e),e+=i.strings.length-2):i._$AI(t[e])),e++}}class tt{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,e,i,a){this.type=2,this._$AH=B,this._$AN=void 0,this._$AA=t,this._$AB=e,this._$AM=i,this.options=a,this._$Cv=a?.isConnected??!0}get parentNode(){let t=this._$AA.parentNode;const e=this._$AM;return void 0!==e&&11===t?.nodeType&&(t=e.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,e=this){t=X(this,t,e),V(t)?t===B||null==t||""===t?(this._$AH!==B&&this._$AR(),this._$AH=B):t!==this._$AH&&t!==Z&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):(t=>z(t)||"function"==typeof t?.[Symbol.iterator])(t)?this.k(t):this._(t)}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t))}_(t){this._$AH!==B&&V(this._$AH)?this._$AA.nextSibling.data=t:this.T(P.createTextNode(t)),this._$AH=t}$(t){const{values:e,_$litType$:i}=t,a="number"==typeof i?this._$AC(t):(void 0===i.el&&(i.el=G.createElement(Y(i.h,i.h[0]),this.options)),i);if(this._$AH?._$AD===a)this._$AH.p(e);else{const t=new Q(a,this),i=t.u(this.options);t.p(e),this.T(i),this._$AH=t}}_$AC(t){let e=W.get(t.strings);return void 0===e&&W.set(t.strings,e=new G(t)),e}k(t){z(this._$AH)||(this._$AH=[],this._$AR());const e=this._$AH;let i,a=0;for(const s of t)a===e.length?e.push(i=new tt(this.O(H()),this.O(H()),this,this.options)):i=e[a],i._$AI(s),a++;a<e.length&&(this._$AR(i&&i._$AB.nextSibling,a),e.length=a)}_$AR(t=this._$AA.nextSibling,e){for(this._$AP?.(!1,!0,e);t!==this._$AB;){const e=A(t).nextSibling;A(t).remove(),t=e}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t))}}class et{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,e,i,a,s){this.type=1,this._$AH=B,this._$AN=void 0,this.element=t,this.name=e,this._$AM=a,this.options=s,i.length>2||""!==i[0]||""!==i[1]?(this._$AH=Array(i.length-1).fill(new String),this.strings=i):this._$AH=B}_$AI(t,e=this,i,a){const s=this.strings;let o=!1;if(void 0===s)t=X(this,t,e,0),o=!V(t)||t!==this._$AH&&t!==Z,o&&(this._$AH=t);else{const a=t;let r,n;for(t=s[0],r=0;r<s.length-1;r++)n=X(this,a[i+r],e,r),n===Z&&(n=this._$AH[r]),o||=!V(n)||n!==this._$AH[r],n===B?t=B:t!==B&&(t+=(n??"")+s[r+1]),this._$AH[r]=n}o&&!a&&this.j(t)}j(t){t===B?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"")}}class it extends et{constructor(){super(...arguments),this.type=3}j(t){this.element[this.name]=t===B?void 0:t}}class at extends et{constructor(){super(...arguments),this.type=4}j(t){this.element.toggleAttribute(this.name,!!t&&t!==B)}}class st extends et{constructor(t,e,i,a,s){super(t,e,i,a,s),this.type=5}_$AI(t,e=this){if((t=X(this,t,e,0)??B)===Z)return;const i=this._$AH,a=t===B&&i!==B||t.capture!==i.capture||t.once!==i.once||t.passive!==i.passive,s=t!==B&&(i===B||a);a&&this.element.removeEventListener(this.name,this,i),s&&this.element.addEventListener(this.name,this,t),this._$AH=t}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t)}}class ot{constructor(t,e,i){this.element=t,this.type=6,this._$AN=void 0,this._$AM=e,this.options=i}get _$AU(){return this._$AM._$AU}_$AI(t){X(this,t)}}const rt=k.litHtmlPolyfillSupport;rt?.(G,tt),(k.litHtmlVersions??=[]).push("3.3.3");const nt=globalThis;
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */class lt extends w{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const e=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=((t,e,i)=>{const a=i?.renderBefore??e;let s=a._$litPart$;if(void 0===s){const t=i?.renderBefore??null;a._$litPart$=s=new tt(e.insertBefore(H(),t),t,void 0,i??{})}return s._$AI(t),s})(e,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return Z}}lt._$litElement$=!0,lt.finalized=!0,nt.litElementHydrateSupport?.({LitElement:lt});const dt=nt.litElementPolyfillSupport;dt?.({LitElement:lt}),(nt.litElementVersions??=[]).push("4.2.2");
+ */Symbol.metadata??=Symbol("metadata"),v.litPropertyMetadata??=new WeakMap;let w=class extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,e=$){if(e.state&&(e.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((e=Object.create(e)).wrapped=!0),this.elementProperties.set(t,e),!e.noAccessor){const i=Symbol(),a=this.getPropertyDescriptor(t,i,e);void 0!==a&&d(this.prototype,t,a)}}static getPropertyDescriptor(t,e,i){const{get:a,set:s}=h(this.prototype,t)??{get(){return this[e]},set(t){this[e]=t}};return{get:a,set(e){const o=a?.call(this);s?.call(this,e),this.requestUpdate(t,o,i)},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??$}static _$Ei(){if(this.hasOwnProperty(b("elementProperties")))return;const t=u(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties)}static finalize(){if(this.hasOwnProperty(b("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(b("properties"))){const t=this.properties,e=[...p(t),...g(t)];for(const i of e)this.createProperty(i,t[i])}const t=this[Symbol.metadata];if(null!==t){const e=litPropertyMetadata.get(t);if(void 0!==e)for(const[t,i]of e)this.elementProperties.set(t,i)}this._$Eh=new Map;for(const[t,e]of this.elementProperties){const i=this._$Eu(t,e);void 0!==i&&this._$Eh.set(i,t)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(t){const e=[];if(Array.isArray(t)){const i=new Set(t.flat(1/0).reverse());for(const t of i)e.unshift(l(t))}else void 0!==t&&e.push(l(t));return e}static _$Eu(t,e){const i=e.attribute;return!1===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(t=>this.enableUpdating=t),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(t=>t(this))}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.()}removeController(t){this._$EO?.delete(t)}_$E_(){const t=new Map,e=this.constructor.elementProperties;for(const i of e.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t)}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return((t,a)=>{if(i)t.adoptedStyleSheets=a.map(t=>t instanceof CSSStyleSheet?t:t.styleSheet);else for(const i of a){const a=document.createElement("style"),s=e.litNonce;void 0!==s&&a.setAttribute("nonce",s),a.textContent=i.cssText,t.appendChild(a)}})(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach(t=>t.hostConnected?.())}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach(t=>t.hostDisconnected?.())}attributeChangedCallback(t,e,i){this._$AK(t,i)}_$ET(t,e){const i=this.constructor.elementProperties.get(t),a=this.constructor._$Eu(t,i);if(void 0!==a&&!0===i.reflect){const s=(void 0!==i.converter?.toAttribute?i.converter:y).toAttribute(e,i.type);this._$Em=t,null==s?this.removeAttribute(a):this.setAttribute(a,s),this._$Em=null}}_$AK(t,e){const i=this.constructor,a=i._$Eh.get(t);if(void 0!==a&&this._$Em!==a){const t=i.getPropertyOptions(a),s="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:y;this._$Em=a;const o=s.fromAttribute(e,t.type);this[a]=o??this._$Ej?.get(a)??o,this._$Em=null}}requestUpdate(t,e,i,a=!1,s){if(void 0!==t){const o=this.constructor;if(!1===a&&(s=this[t]),i??=o.getPropertyOptions(t),!((i.hasChanged??x)(s,e)||i.useDefault&&i.reflect&&s===this._$Ej?.get(t)&&!this.hasAttribute(o._$Eu(t,i))))return;this.C(t,e,i)}!1===this.isUpdatePending&&(this._$ES=this._$EP())}C(t,e,{useDefault:i,reflect:a,wrapped:s},o){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,o??e??this[t]),!0!==s||void 0!==o)||(this._$AL.has(t)||(this.hasUpdated||i||(e=void 0),this._$AL.set(t,e)),!0===a&&this._$Em!==t&&(this._$Eq??=new Set).add(t))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(t){Promise.reject(t)}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,e]of this._$Ep)this[t]=e;this._$Ep=void 0}const t=this.constructor.elementProperties;if(t.size>0)for(const[e,i]of t){const{wrapped:t}=i,a=this[e];!0!==t||this._$AL.has(e)||void 0===a||this.C(e,void 0,i,a)}}let t=!1;const e=this._$AL;try{t=this.shouldUpdate(e),t?(this.willUpdate(e),this._$EO?.forEach(t=>t.hostUpdate?.()),this.update(e)):this._$EM()}catch(e){throw t=!1,this._$EM(),e}t&&this._$AE(e)}willUpdate(t){}_$AE(t){this._$EO?.forEach(t=>t.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return!0}update(t){this._$Eq&&=this._$Eq.forEach(t=>this._$ET(t,this[t])),this._$EM()}updated(t){}firstUpdated(t){}};w.elementStyles=[],w.shadowRootOptions={mode:"open"},w[b("elementProperties")]=new Map,w[b("finalized")]=new Map,f?.({ReactiveElement:w}),(v.reactiveElementVersions??=[]).push("2.1.2");
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
  */
-const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}):customElements.define(t,e)},ht={attribute:!0,type:String,converter:y,reflect:!1,hasChanged:x},pt=(t=ht,e,i)=>{const{kind:a,metadata:s}=i;let o=globalThis.litPropertyMetadata.get(s);if(void 0===o&&globalThis.litPropertyMetadata.set(s,o=new Map),"setter"===a&&((t=Object.create(t)).wrapped=!0),o.set(i.name,t),"accessor"===a){const{name:a}=i;return{set(i){const s=e.get.call(this);e.set.call(this,i),this.requestUpdate(a,s,t,!0,i)},init(e){return void 0!==e&&this.C(a,void 0,t,e),e}}}if("setter"===a){const{name:a}=i;return function(i){const s=this[a];e.call(this,i),this.requestUpdate(a,s,t,!0,i)}}throw Error("Unsupported decorator location: "+a)};
+const k=globalThis,A=t=>t,C=k.trustedTypes,T=C?C.createPolicy("lit-html",{createHTML:t=>t}):void 0,E="$lit$",S=`lit$${Math.random().toFixed(9).slice(2)}$`,M="?"+S,L=`<${M}>`,P=document,H=()=>P.createComment(""),V=t=>null===t||"object"!=typeof t&&"function"!=typeof t,z=Array.isArray,N="[ \t\n\f\r]",D=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,I=/-->/g,O=/>/g,U=RegExp(`>|${N}(?:([^\\s"'>=/]+)(${N}*=${N}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),q=/'/g,j=/"/g,R=/^(?:script|style|textarea|title)$/i,F=(t=>(e,...i)=>({_$litType$:t,strings:e,values:i}))(1),Z=Symbol.for("lit-noChange"),B=Symbol.for("lit-nothing"),W=new WeakMap,K=P.createTreeWalker(P,129);function Y(t,e){if(!z(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==T?T.createHTML(e):e}const J=(t,e)=>{const i=t.length-1,a=[];let s,o=2===e?"<svg>":3===e?"<math>":"",r=D;for(let e=0;e<i;e++){const i=t[e];let n,l,c=-1,d=0;for(;d<i.length&&(r.lastIndex=d,l=r.exec(i),null!==l);)d=r.lastIndex,r===D?"!--"===l[1]?r=I:void 0!==l[1]?r=O:void 0!==l[2]?(R.test(l[2])&&(s=RegExp("</"+l[2],"g")),r=U):void 0!==l[3]&&(r=U):r===U?">"===l[0]?(r=s??D,c=-1):void 0===l[1]?c=-2:(c=r.lastIndex-l[2].length,n=l[1],r=void 0===l[3]?U:'"'===l[3]?j:q):r===j||r===q?r=U:r===I||r===O?r=D:(r=U,s=void 0);const h=r===U&&t[e+1].startsWith("/>")?" ":"";o+=r===D?i+L:c>=0?(a.push(n),i.slice(0,c)+E+i.slice(c)+S+h):i+S+(-2===c?e:h)}return[Y(t,o+(t[i]||"<?>")+(2===e?"</svg>":3===e?"</math>":"")),a]};class G{constructor({strings:t,_$litType$:e},i){let a;this.parts=[];let s=0,o=0;const r=t.length-1,n=this.parts,[l,c]=J(t,e);if(this.el=G.createElement(l,i),K.currentNode=this.el.content,2===e||3===e){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes)}for(;null!==(a=K.nextNode())&&n.length<r;){if(1===a.nodeType){if(a.hasAttributes())for(const t of a.getAttributeNames())if(t.endsWith(E)){const e=c[o++],i=a.getAttribute(t).split(S),r=/([.?@])?(.*)/.exec(e);n.push({type:1,index:s,name:r[2],strings:i,ctor:"."===r[1]?it:"?"===r[1]?at:"@"===r[1]?st:et}),a.removeAttribute(t)}else t.startsWith(S)&&(n.push({type:6,index:s}),a.removeAttribute(t));if(R.test(a.tagName)){const t=a.textContent.split(S),e=t.length-1;if(e>0){a.textContent=C?C.emptyScript:"";for(let i=0;i<e;i++)a.append(t[i],H()),K.nextNode(),n.push({type:2,index:++s});a.append(t[e],H())}}}else if(8===a.nodeType)if(a.data===M)n.push({type:2,index:s});else{let t=-1;for(;-1!==(t=a.data.indexOf(S,t+1));)n.push({type:7,index:s}),t+=S.length-1}s++}}static createElement(t,e){const i=P.createElement("template");return i.innerHTML=t,i}}function X(t,e,i=t,a){if(e===Z)return e;let s=void 0!==a?i._$Co?.[a]:i._$Cl;const o=V(e)?void 0:e._$litDirective$;return s?.constructor!==o&&(s?._$AO?.(!1),void 0===o?s=void 0:(s=new o(t),s._$AT(t,i,a)),void 0!==a?(i._$Co??=[])[a]=s:i._$Cl=s),void 0!==s&&(e=X(t,s._$AS(t,e.values),s,a)),e}class Q{constructor(t,e){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=e}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:e},parts:i}=this._$AD,a=(t?.creationScope??P).importNode(e,!0);K.currentNode=a;let s=K.nextNode(),o=0,r=0,n=i[0];for(;void 0!==n;){if(o===n.index){let e;2===n.type?e=new tt(s,s.nextSibling,this,t):1===n.type?e=new n.ctor(s,n.name,n.strings,this,t):6===n.type&&(e=new ot(s,this,t)),this._$AV.push(e),n=i[++r]}o!==n?.index&&(s=K.nextNode(),o++)}return K.currentNode=P,a}p(t){let e=0;for(const i of this._$AV)void 0!==i&&(void 0!==i.strings?(i._$AI(t,i,e),e+=i.strings.length-2):i._$AI(t[e])),e++}}class tt{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,e,i,a){this.type=2,this._$AH=B,this._$AN=void 0,this._$AA=t,this._$AB=e,this._$AM=i,this.options=a,this._$Cv=a?.isConnected??!0}get parentNode(){let t=this._$AA.parentNode;const e=this._$AM;return void 0!==e&&11===t?.nodeType&&(t=e.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,e=this){t=X(this,t,e),V(t)?t===B||null==t||""===t?(this._$AH!==B&&this._$AR(),this._$AH=B):t!==this._$AH&&t!==Z&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):(t=>z(t)||"function"==typeof t?.[Symbol.iterator])(t)?this.k(t):this._(t)}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t))}_(t){this._$AH!==B&&V(this._$AH)?this._$AA.nextSibling.data=t:this.T(P.createTextNode(t)),this._$AH=t}$(t){const{values:e,_$litType$:i}=t,a="number"==typeof i?this._$AC(t):(void 0===i.el&&(i.el=G.createElement(Y(i.h,i.h[0]),this.options)),i);if(this._$AH?._$AD===a)this._$AH.p(e);else{const t=new Q(a,this),i=t.u(this.options);t.p(e),this.T(i),this._$AH=t}}_$AC(t){let e=W.get(t.strings);return void 0===e&&W.set(t.strings,e=new G(t)),e}k(t){z(this._$AH)||(this._$AH=[],this._$AR());const e=this._$AH;let i,a=0;for(const s of t)a===e.length?e.push(i=new tt(this.O(H()),this.O(H()),this,this.options)):i=e[a],i._$AI(s),a++;a<e.length&&(this._$AR(i&&i._$AB.nextSibling,a),e.length=a)}_$AR(t=this._$AA.nextSibling,e){for(this._$AP?.(!1,!0,e);t!==this._$AB;){const e=A(t).nextSibling;A(t).remove(),t=e}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t))}}class et{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,e,i,a,s){this.type=1,this._$AH=B,this._$AN=void 0,this.element=t,this.name=e,this._$AM=a,this.options=s,i.length>2||""!==i[0]||""!==i[1]?(this._$AH=Array(i.length-1).fill(new String),this.strings=i):this._$AH=B}_$AI(t,e=this,i,a){const s=this.strings;let o=!1;if(void 0===s)t=X(this,t,e,0),o=!V(t)||t!==this._$AH&&t!==Z,o&&(this._$AH=t);else{const a=t;let r,n;for(t=s[0],r=0;r<s.length-1;r++)n=X(this,a[i+r],e,r),n===Z&&(n=this._$AH[r]),o||=!V(n)||n!==this._$AH[r],n===B?t=B:t!==B&&(t+=(n??"")+s[r+1]),this._$AH[r]=n}o&&!a&&this.j(t)}j(t){t===B?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"")}}class it extends et{constructor(){super(...arguments),this.type=3}j(t){this.element[this.name]=t===B?void 0:t}}class at extends et{constructor(){super(...arguments),this.type=4}j(t){this.element.toggleAttribute(this.name,!!t&&t!==B)}}class st extends et{constructor(t,e,i,a,s){super(t,e,i,a,s),this.type=5}_$AI(t,e=this){if((t=X(this,t,e,0)??B)===Z)return;const i=this._$AH,a=t===B&&i!==B||t.capture!==i.capture||t.once!==i.once||t.passive!==i.passive,s=t!==B&&(i===B||a);a&&this.element.removeEventListener(this.name,this,i),s&&this.element.addEventListener(this.name,this,t),this._$AH=t}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t)}}class ot{constructor(t,e,i){this.element=t,this.type=6,this._$AN=void 0,this._$AM=e,this.options=i}get _$AU(){return this._$AM._$AU}_$AI(t){X(this,t)}}const rt=k.litHtmlPolyfillSupport;rt?.(G,tt),(k.litHtmlVersions??=[]).push("3.3.3");const nt=globalThis;
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */function ut(t){return(e,i)=>"object"==typeof i?pt(t,e,i):((t,e,i)=>{const a=e.hasOwnProperty(i);return e.constructor.createProperty(i,t),a?Object.getOwnPropertyDescriptor(e,i):void 0})(t,e,i)}
+ */class lt extends w{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const e=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=((t,e,i)=>{const a=i?.renderBefore??e;let s=a._$litPart$;if(void 0===s){const t=i?.renderBefore??null;a._$litPart$=s=new tt(e.insertBefore(H(),t),t,void 0,i??{})}return s._$AI(t),s})(e,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return Z}}lt._$litElement$=!0,lt.finalized=!0,nt.litElementHydrateSupport?.({LitElement:lt});const ct=nt.litElementPolyfillSupport;ct?.({LitElement:lt}),(nt.litElementVersions??=[]).push("4.2.2");
 /**
  * @license
  * Copyright 2017 Google LLC
  * SPDX-License-Identifier: BSD-3-Clause
- */function gt(t){return ut({...t,state:!0,attribute:!1})}const vt=n`
+ */
+const dt=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}):customElements.define(t,e)},ht={attribute:!0,type:String,converter:y,reflect:!1,hasChanged:x},pt=(t=ht,e,i)=>{const{kind:a,metadata:s}=i;let o=globalThis.litPropertyMetadata.get(s);if(void 0===o&&globalThis.litPropertyMetadata.set(s,o=new Map),"setter"===a&&((t=Object.create(t)).wrapped=!0),o.set(i.name,t),"accessor"===a){const{name:a}=i;return{set(i){const s=e.get.call(this);e.set.call(this,i),this.requestUpdate(a,s,t,!0,i)},init(e){return void 0!==e&&this.C(a,void 0,t,e),e}}}if("setter"===a){const{name:a}=i;return function(i){const s=this[a];e.call(this,i),this.requestUpdate(a,s,t,!0,i)}}throw Error("Unsupported decorator location: "+a)};
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */function gt(t){return(e,i)=>"object"==typeof i?pt(t,e,i):((t,e,i)=>{const a=e.hasOwnProperty(i);return e.constructor.createProperty(i,t),a?Object.getOwnPropertyDescriptor(e,i):void 0})(t,e,i)}
+/**
+ * @license
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: BSD-3-Clause
+ */function ut(t){return gt({...t,state:!0,attribute:!1})}const vt=n`
   :host {
     --alarm-critical: #f44336;
     --alarm-high: #ff5722;
@@ -225,7 +225,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       .checkbox-row label {
         display: flex; align-items: center; gap: 4px; font-size: 0.9em; cursor: pointer;
       }
-    `]}setConfig(t){this._config=t}_update(t,e){const i={...this._config,[t]:e};""!==e&&void 0!==e||delete i[t],this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:i}}))}render(){return this._config?R`
+    `]}setConfig(t){this._config=t}_update(t,e){const i={...this._config,[t]:e};""!==e&&void 0!==e||delete i[t],this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:i}}))}render(){return this._config?F`
       <div class="form-group">
         <label>Title</label>
         <input type="text"
@@ -263,7 +263,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
           Show header
         </label>
       </div>
-    `:R``}};t([ut({attribute:!1})],ft.prototype,"hass",void 0),t([gt()],ft.prototype,"_config",void 0),ft=t([ct("scada-alarm-overview-editor")],ft);var bt="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z",yt="M23,12L20.56,9.22L20.9,5.54L17.29,4.72L15.4,1.54L12,3L8.6,1.54L6.71,4.72L3.1,5.53L3.44,9.21L1,12L3.44,14.78L3.1,18.47L6.71,19.29L8.6,22.47L12,21L15.4,22.46L17.29,19.28L20.9,18.46L20.56,14.78L23,12M13,17H11V15H13V17M13,13H11V7H13V13Z",xt="M13 13H11V7H13M11 15H13V17H11M15.73 3H8.27L3 8.27V15.73L8.27 21H15.73L21 15.73V8.27L15.73 3Z",$t="M10 21H14C14 22.1 13.1 23 12 23S10 22.1 10 21M21 19V20H3V19L5 17V11C5 7.9 7 5.2 10 4.3V4C10 2.9 10.9 2 12 2S14 2.9 14 4V4.3C17 5.2 19 7.9 19 11V17L21 19M17 11C17 8.2 14.8 6 12 6S7 8.2 7 11V18H17V11Z",wt="M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21M19.75,3.19L18.33,4.61C20.04,6.3 21,8.6 21,11H23C23,8.07 21.84,5.25 19.75,3.19M1,11H3C3,8.6 3.96,6.3 5.67,4.61L4.25,3.19C2.16,5.25 1,8.07 1,11Z",kt="M10,21H14A2,2 0 0,1 12,23A2,2 0 0,1 10,21M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M15,9H9V11H12.24L9,13.7V16H15V14H11.76L15,11.3V9Z",At="M17,19H7V5H17M17,1H7C5.89,1 5,1.89 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3C19,1.89 18.1,1 17,1Z",Ct="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z",Tt="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";const Et=async t=>(await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/list"})).alarms,St=async(t,e)=>{await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/acknowledge",alarm_id:e})},Mt=async(t,e,i)=>{await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/shelve",alarm_id:e,duration:i})},Lt=async(t,e)=>{await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/unshelve",alarm_id:e})},Pt=async t=>(await t.connection.sendMessagePromise({type:"scada_alarm_manager/channel/list"})).channels,Ht=async(t,e={})=>(await t.connection.sendMessagePromise({type:"scada_alarm_manager/event/list",...e})).events,Vt=async(t,e)=>t.connection.subscribeMessage(e,{type:"scada_alarm_manager/subscribe"}),zt={0:"Info",1:"Warning",2:"High",3:"Critical"},Nt={normal:"Normal",active_unacknowledged:"Active (Unacked)",active_acknowledged:"Active (Acked)",returned_to_normal_unacknowledged:"RTN (Unacked)",shelved:"Shelved",disabled:"Disabled"},Dt=["active_unacknowledged","active_acknowledged","returned_to_normal_unacknowledged"],It=["active_unacknowledged","returned_to_normal_unacknowledged"],Ot=[3,2,1,0],Ut={0:Tt,1:bt,2:xt,3:yt};let qt=class extends lt{constructor(){super(...arguments),this.alarms=[],this.filterPriority=""}static{this.styles=[vt,n`
+    `:F``}};t([gt({attribute:!1})],ft.prototype,"hass",void 0),t([ut()],ft.prototype,"_config",void 0),ft=t([dt("scada-alarm-overview-editor")],ft);var bt="M13 14H11V9H13M13 18H11V16H13M1 21H23L12 2L1 21Z",yt="M23,12L20.56,9.22L20.9,5.54L17.29,4.72L15.4,1.54L12,3L8.6,1.54L6.71,4.72L3.1,5.53L3.44,9.21L1,12L3.44,14.78L3.1,18.47L6.71,19.29L8.6,22.47L12,21L15.4,22.46L17.29,19.28L20.9,18.46L20.56,14.78L23,12M13,17H11V15H13V17M13,13H11V7H13V13Z",xt="M13 13H11V7H13M11 15H13V17H11M15.73 3H8.27L3 8.27V15.73L8.27 21H15.73L21 15.73V8.27L15.73 3Z",$t="M10 21H14C14 22.1 13.1 23 12 23S10 22.1 10 21M21 19V20H3V19L5 17V11C5 7.9 7 5.2 10 4.3V4C10 2.9 10.9 2 12 2S14 2.9 14 4V4.3C17 5.2 19 7.9 19 11V17L21 19M17 11C17 8.2 14.8 6 12 6S7 8.2 7 11V18H17V11Z",wt="M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21M19.75,3.19L18.33,4.61C20.04,6.3 21,8.6 21,11H23C23,8.07 21.84,5.25 19.75,3.19M1,11H3C3,8.6 3.96,6.3 5.67,4.61L4.25,3.19C2.16,5.25 1,8.07 1,11Z",kt="M10,21H14A2,2 0 0,1 12,23A2,2 0 0,1 10,21M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M15,9H9V11H12.24L9,13.7V16H15V14H11.76L15,11.3V9Z",At="M17,19H7V5H17M17,1H7C5.89,1 5,1.89 5,3V21A2,2 0 0,0 7,23H17A2,2 0 0,0 19,21V3C19,1.89 18.1,1 17,1Z",Ct="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z",Tt="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z";const Et=async(t,e)=>{await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/trigger_action",alarm_id:e})},St=async t=>(await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/list"})).alarms,Mt=async(t,e)=>{await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/acknowledge",alarm_id:e})},Lt=async(t,e,i)=>{await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/shelve",alarm_id:e,duration:i})},Pt=async(t,e)=>{await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/unshelve",alarm_id:e})},Ht=async t=>(await t.connection.sendMessagePromise({type:"scada_alarm_manager/channel/list"})).channels,Vt=async(t,e={})=>(await t.connection.sendMessagePromise({type:"scada_alarm_manager/event/list",...e})).events,zt=async(t,e)=>t.connection.subscribeMessage(e,{type:"scada_alarm_manager/subscribe"}),Nt={0:"Info",1:"Warning",2:"High",3:"Critical"},Dt={normal:"Normal",active_unacknowledged:"Active (Unacked)",active_acknowledged:"Active (Acked)",returned_to_normal_unacknowledged:"RTN (Unacked)",shelved:"Shelved",disabled:"Disabled"},It=["active_unacknowledged","active_acknowledged","returned_to_normal_unacknowledged"],Ot=["active_unacknowledged","returned_to_normal_unacknowledged"],Ut=[3,2,1,0],qt={0:Tt,1:bt,2:xt,3:yt};let jt=class extends lt{constructor(){super(...arguments),this.alarms=[],this.filterPriority=""}static{this.styles=[vt,n`
       :host {
         display: block;
         padding: 16px 24px 8px;
@@ -344,7 +344,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         color: var(--secondary-text-color, #727272);
         white-space: nowrap;
       }
-    `]}_emit(t){this.dispatchEvent(new CustomEvent("priority-filter",{detail:{priority:t},bubbles:!0,composed:!0}))}_tile(t,e,i,a,s){const o=null!==s,r=o&&this.filterPriority===s;return R`
+    `]}_emit(t){this.dispatchEvent(new CustomEvent("priority-filter",{detail:{priority:t},bubbles:!0,composed:!0}))}_tile(t,e,i,a,s){const o=null!==s,r=o&&this.filterPriority===s;return F`
       <button
         class="tile ${r?"sel":""}"
         style=${`--c:${t}`}
@@ -357,25 +357,25 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
           <div class="lbl">${i}</div>
         </div>
       </button>
-    `}render(){const t=this.alarms.filter(t=>Dt.includes(t.runtime.state)),e=e=>t.filter(t=>t.priority===e).length,i=t.filter(t=>It.includes(t.runtime.state)).length,a=this.alarms.filter(t=>"shelved"===t.runtime.state).length,s=t.length,o=Ot.map(t=>({p:t,n:e(t)})).filter(t=>t.n>0);return R`
+    `}render(){const t=this.alarms.filter(t=>It.includes(t.runtime.state)),e=e=>t.filter(t=>t.priority===e).length,i=t.filter(t=>Ot.includes(t.runtime.state)).length,a=this.alarms.filter(t=>"shelved"===t.runtime.state).length,s=t.length,o=Ut.map(t=>({p:t,n:e(t)})).filter(t=>t.n>0);return F`
       <div class="kpis">
         ${this._tile("#5e5e5e",s,"Active alarms",wt,null)}
-        ${Ot.map(t=>this._tile(mt(t),e(t),zt[t],Ut[t],String(t)))}
+        ${Ut.map(t=>this._tile(mt(t),e(t),Nt[t],qt[t],String(t)))}
         ${this._tile("#ff9800",i,"Unacknowledged","M23 7V13H21V7M21 15H23V17H21M12 2A2 2 0 0 0 10 4A2 2 0 0 0 10 4.29C7.12 5.14 5 7.82 5 11V17L3 19V20H21V19L19 17V11C19 7.82 16.88 5.14 14 4.29A2 2 0 0 0 14 4A2 2 0 0 0 12 2M10 21A2 2 0 0 0 12 23A2 2 0 0 0 14 21Z",null)}
         ${this._tile("#9c27b0",a,"Shelved",kt,null)}
       </div>
-      ${s>0?R`
+      ${s>0?F`
             <div class="bar-row">
               <div class="bar">
-                ${o.map(t=>R`<span
+                ${o.map(t=>F`<span
                       style=${`flex:${t.n};background:${mt(t.p)}`}
-                      title=${`${t.n} ${zt[t.p]}`}
+                      title=${`${t.n} ${Nt[t.p]}`}
                     ></span>`)}
               </div>
               <span class="hint">${i} of ${s} need attention</span>
             </div>
           `:B}
-    `}};t([ut({attribute:!1})],qt.prototype,"alarms",void 0),t([ut()],qt.prototype,"filterPriority",void 0),qt=t([ct("alarm-kpi-strip")],qt);let jt=class extends lt{constructor(){super(...arguments),this.open=!1,this.version=""}static{this.styles=[vt,n`
+    `}};t([gt({attribute:!1})],jt.prototype,"alarms",void 0),t([gt()],jt.prototype,"filterPriority",void 0),jt=t([dt("alarm-kpi-strip")],jt);let Rt=class extends lt{constructor(){super(...arguments),this.open=!1,this.version=""}static{this.styles=[vt,n`
       .overlay {
         position: fixed; top: 0; left: 0; right: 0; bottom: 0;
         background: rgba(0, 0, 0, 0.5);
@@ -415,7 +415,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         border-top: 1px solid var(--divider-color, #e0e0e0);
         font-size: 0.8em; color: var(--secondary-text-color);
       }
-    `]}_close(){this.open=!1,this.dispatchEvent(new CustomEvent("close"))}render(){return this.open?R`
+    `]}_close(){this.open=!1,this.dispatchEvent(new CustomEvent("close"))}render(){return this.open?F`
       <div class="overlay" @click=${this._close}>
         <div class="dialog" @click=${t=>t.stopPropagation()}>
           <div class="dialog-header">
@@ -446,11 +446,11 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
             <p>Override default notification text with Jinja2 templates. Available variables:</p>
             <p><span class="key">{{ name }}</span>, <span class="key">{{ value }}</span>, <span class="key">{{ unit }}</span>, <span class="key">{{ area }}</span>, <span class="key">{{ equipment }}</span>, <span class="key">{{ friendly_name }}</span>, <span class="key">{{ threshold }}</span>, <span class="key">{{ operator }}</span>, <span class="key">{{ priority }}</span></p>
 
-            ${this.version?R`<div class="version-line">SCADA Alarm Manager v${this.version}</div>`:""}
+            ${this.version?F`<div class="version-line">SCADA Alarm Manager v${this.version}</div>`:""}
           </div>
         </div>
       </div>
-    `:R``}};t([ut({type:Boolean})],jt.prototype,"open",void 0),t([ut({type:String})],jt.prototype,"version",void 0),jt=t([ct("help-dialog")],jt);const Ft={0:Tt,1:bt,2:xt,3:yt};let Rt=class extends lt{constructor(){super(...arguments),this.priority=0}static{this.styles=n`
+    `:F``}};t([gt({type:Boolean})],Rt.prototype,"open",void 0),t([gt({type:String})],Rt.prototype,"version",void 0),Rt=t([dt("help-dialog")],Rt);const Ft={0:Tt,1:bt,2:xt,3:yt};let Zt=class extends lt{constructor(){super(...arguments),this.priority=0}static{this.styles=n`
     .badge {
       display: inline-flex;
       align-items: center;
@@ -460,7 +460,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       border-radius: 50%;
       --mdc-icon-size: 18px;
     }
-  `}render(){const t=mt(this.priority),e=zt[this.priority]??"Unknown";return R`
+  `}render(){const t=mt(this.priority),e=Nt[this.priority]??"Unknown";return F`
       <span
         class="badge"
         style="background: color-mix(in srgb, ${t} 18%, transparent); color: ${t}"
@@ -468,7 +468,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       >
         <ha-svg-icon .path=${Ft[this.priority]}></ha-svg-icon>
       </span>
-    `}};t([ut({type:Number})],Rt.prototype,"priority",void 0),Rt=t([ct("severity-badge")],Rt);let Zt=class extends lt{constructor(){super(...arguments),this.open=!1}static{this.styles=[vt,n`
+    `}};t([gt({type:Number})],Zt.prototype,"priority",void 0),Zt=t([dt("severity-badge")],Zt);let Bt=class extends lt{constructor(){super(...arguments),this.open=!1}static{this.styles=[vt,n`
       .overlay {
         position: fixed; top: 0; left: 0; right: 0; bottom: 0;
         background: rgba(0, 0, 0, 0.5);
@@ -530,7 +530,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         display: flex; gap: 8px; justify-content: flex-end; padding: 12px 20px;
         border-top: 1px solid var(--divider-color, #e0e0e0);
       }
-    `]}_close(){this.open=!1,this.dispatchEvent(new CustomEvent("close"))}_emit(t,e={}){this.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0}))}_openEntityInfo(){this.dispatchEvent(new CustomEvent("hass-more-info",{detail:{entityId:this.alarm?.source_entity_id},bubbles:!0,composed:!0}))}render(){if(!this.open||!this.alarm)return R``;const t=this.alarm,e=t.runtime;return R`
+    `]}_close(){this.open=!1,this.dispatchEvent(new CustomEvent("close"))}_emit(t,e={}){this.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0}))}_openEntityInfo(){this.dispatchEvent(new CustomEvent("hass-more-info",{detail:{entityId:this.alarm?.source_entity_id},bubbles:!0,composed:!0}))}render(){if(!this.open||!this.alarm)return F``;const t=this.alarm,e=t.runtime;return F`
       <div class="overlay" @click=${this._close}>
         <div class="dialog" @click=${t=>t.stopPropagation()}>
           <div class="dialog-header">
@@ -541,13 +541,13 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
             <button class="close-btn" @click=${this._close}>&times;</button>
           </div>
           <div class="dialog-body">
-            ${t.description?R`<div class="description">${t.description}</div>`:""}
+            ${t.description?F`<div class="description">${t.description}</div>`:""}
 
             <div class="section">
               <div class="section-title">State</div>
               <div class="field">
                 <span class="field-label">Current State</span>
-                <span class="field-value"><span class="badge" style="background: ${_t(e.state)}">${Nt[e.state]??e.state}</span></span>
+                <span class="field-value"><span class="badge" style="background: ${_t(e.state)}">${Dt[e.state]??e.state}</span></span>
               </div>
               <div class="field">
                 <span class="field-label">Last Value</span>
@@ -557,7 +557,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                 <span class="field-label">Triggered At</span>
                 <span class="field-value">${e.triggered_at?new Date(e.triggered_at).toLocaleString():"-"}</span>
               </div>
-              ${e.acked_at?R`
+              ${e.acked_at?F`
                 <div class="field">
                   <span class="field-label">Acknowledged At</span>
                   <span class="field-value">${new Date(e.acked_at).toLocaleString()}</span>
@@ -567,7 +567,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                   <span class="field-value">${e.acked_by??"-"}</span>
                 </div>
               `:""}
-              ${e.shelved_until?R`
+              ${e.shelved_until?F`
                 <div class="field">
                   <span class="field-label">Shelved Until</span>
                   <span class="field-value">${new Date(e.shelved_until).toLocaleString()}</span>
@@ -579,7 +579,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
               <div class="section-title">Definition</div>
               <div class="field">
                 <span class="field-label">Priority</span>
-                <span class="field-value">${zt[t.priority]}</span>
+                <span class="field-value">${Nt[t.priority]}</span>
               </div>
               <div class="field">
                 <span class="field-label">Source Entity</span>
@@ -593,10 +593,10 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                 <span class="field-label">Trigger Config</span>
                 <span class="field-value">${JSON.stringify(t.trigger_config)}</span>
               </div>
-              ${t.area?R`<div class="field"><span class="field-label">Area</span><span class="field-value">${t.area}</span></div>`:""}
-              ${t.equipment?R`<div class="field"><span class="field-label">Equipment</span><span class="field-value">${t.equipment}</span></div>`:""}
-              ${t.tag?R`<div class="field"><span class="field-label">Tag</span><span class="field-value">${t.tag}</span></div>`:""}
-              ${t.channel_id?R`<div class="field"><span class="field-label">Channel ID</span><span class="field-value">${t.channel_id}</span></div>`:""}
+              ${t.area?F`<div class="field"><span class="field-label">Area</span><span class="field-value">${t.area}</span></div>`:""}
+              ${t.equipment?F`<div class="field"><span class="field-label">Equipment</span><span class="field-value">${t.equipment}</span></div>`:""}
+              ${t.tag?F`<div class="field"><span class="field-label">Tag</span><span class="field-value">${t.tag}</span></div>`:""}
+              ${t.channel_id?F`<div class="field"><span class="field-label">Channel ID</span><span class="field-value">${t.channel_id}</span></div>`:""}
             </div>
 
             <div class="section">
@@ -625,15 +625,17 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
               </div>
             </div>
             <div class="dialog-footer">
-              ${"active_unacknowledged"===e.state||"returned_to_normal_unacknowledged"===e.state?R`<button class="btn btn-primary" @click=${()=>{this._emit("ack-alarm",{id:t.id}),this._close()}}>Acknowledge</button>`:""}
-              ${"shelved"!==e.state&&"disabled"!==e.state?R`<button class="btn" style="background: var(--alarm-shelved, #9c27b0); color: white;" @click=${()=>{this._emit("shelve-alarm",{alarm:t}),this._close()}}>Shelve</button>`:""}
-              ${"shelved"===e.state?R`<button class="btn" style="background: var(--alarm-shelved, #9c27b0); color: white;" @click=${()=>{this._emit("unshelve-alarm",{id:t.id}),this._close()}}>Unshelve</button>`:""}
-              ${"external"===t.trigger_type?R`<button class="btn" style="background: var(--secondary-background-color, #f5f5f5); opacity: 0.5; cursor: not-allowed;" disabled title="External alarms are managed by automations/blueprints and can't be edited here">Edit</button>`:R`<button class="btn" style="background: var(--secondary-background-color, #f5f5f5);" @click=${()=>{this._emit("edit-alarm",{id:t.id}),this._close()}}>Edit</button>`}
+              ${"active_unacknowledged"===e.state||"returned_to_normal_unacknowledged"===e.state?F`<button class="btn btn-primary" @click=${()=>{this._emit("ack-alarm",{id:t.id}),this._close()}}>Acknowledge</button>`:""}
+              ${"shelved"!==e.state&&"disabled"!==e.state?F`<button class="btn" style="background: var(--alarm-shelved, #9c27b0); color: white;" @click=${()=>{this._emit("shelve-alarm",{alarm:t}),this._close()}}>Shelve</button>`:""}
+              ${"shelved"===e.state?F`<button class="btn" style="background: var(--alarm-shelved, #9c27b0); color: white;" @click=${()=>{this._emit("unshelve-alarm",{id:t.id}),this._close()}}>Unshelve</button>`:""}
+              ${t.action_service?F`<button class="btn btn-primary" title="Run this alarm's configured action" @click=${()=>{this._emit("trigger-action",{id:t.id}),this._close()}}>${t.action_label||"Action"}</button>`:""}
+              ${t.channel_id?F`<button class="btn" style="background: #607D8B; color: white;" title="Send this alarm's real notification as a test" @click=${()=>{this._emit("test-alarm",{id:t.id}),this._close()}}>Test</button>`:""}
+              ${"external"===t.trigger_type?F`<button class="btn" style="background: var(--secondary-background-color, #f5f5f5); opacity: 0.5; cursor: not-allowed;" disabled title="External alarms are managed by automations/blueprints and can't be edited here">Edit</button>`:F`<button class="btn" style="background: var(--secondary-background-color, #f5f5f5);" @click=${()=>{this._emit("edit-alarm",{id:t.id}),this._close()}}>Edit</button>`}
             </div>
           </div>
         </div>
       </div>
-    `}};t([ut({attribute:!1})],Zt.prototype,"alarm",void 0),t([ut({type:Boolean})],Zt.prototype,"open",void 0),Zt=t([ct("alarm-detail-dialog")],Zt);const Bt=r("#9c27b0"),Wt=[15,30,60,240,480,1440,2880,7200,20160,43200];let Kt=class extends lt{constructor(){super(...arguments),this.open=!1,this.alarmId="",this.alarmName="",this._minutes=15}static{this.styles=[vt,n`
+    `}};t([gt({attribute:!1})],Bt.prototype,"alarm",void 0),t([gt({type:Boolean})],Bt.prototype,"open",void 0),Bt=t([dt("alarm-detail-dialog")],Bt);const Wt=r("#9c27b0"),Kt=[15,30,60,240,480,1440,2880,7200,20160,43200];let Yt=class extends lt{constructor(){super(...arguments),this.open=!1,this.alarmId="",this.alarmName="",this._minutes=15}static{this.styles=[vt,n`
       .overlay {
         position: fixed;
         inset: 0;
@@ -661,7 +663,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         padding: 16px 12px 16px 20px;
         border-bottom: 1px solid var(--divider-color, #e0e0e0);
         --mdc-icon-size: 22px;
-        color: var(--alarm-shelved, ${Bt});
+        color: var(--alarm-shelved, ${Wt});
       }
       .title {
         flex: 1;
@@ -712,9 +714,9 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         color: var(--primary-text-color, #212121);
       }
       .chip.sel {
-        border-color: ${Bt};
-        background: color-mix(in srgb, ${Bt} 14%, transparent);
-        color: ${Bt};
+        border-color: ${Wt};
+        background: color-mix(in srgb, ${Wt} 14%, transparent);
+        color: ${Wt};
       }
       .slider {
         display: flex;
@@ -723,7 +725,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       }
       .slider input {
         flex: 1;
-        accent-color: ${Bt};
+        accent-color: ${Wt};
       }
       .slider span {
         font-size: 14px;
@@ -739,10 +741,10 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         padding: 0 20px 20px;
       }
       .btn-shelve {
-        background: ${Bt};
+        background: ${Wt};
         color: #fff;
       }
-    `]}_fmt(t){return t<60?`${t} min`:t<1440?t/60+" h":t/1440+" d"}_close(){this.dispatchEvent(new CustomEvent("dialog-closed"))}_confirm(){this.dispatchEvent(new CustomEvent("shelve-confirm",{detail:{alarmId:this.alarmId,minutes:this._minutes}}))}render(){return this.open?R`
+    `]}_fmt(t){return t<60?`${t} min`:t<1440?t/60+" h":t/1440+" d"}_close(){this.dispatchEvent(new CustomEvent("dialog-closed"))}_confirm(){this.dispatchEvent(new CustomEvent("shelve-confirm",{detail:{alarmId:this.alarmId,minutes:this._minutes}}))}render(){return this.open?F`
       <div class="overlay" @click=${this._close}>
         <div class="dialog" @click=${t=>t.stopPropagation()}>
           <div class="head">
@@ -758,7 +760,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
               active until the timer expires, then it returns to normal evaluation.
             </p>
             <div class="presets">
-              ${Wt.map(t=>R`
+              ${Kt.map(t=>F`
                   <button class="chip ${this._minutes===t?"sel":""}" @click=${()=>this._minutes=t}>
                     ${this._fmt(t)}
                   </button>
@@ -784,7 +786,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
           </div>
         </div>
       </div>
-    `:R``}};t([ut({type:Boolean})],Kt.prototype,"open",void 0),t([ut()],Kt.prototype,"alarmId",void 0),t([ut()],Kt.prototype,"alarmName",void 0),t([gt()],Kt.prototype,"_minutes",void 0),Kt=t([ct("shelve-dialog")],Kt);const Yt=["active_unacknowledged","returned_to_normal_unacknowledged"];let Jt=class extends lt{static{this.styles=[vt,n`
+    `:F``}};t([gt({type:Boolean})],Yt.prototype,"open",void 0),t([gt()],Yt.prototype,"alarmId",void 0),t([gt()],Yt.prototype,"alarmName",void 0),t([ut()],Yt.prototype,"_minutes",void 0),Yt=t([dt("shelve-dialog")],Yt);const Jt=["active_unacknowledged","returned_to_normal_unacknowledged"];let Gt=class extends lt{static{this.styles=[vt,n`
       :host {
         display: block;
       }
@@ -896,7 +898,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
           animation: none;
         }
       }
-    `]}_emit(t,e){this.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0}))}willUpdate(){const t=this.alarm,e=t&&t.priority>=3&&Yt.includes(t.runtime.state);this.toggleAttribute("flashing",!!e)}render(){const t=this.alarm;if(!t)return R``;const e=mt(t.priority),i=_t(t.runtime.state),a=Yt.includes(t.runtime.state);return R`
+    `]}_emit(t,e){this.dispatchEvent(new CustomEvent(t,{detail:e,bubbles:!0,composed:!0}))}willUpdate(){const t=this.alarm,e=t&&t.priority>=3&&Jt.includes(t.runtime.state);this.toggleAttribute("flashing",!!e)}render(){const t=this.alarm;if(!t)return F``;const e=mt(t.priority),i=_t(t.runtime.state),a=Jt.includes(t.runtime.state);return F`
       <div class="card" @click=${()=>this._emit("open-alarm",{alarm:t})}>
         <span class="accent" style=${`background:${e}`}></span>
 
@@ -920,12 +922,12 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
             style=${`background:color-mix(in srgb, ${i} 15%, transparent); color:${i}`}
           >
             <span class="dot" style=${`background:${i}`}></span>
-            ${Nt[t.runtime.state]??t.runtime.state}
+            ${Dt[t.runtime.state]??t.runtime.state}
           </span>
         </div>
 
         <div class="foot">
-          ${a?R`<button
+          ${a?F`<button
                 class="btn btn-primary"
                 @click=${e=>{e.stopPropagation(),this._emit("ack-alarm",{id:t.id})}}
               >
@@ -939,7 +941,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
           </button>
         </div>
       </div>
-    `}};t([ut({attribute:!1})],Jt.prototype,"alarm",void 0),Jt=t([ct("alarm-tile-card")],Jt);const Gt=["active_unacknowledged","returned_to_normal_unacknowledged"];let Xt=class extends lt{constructor(){super(...arguments),this.priorityFilter="",this._alarms=[],this._loading=!0,this._layout="table",this._search="",this._toast="",this._filterPriority="",this._filterState="",this._filterTag="",this._filterChannel="",this._channels=[]}static{this.styles=[vt,n`
+    `}};t([gt({attribute:!1})],Gt.prototype,"alarm",void 0),Gt=t([dt("alarm-tile-card")],Gt);const Xt=["active_unacknowledged","returned_to_normal_unacknowledged"];let Qt=class extends lt{constructor(){super(...arguments),this.priorityFilter="",this._alarms=[],this._loading=!0,this._layout="table",this._search="",this._toast="",this._filterPriority="",this._filterState="",this._filterTag="",this._filterChannel="",this._channels=[]}static{this.styles=[vt,n`
       :host { display: block; padding: 16px; }
       .toolbar {
         display: flex; gap: 8px; margin-bottom: 14px; align-items: center; flex-wrap: wrap;
@@ -1009,38 +1011,38 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         box-shadow: 0 4px 16px rgba(0,0,0,.2); animation: toast-in .25s ease;
       }
       @keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } }
-    `]}connectedCallback(){super.connectedCallback(),this._loadAlarms(),this._loadChannels(),this._subscribe()}async _loadChannels(){this.hass&&(this._channels=await Pt(this.hass))}get _tags(){return[...new Set(this._alarms.map(t=>t.tag).filter(Boolean))].sort()}disconnectedCallback(){super.disconnectedCallback(),this._unsub?.()}async _loadAlarms(){if(this.hass)try{const t=await Et(this.hass);this._alarms=t.filter(t=>"active_unacknowledged"===t.runtime.state||"active_acknowledged"===t.runtime.state||"returned_to_normal_unacknowledged"===t.runtime.state)}finally{this._loading=!1}}async _subscribe(){this.hass&&(this._unsub=await Vt(this.hass,()=>this._loadAlarms()))}get _filtered(){return this._alarms.filter(t=>{const e=this.priorityFilter||this._filterPriority;if(e&&String(t.priority)!==e)return!1;if(this._filterState&&t.runtime.state!==this._filterState)return!1;if(this._filterTag&&t.tag!==this._filterTag)return!1;if(this._filterChannel&&t.channel_id!==this._filterChannel)return!1;if(this._search){const e=this._search.toLowerCase();if(!t.name.toLowerCase().includes(e)&&!t.area.toLowerCase().includes(e)&&!t.source_entity_id.toLowerCase().includes(e))return!1}return!0}).sort((t,e)=>e.priority-t.priority)}_showToast(t){this._toast=t,setTimeout(()=>this._toast="",2600)}async _ack(t){this.hass&&(await St(this.hass,t),this._showToast("Alarm acknowledged"),this._loadAlarms())}async _ackAll(){if(!this.hass)return;const t=await(async t=>t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/acknowledge_all"}))(this.hass);this._showToast(`Acknowledged ${t.acknowledged} alarms`),this._loadAlarms()}_shelve(t){this._shelveTarget=t}async _unshelve(t){this.hass&&(await Lt(this.hass,t),this._showToast("Alarm unshelved"),this._loadAlarms())}_edit(t){this.dispatchEvent(new CustomEvent("navigate",{detail:{view:"create-edit",alarmId:t},bubbles:!0,composed:!0}))}render(){if(this._loading)return R`<div class="empty-state">Loading...</div>`;if(0===this._alarms.length)return R`
+    `]}connectedCallback(){super.connectedCallback(),this._loadAlarms(),this._loadChannels(),this._subscribe()}async _loadChannels(){this.hass&&(this._channels=await Ht(this.hass))}get _tags(){return[...new Set(this._alarms.map(t=>t.tag).filter(Boolean))].sort()}disconnectedCallback(){super.disconnectedCallback(),this._unsub?.()}async _loadAlarms(){if(this.hass)try{const t=await St(this.hass);this._alarms=t.filter(t=>"active_unacknowledged"===t.runtime.state||"active_acknowledged"===t.runtime.state||"returned_to_normal_unacknowledged"===t.runtime.state)}finally{this._loading=!1}}async _subscribe(){this.hass&&(this._unsub=await zt(this.hass,()=>this._loadAlarms()))}get _filtered(){return this._alarms.filter(t=>{const e=this.priorityFilter||this._filterPriority;if(e&&String(t.priority)!==e)return!1;if(this._filterState&&t.runtime.state!==this._filterState)return!1;if(this._filterTag&&t.tag!==this._filterTag)return!1;if(this._filterChannel&&t.channel_id!==this._filterChannel)return!1;if(this._search){const e=this._search.toLowerCase();if(!t.name.toLowerCase().includes(e)&&!t.area.toLowerCase().includes(e)&&!t.source_entity_id.toLowerCase().includes(e))return!1}return!0}).sort((t,e)=>e.priority-t.priority)}_showToast(t){this._toast=t,setTimeout(()=>this._toast="",2600)}async _ack(t){this.hass&&(await Mt(this.hass,t),this._showToast("Alarm acknowledged"),this._loadAlarms())}async _ackAll(){if(!this.hass)return;const t=await(async t=>t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/acknowledge_all"}))(this.hass);this._showToast(`Acknowledged ${t.acknowledged} alarms`),this._loadAlarms()}_shelve(t){this._shelveTarget=t}async _unshelve(t){this.hass&&(await Pt(this.hass,t),this._showToast("Alarm unshelved"),this._loadAlarms())}async _triggerAction(t){this.hass&&(await Et(this.hass,t),this._showToast("Action triggered"))}async _testAlarm(t){this.hass&&(await this.hass.callService("scada_alarm_manager","test_alarm_notification",{alarm_id:t}),this._showToast("Test notification sent"))}_edit(t){this.dispatchEvent(new CustomEvent("navigate",{detail:{view:"create-edit",alarmId:t},bubbles:!0,composed:!0}))}render(){if(this._loading)return F`<div class="empty-state">Loading...</div>`;if(0===this._alarms.length)return F`
         <div class="empty-state">
           <div class="icon">&#x2714;</div>
           <div>No active alarms</div>
         </div>
-      `;const t=this._filtered,e=this._alarms.filter(t=>Gt.includes(t.runtime.state)).length;return R`
+      `;const t=this._filtered,e=this._alarms.filter(t=>Xt.includes(t.runtime.state)).length;return F`
       <div class="toolbar">
         <span class="count-badge" style="background: ${mt(3)}22; color: ${mt(3)}">
           ${this._alarms.length} active
         </span>
-        ${t.length!==this._alarms.length?R`<span style="font-size: 0.85em; color: var(--secondary-text-color);">(${t.length} shown)</span>`:""}
+        ${t.length!==this._alarms.length?F`<span style="font-size: 0.85em; color: var(--secondary-text-color);">(${t.length} shown)</span>`:""}
 
         <div class="search-box">
           <ha-svg-icon .path=${"M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"}></ha-svg-icon>
           <input type="text" placeholder="Search alarms..."
             .value=${this._search}
             @input=${t=>this._search=t.target.value} />
-          ${this._search?R`<span class="clear" @click=${()=>this._search=""}><ha-svg-icon .path=${Ct}></ha-svg-icon></span>`:B}
+          ${this._search?F`<span class="clear" @click=${()=>this._search=""}><ha-svg-icon .path=${Ct}></ha-svg-icon></span>`:B}
         </div>
 
         <select class="toolbar-filter" title="Filter by tag"
           .value=${this._filterTag}
           @change=${t=>this._filterTag=t.target.value}>
           <option value="">All tags</option>
-          ${this._tags.map(t=>R`<option value=${t}>${t}</option>`)}
+          ${this._tags.map(t=>F`<option value=${t}>${t}</option>`)}
         </select>
 
         <select class="toolbar-filter" title="Filter by channel"
           .value=${this._filterChannel}
           @change=${t=>this._filterChannel=t.target.value}>
           <option value="">All channels</option>
-          ${this._channels.map(t=>R`<option value=${t.id}>${t.name}</option>`)}
+          ${this._channels.map(t=>F`<option value=${t.id}>${t.name}</option>`)}
         </select>
 
         <button class="ack-all" ?disabled=${0===e} @click=${this._ackAll} title="Acknowledge all unacknowledged alarms">
@@ -1058,9 +1060,9 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         </div>
       </div>
 
-      ${"cards"===this._layout?R`
+      ${"cards"===this._layout?F`
         <div class="cards-grid">
-          ${t.map(t=>R`
+          ${t.map(t=>F`
             <alarm-tile-card
               .alarm=${t}
               @ack-alarm=${t=>this._ack(t.detail.id)}
@@ -1068,7 +1070,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
               @open-alarm=${t=>this._detailAlarm=t.detail.alarm}>
             </alarm-tile-card>`)}
         </div>
-      `:R`
+      `:F`
         <table>
           <thead>
             <tr>
@@ -1084,14 +1086,14 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
               <th>
                 <select @change=${t=>this._filterPriority=t.target.value}>
                   <option value="">All</option>
-                  ${[0,1,2,3].map(t=>R`<option value=${t}>${zt[t]}</option>`)}
+                  ${[0,1,2,3].map(t=>F`<option value=${t}>${Nt[t]}</option>`)}
                 </select>
               </th>
               <th></th>
               <th>
                 <select @change=${t=>this._filterState=t.target.value}>
                   <option value="">All</option>
-                  ${["active_unacknowledged","active_acknowledged","returned_to_normal_unacknowledged"].map(t=>R`<option value=${t}>${Nt[t]}</option>`)}
+                  ${["active_unacknowledged","active_acknowledged","returned_to_normal_unacknowledged"].map(t=>F`<option value=${t}>${Dt[t]}</option>`)}
                 </select>
               </th>
               <th></th>
@@ -1101,16 +1103,16 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
             </tr>
           </thead>
           <tbody>
-            ${t.map(t=>{const e=t.priority>=3?"alarm-row-critical":t.priority>=2?"alarm-row-high":"",i=Gt.includes(t.runtime.state);return R`
+            ${t.map(t=>{const e=t.priority>=3?"alarm-row-critical":t.priority>=2?"alarm-row-high":"",i=Xt.includes(t.runtime.state);return F`
                 <tr class="${e} ${t.priority>=3&&i?"flashing":""}" @click=${()=>this._detailAlarm=t}>
                   <td><severity-badge .priority=${t.priority}></severity-badge></td>
-                  <td><strong>${t.name}</strong>${t.area?R`<br><span class="time-ago">${t.area}</span>`:""}</td>
-                  <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${_t(t.runtime.state)}" title="${Nt[t.runtime.state]??t.runtime.state}"></span></td>
+                  <td><strong>${t.name}</strong>${t.area?F`<br><span class="time-ago">${t.area}</span>`:""}</td>
+                  <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${_t(t.runtime.state)}" title="${Dt[t.runtime.state]??t.runtime.state}"></span></td>
                   <td style="font-size:0.85em">${t.source_entity_id}</td>
                   <td>${t.runtime.last_value??"-"}</td>
                   <td class="time-ago">${t.runtime.triggered_at?new Date(t.runtime.triggered_at).toLocaleString():"-"}</td>
                   <td class="actions">
-                    ${i?R`<button class="btn btn-primary btn-small" title="Acknowledge this alarm" @click=${e=>{e.stopPropagation(),this._ack(t.id)}}>ACK</button>`:""}
+                    ${i?F`<button class="btn btn-primary btn-small" title="Acknowledge this alarm" @click=${e=>{e.stopPropagation(),this._ack(t.id)}}>ACK</button>`:""}
                     <button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" title="Temporarily suppress this alarm" @click=${e=>{e.stopPropagation(),this._shelve(t)}}>Shelve</button>
                   </td>
                 </tr>
@@ -1127,6 +1129,8 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         @ack-alarm=${t=>this._ack(t.detail.id)}
         @shelve-alarm=${t=>this._shelve(t.detail.alarm)}
         @unshelve-alarm=${t=>this._unshelve(t.detail.id)}
+        @trigger-action=${t=>this._triggerAction(t.detail.id)}
+        @test-alarm=${t=>this._testAlarm(t.detail.id)}
       ></alarm-detail-dialog>
 
       <shelve-dialog
@@ -1134,11 +1138,11 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         .alarmId=${this._shelveTarget?.id??""}
         .alarmName=${this._shelveTarget?.name??""}
         @dialog-closed=${()=>this._shelveTarget=void 0}
-        @shelve-confirm=${async t=>{await Mt(this.hass,t.detail.alarmId,t.detail.minutes),this._shelveTarget=void 0,this._showToast("Alarm shelved"),this._loadAlarms()}}
+        @shelve-confirm=${async t=>{await Lt(this.hass,t.detail.alarmId,t.detail.minutes),this._shelveTarget=void 0,this._showToast("Alarm shelved"),this._loadAlarms()}}
       ></shelve-dialog>
 
-      ${this._toast?R`<div class="toast">${this._toast}</div>`:B}
-    `}};t([ut({attribute:!1})],Xt.prototype,"hass",void 0),t([ut()],Xt.prototype,"priorityFilter",void 0),t([gt()],Xt.prototype,"_alarms",void 0),t([gt()],Xt.prototype,"_loading",void 0),t([gt()],Xt.prototype,"_detailAlarm",void 0),t([gt()],Xt.prototype,"_shelveTarget",void 0),t([gt()],Xt.prototype,"_layout",void 0),t([gt()],Xt.prototype,"_search",void 0),t([gt()],Xt.prototype,"_toast",void 0),t([gt()],Xt.prototype,"_filterPriority",void 0),t([gt()],Xt.prototype,"_filterState",void 0),t([gt()],Xt.prototype,"_filterTag",void 0),t([gt()],Xt.prototype,"_filterChannel",void 0),t([gt()],Xt.prototype,"_channels",void 0),Xt=t([ct("active-alarms-view")],Xt);let Qt=class extends lt{constructor(){super(...arguments),this.priorityFilter="",this._alarms=[],this._channels=[],this._loading=!0,this._filterPriority="",this._filterName="",this._filterState="",this._filterEntity="",this._filterTrigger="",this._filterChannel="",this._filterTag="",this._filterEnabled="",this._toast=""}static{this.styles=[vt,n`
+      ${this._toast?F`<div class="toast">${this._toast}</div>`:B}
+    `}};t([gt({attribute:!1})],Qt.prototype,"hass",void 0),t([gt()],Qt.prototype,"priorityFilter",void 0),t([ut()],Qt.prototype,"_alarms",void 0),t([ut()],Qt.prototype,"_loading",void 0),t([ut()],Qt.prototype,"_detailAlarm",void 0),t([ut()],Qt.prototype,"_shelveTarget",void 0),t([ut()],Qt.prototype,"_layout",void 0),t([ut()],Qt.prototype,"_search",void 0),t([ut()],Qt.prototype,"_toast",void 0),t([ut()],Qt.prototype,"_filterPriority",void 0),t([ut()],Qt.prototype,"_filterState",void 0),t([ut()],Qt.prototype,"_filterTag",void 0),t([ut()],Qt.prototype,"_filterChannel",void 0),t([ut()],Qt.prototype,"_channels",void 0),Qt=t([dt("active-alarms-view")],Qt);let te=class extends lt{constructor(){super(...arguments),this.priorityFilter="",this._alarms=[],this._channels=[],this._loading=!0,this._filterPriority="",this._filterName="",this._filterState="",this._filterEntity="",this._filterTrigger="",this._filterChannel="",this._filterTag="",this._filterEnabled="",this._toast=""}static{this.styles=[vt,n`
       :host { display: block; padding: 16px; }
       .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
       .filter-row input, .filter-row select {
@@ -1167,7 +1171,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         box-shadow: 0 4px 16px rgba(0,0,0,.2); animation: toast-in .25s ease;
       }
       @keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } }
-    `]}connectedCallback(){super.connectedCallback(),this._load()}async _load(){if(this.hass)try{const[t,e]=await Promise.all([Et(this.hass),Pt(this.hass)]);this._alarms=t,this._channels=e}finally{this._loading=!1}}_getChannelName(t){if(!t)return"-";const e=this._channels.find(e=>e.id===t);return e?e.name:t}get _filtered(){return this._alarms.filter(t=>{const e=this.priorityFilter||this._filterPriority;return(!e||String(t.priority)===e)&&(!(this._filterName&&!t.name.toLowerCase().includes(this._filterName.toLowerCase()))&&((!this._filterState||t.runtime.state===this._filterState)&&(!(this._filterEntity&&!t.source_entity_id.toLowerCase().includes(this._filterEntity.toLowerCase()))&&((!this._filterTrigger||t.trigger_type===this._filterTrigger)&&((!this._filterChannel||t.channel_id===this._filterChannel)&&(!(this._filterTag&&!(t.tag??"").toLowerCase().includes(this._filterTag.toLowerCase()))&&(!("yes"===this._filterEnabled&&!t.enabled)&&("no"!==this._filterEnabled||!t.enabled))))))))})}_showToast(t){this._toast=t,setTimeout(()=>this._toast="",2600)}_confirmDelete(t){this._deleteTarget=t}async _doDelete(){if(!this.hass||!this._deleteTarget)return;const t=this._deleteTarget.name;await(async(t,e)=>{await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/delete",alarm_id:e})})(this.hass,this._deleteTarget.id),this._deleteTarget=void 0,this._showToast(`Deleted: ${t}`),this._load()}_edit(t){this.dispatchEvent(new CustomEvent("navigate",{detail:{view:"create-edit",alarmId:t},bubbles:!0,composed:!0}))}async _testNotification(t){this.hass&&t.channel_id&&await this.hass.callService("scada_alarm_manager","test_notification",{channel_id:t.channel_id})}_shelve(t){this._shelveTarget=t}async _ack(t){this.hass&&(await St(this.hass,t),this._showToast("Alarm acknowledged"),this._load())}async _unshelve(t){this.hass&&(await Lt(this.hass,t),this._load())}render(){if(this._loading)return R`<div class="empty-state">Loading...</div>`;const t=this._filtered;return R`
+    `]}connectedCallback(){super.connectedCallback(),this._load()}async _load(){if(this.hass)try{const[t,e]=await Promise.all([St(this.hass),Ht(this.hass)]);this._alarms=t,this._channels=e}finally{this._loading=!1}}_getChannelName(t){if(!t)return"-";const e=this._channels.find(e=>e.id===t);return e?e.name:t}get _filtered(){return this._alarms.filter(t=>{const e=this.priorityFilter||this._filterPriority;return(!e||String(t.priority)===e)&&(!(this._filterName&&!t.name.toLowerCase().includes(this._filterName.toLowerCase()))&&((!this._filterState||t.runtime.state===this._filterState)&&(!(this._filterEntity&&!t.source_entity_id.toLowerCase().includes(this._filterEntity.toLowerCase()))&&((!this._filterTrigger||t.trigger_type===this._filterTrigger)&&((!this._filterChannel||t.channel_id===this._filterChannel)&&(!(this._filterTag&&!(t.tag??"").toLowerCase().includes(this._filterTag.toLowerCase()))&&(!("yes"===this._filterEnabled&&!t.enabled)&&("no"!==this._filterEnabled||!t.enabled))))))))})}_showToast(t){this._toast=t,setTimeout(()=>this._toast="",2600)}_confirmDelete(t){this._deleteTarget=t}async _doDelete(){if(!this.hass||!this._deleteTarget)return;const t=this._deleteTarget.name;await(async(t,e)=>{await t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/delete",alarm_id:e})})(this.hass,this._deleteTarget.id),this._deleteTarget=void 0,this._showToast(`Deleted: ${t}`),this._load()}_edit(t){this.dispatchEvent(new CustomEvent("navigate",{detail:{view:"create-edit",alarmId:t},bubbles:!0,composed:!0}))}async _testNotification(t){this.hass&&(await this.hass.callService("scada_alarm_manager","test_alarm_notification",{alarm_id:t.id}),this._showToast(`Test notification sent: ${t.name}`))}async _triggerAction(t){this.hass&&(await Et(this.hass,t),this._showToast("Action triggered"))}_shelve(t){this._shelveTarget=t}async _ack(t){this.hass&&(await Mt(this.hass,t),this._showToast("Alarm acknowledged"),this._load())}async _unshelve(t){this.hass&&(await Pt(this.hass,t),this._load())}render(){if(this._loading)return F`<div class="empty-state">Loading...</div>`;const t=this._filtered;return F`
       <div class="toolbar">
         <span>${t.length} of ${this._alarms.length} alarm${1!==this._alarms.length?"s":""}</span>
         <button class="btn btn-primary" @click=${()=>this._edit("")}>+ New Alarm</button>
@@ -1189,14 +1193,14 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
             <th>
               <select @change=${t=>this._filterPriority=t.target.value}>
                 <option value="">All</option>
-                ${[0,1,2,3].map(t=>R`<option value=${t}>${zt[t]}</option>`)}
+                ${[0,1,2,3].map(t=>F`<option value=${t}>${Nt[t]}</option>`)}
               </select>
             </th>
             <th><input type="text" placeholder="Filter..." .value=${this._filterName} @input=${t=>this._filterName=t.target.value} /></th>
             <th>
               <select @change=${t=>this._filterState=t.target.value}>
                 <option value="">All</option>
-                ${Object.entries(Nt).map(([t,e])=>R`<option value=${t}>${e}</option>`)}
+                ${Object.entries(Dt).map(([t,e])=>F`<option value=${t}>${e}</option>`)}
               </select>
             </th>
             <th><input type="text" placeholder="Filter..." .value=${this._filterEntity} @input=${t=>this._filterEntity=t.target.value} /></th>
@@ -1212,7 +1216,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
             <th>
               <select @change=${t=>this._filterChannel=t.target.value}>
                 <option value="">All</option>
-                ${this._channels.map(t=>R`<option value=${t.id}>${t.name}</option>`)}
+                ${this._channels.map(t=>F`<option value=${t.id}>${t.name}</option>`)}
               </select>
             </th>
             <th><input type="text" placeholder="Filter..." .value=${this._filterTag} @input=${t=>this._filterTag=t.target.value} /></th>
@@ -1227,23 +1231,24 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
           </tr>
         </thead>
         <tbody>
-          ${t.map(t=>R`
+          ${t.map(t=>F`
               <tr @click=${()=>this._detailAlarm=t}>
                 <td><severity-badge .priority=${t.priority}></severity-badge></td>
                 <td>
                   <strong>${t.name}</strong>
-                  ${"shelved"===t.runtime.state&&t.runtime.shelved_until?R`<br><span style="font-size: 0.75em; color: var(--secondary-text-color);">Until ${new Date(t.runtime.shelved_until).toLocaleString()}</span>`:""}
+                  ${"shelved"===t.runtime.state&&t.runtime.shelved_until?F`<br><span style="font-size: 0.75em; color: var(--secondary-text-color);">Until ${new Date(t.runtime.shelved_until).toLocaleString()}</span>`:""}
                 </td>
-                <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${_t(t.runtime.state)}" title="${Nt[t.runtime.state]??t.runtime.state}"></span></td>
+                <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${_t(t.runtime.state)}" title="${Dt[t.runtime.state]??t.runtime.state}"></span></td>
                 <td>${t.source_entity_id}</td>
                 <td>${t.trigger_type}</td>
                 <td>${this._getChannelName(t.channel_id)}</td>
                 <td>${t.tag||"-"}</td>
                 <td>${t.enabled?"Yes":"No"}</td>
                 <td class="actions">
-                  ${"shelved"===t.runtime.state?R`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" title="Remove shelve and restore alarm" @click=${e=>{e.stopPropagation(),this._unshelve(t.id)}}>Unshelve</button>`:"disabled"!==t.runtime.state?R`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" title="Temporarily suppress this alarm" @click=${e=>{e.stopPropagation(),this._shelve(t)}}>Shelve</button>`:""}
-                  ${t.channel_id?R`<button class="btn btn-small" style="background: #607D8B; color: white;" title="Send a test notification through this alarm's channel" @click=${e=>{e.stopPropagation(),this._testNotification(t)}}>Test</button>`:""}
-                  ${"external"===t.trigger_type?R`<button class="btn btn-small btn-primary" disabled style="opacity: 0.5; cursor: not-allowed;" title="External alarms are managed by automations/blueprints and can't be edited here" @click=${t=>t.stopPropagation()}>Edit</button>`:R`<button class="btn btn-small btn-primary" title="Edit alarm definition" @click=${e=>{e.stopPropagation(),this._edit(t.id)}}>Edit</button>`}
+                  ${"shelved"===t.runtime.state?F`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" title="Remove shelve and restore alarm" @click=${e=>{e.stopPropagation(),this._unshelve(t.id)}}>Unshelve</button>`:"disabled"!==t.runtime.state?F`<button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" title="Temporarily suppress this alarm" @click=${e=>{e.stopPropagation(),this._shelve(t)}}>Shelve</button>`:""}
+                  ${t.action_service?F`<button class="btn btn-small btn-primary" title=${t.action_label||"Run this alarm's action"} @click=${e=>{e.stopPropagation(),this._triggerAction(t.id)}}>${t.action_label||"Action"}</button>`:""}
+                  ${t.channel_id?F`<button class="btn btn-small" style="background: #607D8B; color: white;" title="Send this alarm's real notification as a test" @click=${e=>{e.stopPropagation(),this._testNotification(t)}}>Test</button>`:""}
+                  ${"external"===t.trigger_type?F`<button class="btn btn-small btn-primary" disabled style="opacity: 0.5; cursor: not-allowed;" title="External alarms are managed by automations/blueprints and can't be edited here" @click=${t=>t.stopPropagation()}>Edit</button>`:F`<button class="btn btn-small btn-primary" title="Edit alarm definition" @click=${e=>{e.stopPropagation(),this._edit(t.id)}}>Edit</button>`}
                   <button class="btn btn-small btn-danger" title="Permanently delete this alarm" @click=${e=>{e.stopPropagation(),this._confirmDelete(t)}}>Delete</button>
                 </td>
               </tr>
@@ -1258,6 +1263,8 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         @ack-alarm=${t=>this._ack(t.detail.id)}
         @shelve-alarm=${t=>this._shelve(t.detail.alarm)}
         @unshelve-alarm=${t=>this._unshelve(t.detail.id)}
+        @trigger-action=${t=>this._triggerAction(t.detail.id)}
+        @test-alarm=${t=>{const e=this._alarms.find(e=>e.id===t.detail.id);e&&this._testNotification(e)}}
       ></alarm-detail-dialog>
 
       <shelve-dialog
@@ -1265,10 +1272,10 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         .alarmId=${this._shelveTarget?.id??""}
         .alarmName=${this._shelveTarget?.name??""}
         @dialog-closed=${()=>this._shelveTarget=void 0}
-        @shelve-confirm=${async t=>{await Mt(this.hass,t.detail.alarmId,t.detail.minutes),this._shelveTarget=void 0,this._showToast("Alarm shelved"),this._load()}}
+        @shelve-confirm=${async t=>{await Lt(this.hass,t.detail.alarmId,t.detail.minutes),this._shelveTarget=void 0,this._showToast("Alarm shelved"),this._load()}}
       ></shelve-dialog>
 
-      ${this._deleteTarget?R`
+      ${this._deleteTarget?F`
         <div class="overlay" @click=${()=>this._deleteTarget=void 0}>
           <div class="confirm-dialog" @click=${t=>t.stopPropagation()}>
             <h3>Delete alarm</h3>
@@ -1281,8 +1288,8 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         </div>
       `:""}
 
-      ${this._toast?R`<div class="toast">${this._toast}</div>`:""}
-    `}};t([ut({attribute:!1})],Qt.prototype,"hass",void 0),t([ut()],Qt.prototype,"priorityFilter",void 0),t([gt()],Qt.prototype,"_alarms",void 0),t([gt()],Qt.prototype,"_channels",void 0),t([gt()],Qt.prototype,"_loading",void 0),t([gt()],Qt.prototype,"_detailAlarm",void 0),t([gt()],Qt.prototype,"_shelveTarget",void 0),t([gt()],Qt.prototype,"_filterPriority",void 0),t([gt()],Qt.prototype,"_filterName",void 0),t([gt()],Qt.prototype,"_filterState",void 0),t([gt()],Qt.prototype,"_filterEntity",void 0),t([gt()],Qt.prototype,"_filterTrigger",void 0),t([gt()],Qt.prototype,"_filterChannel",void 0),t([gt()],Qt.prototype,"_filterTag",void 0),t([gt()],Qt.prototype,"_filterEnabled",void 0),t([gt()],Qt.prototype,"_deleteTarget",void 0),t([gt()],Qt.prototype,"_toast",void 0),Qt=t([ct("all-alarms-view")],Qt);let te=class extends lt{constructor(){super(...arguments),this._events=[],this._loading=!0,this._offset=0,this._limit=50,this._filterAlarm="",this._filterEvent="",this._filterUser=""}static{this.styles=[vt,n`
+      ${this._toast?F`<div class="toast">${this._toast}</div>`:""}
+    `}};t([gt({attribute:!1})],te.prototype,"hass",void 0),t([gt()],te.prototype,"priorityFilter",void 0),t([ut()],te.prototype,"_alarms",void 0),t([ut()],te.prototype,"_channels",void 0),t([ut()],te.prototype,"_loading",void 0),t([ut()],te.prototype,"_detailAlarm",void 0),t([ut()],te.prototype,"_shelveTarget",void 0),t([ut()],te.prototype,"_filterPriority",void 0),t([ut()],te.prototype,"_filterName",void 0),t([ut()],te.prototype,"_filterState",void 0),t([ut()],te.prototype,"_filterEntity",void 0),t([ut()],te.prototype,"_filterTrigger",void 0),t([ut()],te.prototype,"_filterChannel",void 0),t([ut()],te.prototype,"_filterTag",void 0),t([ut()],te.prototype,"_filterEnabled",void 0),t([ut()],te.prototype,"_deleteTarget",void 0),t([ut()],te.prototype,"_toast",void 0),te=t([dt("all-alarms-view")],te);let ee=class extends lt{constructor(){super(...arguments),this._events=[],this._loading=!0,this._offset=0,this._limit=50,this._filterAlarm="",this._filterEvent="",this._filterUser=""}static{this.styles=[vt,n`
       :host { display: block; padding: 16px; }
       .pagination { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
       .event-type {
@@ -1296,7 +1303,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         background: var(--card-background-color, white);
         color: var(--primary-text-color, #333);
       }
-    `]}connectedCallback(){super.connectedCallback(),this._loadEvents()}async _loadEvents(){if(this.hass)try{this._events=await Ht(this.hass,{limit:this._limit,offset:this._offset})}finally{this._loading=!1}}get _filtered(){return this._events.filter(t=>!(this._filterAlarm&&!t.alarm_name.toLowerCase().includes(this._filterAlarm.toLowerCase()))&&((!this._filterEvent||t.event_type===this._filterEvent)&&!(this._filterUser&&!(t.user??"").toLowerCase().includes(this._filterUser.toLowerCase()))))}_nextPage(){this._offset+=this._limit,this._loading=!0,this._loadEvents()}_prevPage(){this._offset=Math.max(0,this._offset-this._limit),this._loading=!0,this._loadEvents()}render(){if(this._loading)return R`<div class="empty-state">Loading...</div>`;if(0===this._events.length&&0===this._offset)return R`<div class="empty-state">No alarm events recorded yet.</div>`;const t=[...new Set(this._events.map(t=>t.event_type))].sort(),e=this._filtered;return R`
+    `]}connectedCallback(){super.connectedCallback(),this._loadEvents()}async _loadEvents(){if(this.hass)try{this._events=await Vt(this.hass,{limit:this._limit,offset:this._offset})}finally{this._loading=!1}}get _filtered(){return this._events.filter(t=>!(this._filterAlarm&&!t.alarm_name.toLowerCase().includes(this._filterAlarm.toLowerCase()))&&((!this._filterEvent||t.event_type===this._filterEvent)&&!(this._filterUser&&!(t.user??"").toLowerCase().includes(this._filterUser.toLowerCase()))))}_nextPage(){this._offset+=this._limit,this._loading=!0,this._loadEvents()}_prevPage(){this._offset=Math.max(0,this._offset-this._limit),this._loading=!0,this._loadEvents()}render(){if(this._loading)return F`<div class="empty-state">Loading...</div>`;if(0===this._events.length&&0===this._offset)return F`<div class="empty-state">No alarm events recorded yet.</div>`;const t=[...new Set(this._events.map(t=>t.event_type))].sort(),e=this._filtered;return F`
       <table>
         <thead>
           <tr>
@@ -1313,7 +1320,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
             <th>
               <select @change=${t=>this._filterEvent=t.target.value}>
                 <option value="">All</option>
-                ${t.map(t=>R`<option value=${t}>${t}</option>`)}
+                ${t.map(t=>F`<option value=${t}>${t}</option>`)}
               </select>
             </th>
             <th></th>
@@ -1322,13 +1329,13 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
           </tr>
         </thead>
         <tbody>
-          ${e.map(t=>R`
+          ${e.map(t=>F`
               <tr>
                 <td>${new Date(t.timestamp).toLocaleString()}</td>
                 <td><strong>${t.alarm_name}</strong></td>
                 <td><span class="event-type">${t.event_type}</span></td>
-                <td>${t.old_state?R`<span class="badge" style="background: ${_t(t.old_state)}">${Nt[t.old_state]??t.old_state}</span>`:"-"}</td>
-                <td>${t.new_state?R`<span class="badge" style="background: ${_t(t.new_state)}">${Nt[t.new_state]??t.new_state}</span>`:"-"}</td>
+                <td>${t.old_state?F`<span class="badge" style="background: ${_t(t.old_state)}">${Dt[t.old_state]??t.old_state}</span>`:"-"}</td>
+                <td>${t.new_state?F`<span class="badge" style="background: ${_t(t.new_state)}">${Dt[t.new_state]??t.new_state}</span>`:"-"}</td>
                 <td>${t.user??"-"}</td>
               </tr>
             `)}
@@ -1339,7 +1346,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         <span>Page ${Math.floor(this._offset/this._limit)+1}</span>
         <button class="btn btn-small" ?disabled=${this._events.length<this._limit} @click=${this._nextPage}>Next</button>
       </div>
-    `}};t([ut({attribute:!1})],te.prototype,"hass",void 0),t([gt()],te.prototype,"_events",void 0),t([gt()],te.prototype,"_loading",void 0),t([gt()],te.prototype,"_offset",void 0),t([gt()],te.prototype,"_filterAlarm",void 0),t([gt()],te.prototype,"_filterEvent",void 0),t([gt()],te.prototype,"_filterUser",void 0),te=t([ct("history-view")],te);const ee=[{id:"notify.mobile_app_marius",label:"Marius — phone",path:At},{id:"notify.mobile_app_anna",label:"Anna — phone",path:At},{id:"notify.mobile_app_security",label:"Security — phone",path:"M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M17.13,17C15.92,18.85 14.11,20.24 12,20.92C9.89,20.24 8.08,18.85 6.87,17C6.53,16.5 6.24,16 6,15.47C6,13.82 8.71,12.47 12,12.47C15.29,12.47 18,13.79 18,15.47C17.76,16 17.47,16.5 17.13,17Z"},{id:"notify.facilities_team",label:"Facilities team",path:"M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z"},{id:"notify.it_oncall",label:"IT on-call",path:"M12,15C7.58,15 4,16.79 4,19V21H20V19C20,16.79 16.42,15 12,15M8,9A4,4 0 0,0 12,13A4,4 0 0,0 16,9M11.5,2C11.2,2 11,2.21 11,2.5V5.5H10V3C10,3 7.75,3.86 7.75,6.75C7.75,6.75 7,6.89 7,8H17C16.95,6.89 16.25,6.75 16.25,6.75C16.25,3.86 14,3 14,3V5.5H13V2.5C13,2.21 12.81,2 12.5,2H11.5Z"},{id:"notify.persistent",label:"Persistent notification",path:"M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21"},{id:"notify.telegram_ops",label:"Telegram — Ops",path:"M2,21L23,12L2,3V10L17,12L2,14V21Z"},{id:"notify.email_admin",label:"Email — admin",path:"M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z"},{id:"notify.alexa_everywhere",label:"Alexa — announce",path:"M12,8H4A2,2 0 0,0 2,10V14A2,2 0 0,0 4,16H5V20A1,1 0 0,0 6,21H8A1,1 0 0,0 9,20V16H12L17,20V4L12,8M21.5,12C21.5,13.71 20.54,15.26 19,16V8C20.53,8.75 21.5,10.3 21.5,12Z"}];let ie=class extends lt{constructor(){super(...arguments),this.value=[],this.targets=ee,this._open=!1}static{this.styles=[vt,n`
+    `}};t([gt({attribute:!1})],ee.prototype,"hass",void 0),t([ut()],ee.prototype,"_events",void 0),t([ut()],ee.prototype,"_loading",void 0),t([ut()],ee.prototype,"_offset",void 0),t([ut()],ee.prototype,"_filterAlarm",void 0),t([ut()],ee.prototype,"_filterEvent",void 0),t([ut()],ee.prototype,"_filterUser",void 0),ee=t([dt("history-view")],ee);const ie=[{id:"notify.mobile_app_marius",label:"Marius — phone",path:At},{id:"notify.mobile_app_anna",label:"Anna — phone",path:At},{id:"notify.mobile_app_security",label:"Security — phone",path:"M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,5A3,3 0 0,1 15,8A3,3 0 0,1 12,11A3,3 0 0,1 9,8A3,3 0 0,1 12,5M17.13,17C15.92,18.85 14.11,20.24 12,20.92C9.89,20.24 8.08,18.85 6.87,17C6.53,16.5 6.24,16 6,15.47C6,13.82 8.71,12.47 12,12.47C15.29,12.47 18,13.79 18,15.47C17.76,16 17.47,16.5 17.13,17Z"},{id:"notify.facilities_team",label:"Facilities team",path:"M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z"},{id:"notify.it_oncall",label:"IT on-call",path:"M12,15C7.58,15 4,16.79 4,19V21H20V19C20,16.79 16.42,15 12,15M8,9A4,4 0 0,0 12,13A4,4 0 0,0 16,9M11.5,2C11.2,2 11,2.21 11,2.5V5.5H10V3C10,3 7.75,3.86 7.75,6.75C7.75,6.75 7,6.89 7,8H17C16.95,6.89 16.25,6.75 16.25,6.75C16.25,3.86 14,3 14,3V5.5H13V2.5C13,2.21 12.81,2 12.5,2H11.5Z"},{id:"notify.persistent",label:"Persistent notification",path:"M21,19V20H3V19L5,17V11C5,7.9 7.03,5.17 10,4.29C10,4.19 10,4.1 10,4A2,2 0 0,1 12,2A2,2 0 0,1 14,4C14,4.1 14,4.19 14,4.29C16.97,5.17 19,7.9 19,11V17L21,19M14,21A2,2 0 0,1 12,23A2,2 0 0,1 10,21"},{id:"notify.telegram_ops",label:"Telegram — Ops",path:"M2,21L23,12L2,3V10L17,12L2,14V21Z"},{id:"notify.email_admin",label:"Email — admin",path:"M20,8L12,13L4,8V6L12,11L20,6M20,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V6C22,4.89 21.1,4 20,4Z"},{id:"notify.alexa_everywhere",label:"Alexa — announce",path:"M12,8H4A2,2 0 0,0 2,10V14A2,2 0 0,0 4,16H5V20A1,1 0 0,0 6,21H8A1,1 0 0,0 9,20V16H12L17,20V4L12,8M21.5,12C21.5,13.71 20.54,15.26 19,16V8C20.53,8.75 21.5,10.3 21.5,12Z"}];let ae=class extends lt{constructor(){super(...arguments),this.value=[],this.targets=ie,this._open=!1}static{this.styles=[vt,n`
       :host {
         display: block;
         position: relative;
@@ -1439,10 +1446,10 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         font-family: var(--ha-font-family-code, monospace);
         color: var(--secondary-text-color, #727272);
       }
-    `]}connectedCallback(){super.connectedCallback(),this._onDoc=this._onDoc.bind(this),document.addEventListener("mousedown",this._onDoc)}disconnectedCallback(){super.disconnectedCallback(),document.removeEventListener("mousedown",this._onDoc)}_onDoc(t){t.composedPath().includes(this)||(this._open=!1)}_meta(t){return this.targets.find(e=>e.id===t)??{id:t,label:t,path:$t}}_emit(t){this.dispatchEvent(new CustomEvent("value-changed",{detail:{value:t}}))}_add(t){this._emit([...this.value,{target:t,min_priority:0}])}_remove(t){this._emit(this.value.filter(e=>e.target!==t))}_setPriority(t,e){this._emit(this.value.map(i=>i.target===t?{...i,min_priority:e}:i))}render(){const t=this.value.map(t=>t.target),e=this.targets.filter(e=>!t.includes(e.id)),i={0:"All",1:"Warn+",2:"High+",3:"Crit"};return R`
+    `]}connectedCallback(){super.connectedCallback(),this._onDoc=this._onDoc.bind(this),document.addEventListener("mousedown",this._onDoc)}disconnectedCallback(){super.disconnectedCallback(),document.removeEventListener("mousedown",this._onDoc)}_onDoc(t){t.composedPath().includes(this)||(this._open=!1)}_meta(t){return this.targets.find(e=>e.id===t)??{id:t,label:t,path:$t}}_emit(t){this.dispatchEvent(new CustomEvent("value-changed",{detail:{value:t}}))}_add(t){this._emit([...this.value,{target:t,min_priority:0}])}_remove(t){this._emit(this.value.filter(e=>e.target!==t))}_setPriority(t,e){this._emit(this.value.map(i=>i.target===t?{...i,min_priority:e}:i))}render(){const t=this.value.map(t=>t.target),e=this.targets.filter(e=>!t.includes(e.id)),i={0:"All",1:"Warn+",2:"High+",3:"Crit"};return F`
       <div class="box">
-        ${0===this.value.length?R`<span class="empty">No targets — alarms log to history only</span>`:B}
-        ${this.value.map(t=>{const e=this._meta(t.target);return R`
+        ${0===this.value.length?F`<span class="empty">No targets — alarms log to history only</span>`:B}
+        ${this.value.map(t=>{const e=this._meta(t.target);return F`
             <span class="chip">
               <ha-svg-icon .path=${e.path}></ha-svg-icon>
               ${e.label}
@@ -1451,7 +1458,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                 .value=${String(t.min_priority)}
                 @change=${e=>{e.stopPropagation(),this._setPriority(t.target,parseInt(e.target.value))}}
                 @click=${t=>t.stopPropagation()}>
-                ${[0,1,2,3].map(t=>R`<option value=${t}>${i[t]}</option>`)}
+                ${[0,1,2,3].map(t=>F`<option value=${t}>${i[t]}</option>`)}
               </select>
               <span class="x" title="Remove" @click=${()=>this._remove(t.target)}>
                 <ha-svg-icon .path=${Ct}></ha-svg-icon>
@@ -1462,9 +1469,9 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
           <ha-svg-icon .path=${"M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"}></ha-svg-icon>Add target
         </button>
       </div>
-      ${this._open&&e.length>0?R`
+      ${this._open&&e.length>0?F`
             <div class="menu">
-              ${e.map(t=>R`
+              ${e.map(t=>F`
                   <div
                     class="opt"
                     @click=${()=>{this._add(t.id),1===e.length&&(this._open=!1)}}
@@ -1476,7 +1483,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                 `)}
             </div>
           `:B}
-    `}};t([ut({attribute:!1})],ie.prototype,"value",void 0),t([ut({attribute:!1})],ie.prototype,"targets",void 0),t([gt()],ie.prototype,"_open",void 0),ie=t([ct("notify-target-picker")],ie);let ae=class extends lt{constructor(){super(...arguments),this._channels=[],this._loading=!0,this._editing=null,this._formName="",this._formTargets=[],this._formMinPriority=0,this._formPersistent=!0,this._formMobile=!0,this._formCritical=!1,this._filterName=""}get _notifyTargets(){return this.hass?.services?.notify?Object.keys(this.hass.services.notify).filter(t=>"send_message"!==t&&"persistent_notification"!==t).map(t=>({id:`notify.${t}`,label:t.replace(/_/g," ").replace(/\b\w/g,t=>t.toUpperCase()),path:$t})):[]}static{this.styles=[vt,n`
+    `}};t([gt({attribute:!1})],ae.prototype,"value",void 0),t([gt({attribute:!1})],ae.prototype,"targets",void 0),t([ut()],ae.prototype,"_open",void 0),ae=t([dt("notify-target-picker")],ae);let se=class extends lt{constructor(){super(...arguments),this._channels=[],this._loading=!0,this._editing=null,this._formName="",this._formTargets=[],this._formMinPriority=0,this._formPersistent=!0,this._formMobile=!0,this._formCritical=!1,this._filterName=""}get _notifyTargets(){return this.hass?.services?.notify?Object.keys(this.hass.services.notify).filter(t=>"send_message"!==t&&"persistent_notification"!==t).map(t=>({id:`notify.${t}`,label:t.replace(/_/g," ").replace(/\b\w/g,t=>t.toUpperCase()),path:$t})):[]}static{this.styles=[vt,n`
       :host { display: block; padding: 16px; }
       .form-card {
         background: var(--card-background-color, white);
@@ -1493,7 +1500,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         background: var(--card-background-color, white);
         color: var(--primary-text-color, #333);
       }
-    `]}connectedCallback(){super.connectedCallback(),this._loadChannels()}async _loadChannels(){if(this.hass)try{this._channels=await Pt(this.hass)}finally{this._loading=!1}}_startCreate(){this._editing={},this._formName="",this._formTargets=[],this._formMinPriority=0,this._formPersistent=!0,this._formMobile=!0,this._formCritical=!1}_startEdit(t){this._editing=t,this._formName=t.name,this._formTargets=t.notification_targets.map(t=>"string"==typeof t?{target:t,min_priority:0}:{target:t.target,min_priority:t.min_priority??0}),this._formMinPriority=t.min_priority,this._formPersistent=t.persistent_notification,this._formMobile=t.mobile_push,this._formCritical=t.critical_notification}async _save(){if(!this.hass||!this._formName.trim())return;const t={name:this._formName.trim(),notification_targets:this._formTargets,min_priority:this._formMinPriority,persistent_notification:this._formPersistent,mobile_push:this._formMobile,critical_notification:this._formCritical};this._editing?.id?await(async(t,e,i)=>t.connection.sendMessagePromise({type:"scada_alarm_manager/channel/update",channel_id:e,...i}))(this.hass,this._editing.id,t):await(async(t,e)=>t.connection.sendMessagePromise({type:"scada_alarm_manager/channel/create",...e}))(this.hass,t),this._editing=null,this._loadChannels()}async _delete(t){this.hass&&confirm("Delete this channel?")&&(await(async(t,e)=>{await t.connection.sendMessagePromise({type:"scada_alarm_manager/channel/delete",channel_id:e})})(this.hass,t),this._loadChannels())}render(){return this._loading?R`<div class="empty-state">Loading...</div>`:R`
+    `]}connectedCallback(){super.connectedCallback(),this._loadChannels()}async _loadChannels(){if(this.hass)try{this._channels=await Ht(this.hass)}finally{this._loading=!1}}_startCreate(){this._editing={},this._formName="",this._formTargets=[],this._formMinPriority=0,this._formPersistent=!0,this._formMobile=!0,this._formCritical=!1}_startEdit(t){this._editing=t,this._formName=t.name,this._formTargets=t.notification_targets.map(t=>"string"==typeof t?{target:t,min_priority:0}:{target:t.target,min_priority:t.min_priority??0}),this._formMinPriority=t.min_priority,this._formPersistent=t.persistent_notification,this._formMobile=t.mobile_push,this._formCritical=t.critical_notification}async _save(){if(!this.hass||!this._formName.trim())return;const t={name:this._formName.trim(),notification_targets:this._formTargets,min_priority:this._formMinPriority,persistent_notification:this._formPersistent,mobile_push:this._formMobile,critical_notification:this._formCritical};this._editing?.id?await(async(t,e,i)=>t.connection.sendMessagePromise({type:"scada_alarm_manager/channel/update",channel_id:e,...i}))(this.hass,this._editing.id,t):await(async(t,e)=>t.connection.sendMessagePromise({type:"scada_alarm_manager/channel/create",...e}))(this.hass,t),this._editing=null,this._loadChannels()}async _delete(t){this.hass&&confirm("Delete this channel?")&&(await(async(t,e)=>{await t.connection.sendMessagePromise({type:"scada_alarm_manager/channel/delete",channel_id:e})})(this.hass,t),this._loadChannels())}render(){return this._loading?F`<div class="empty-state">Loading...</div>`:F`
       ${null!==this._editing?this._renderForm():""}
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
         <span>${this._channels.length} channel${1!==this._channels.length?"s":""}</span>
@@ -1516,11 +1523,11 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
           </tr>
         </thead>
         <tbody>
-          ${this._channels.filter(t=>!this._filterName||t.name.toLowerCase().includes(this._filterName.toLowerCase())).map(t=>R`
+          ${this._channels.filter(t=>!this._filterName||t.name.toLowerCase().includes(this._filterName.toLowerCase())).map(t=>F`
               <tr>
                 <td><strong>${t.name}</strong></td>
                 <td>${0===t.notification_targets.length?"-":t.notification_targets.map(t=>"string"==typeof t?t:t.target).join(", ")}</td>
-                <td>${zt[t.min_priority]??"Info"}</td>
+                <td>${Nt[t.min_priority]??"Info"}</td>
                 <td>${t.persistent_notification?"Yes":"No"}</td>
                 <td>${t.mobile_push?"Yes":"No"}</td>
                 <td>${t.critical_notification?"Yes":"No"}</td>
@@ -1532,7 +1539,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
             `)}
         </tbody>
       </table>
-    `}_renderForm(){return R`
+    `}_renderForm(){return F`
       <div class="form-card">
         <h3>${this._editing?.id?"Edit Channel":"New Channel"}</h3>
         <div class="form-row">
@@ -1570,7 +1577,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
           <button class="btn" style="background: var(--secondary-background-color)" @click=${()=>this._editing=null}>Cancel</button>
         </div>
       </div>
-    `}};t([ut({attribute:!1})],ae.prototype,"hass",void 0),t([gt()],ae.prototype,"_channels",void 0),t([gt()],ae.prototype,"_loading",void 0),t([gt()],ae.prototype,"_editing",void 0),t([gt()],ae.prototype,"_formName",void 0),t([gt()],ae.prototype,"_formTargets",void 0),t([gt()],ae.prototype,"_formMinPriority",void 0),t([gt()],ae.prototype,"_formPersistent",void 0),t([gt()],ae.prototype,"_formMobile",void 0),t([gt()],ae.prototype,"_formCritical",void 0),t([gt()],ae.prototype,"_filterName",void 0),ae=t([ct("channels-view")],ae);let se=class extends lt{constructor(){super(...arguments),this._channels=[],this._loading=!0,this._saving=!1,this._name="",this._description="",this._sourceEntityId="",this._triggerType="digital",this._priority=1,this._area="",this._equipment="",this._tag="",this._channelId=null,this._enabled=!0,this._latching=!1,this._ackRequired=!0,this._autoClear=!0,this._conditionTemplate="",this._conditionMode="none",this._conditionEntity="",this._notificationTitleTemplate="",this._notificationTextTemplate="",this._conditionState="",this._remindIntervalMin="",this._triggerDelaySec="",this._clearDelaySec="",this._actionLabel="",this._actionService="",this._actionEntity="",this._linkPagePath="",this._analogOperator=">",this._analogThreshold="0",this._hysteresis="",this._digitalTargetState="on",this._customMatchValues=""}static{this.styles=[vt,n`
+    `}};t([gt({attribute:!1})],se.prototype,"hass",void 0),t([ut()],se.prototype,"_channels",void 0),t([ut()],se.prototype,"_loading",void 0),t([ut()],se.prototype,"_editing",void 0),t([ut()],se.prototype,"_formName",void 0),t([ut()],se.prototype,"_formTargets",void 0),t([ut()],se.prototype,"_formMinPriority",void 0),t([ut()],se.prototype,"_formPersistent",void 0),t([ut()],se.prototype,"_formMobile",void 0),t([ut()],se.prototype,"_formCritical",void 0),t([ut()],se.prototype,"_filterName",void 0),se=t([dt("channels-view")],se);let oe=class extends lt{constructor(){super(...arguments),this._channels=[],this._loading=!0,this._saving=!1,this._name="",this._description="",this._sourceEntityId="",this._triggerType="digital",this._priority=1,this._area="",this._equipment="",this._tag="",this._channelId=null,this._enabled=!0,this._latching=!1,this._ackRequired=!0,this._autoClear=!0,this._conditionTemplate="",this._conditionMode="none",this._conditionEntity="",this._notificationTitleTemplate="",this._notificationTextTemplate="",this._conditionState="",this._remindIntervalMin="",this._triggerDelaySec="",this._clearDelaySec="",this._actionLabel="",this._actionService="",this._actionEntity="",this._actionTarget={},this._linkPagePath="",this._linkViewPath="",this._views=[],this._analogOperator=">",this._analogThreshold="0",this._hysteresis="",this._digitalTargetState="on",this._customMatchValues=""}static{this.styles=[vt,n`
       :host { display: block; padding: 16px; max-width: 800px; }
       .form-card {
         background: var(--card-background-color, white);
@@ -1585,7 +1592,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       .checkbox-group { display: flex; gap: 16px; align-items: center; margin: 12px 0; flex-wrap: wrap; }
       .checkbox-group label { display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 0.9em; }
       .success { color: var(--alarm-normal); margin-top: 8px; }
-    `]}connectedCallback(){super.connectedCallback(),this._load()}updated(t){t.has("alarmId")&&this._load()}async _ensureHaPickersLoaded(){if(customElements.get("ha-entity-picker"))return;const t=await(window.loadCardHelpers?.());if(!t)return;const e=await t.createCardElement({type:"entities",entities:[]});await(e?.constructor?.getConfigElement?.())}async _load(){if(this.hass){this._loading=!0;try{if(await this._ensureHaPickersLoaded(),this._channels=await Pt(this.hass),this.alarmId){const t=await(async(t,e)=>t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/get",alarm_id:e}))(this.hass,this.alarmId);this._name=t.name,this._description=t.description,this._sourceEntityId=t.source_entity_id,this._triggerType=t.trigger_type,this._priority=t.priority,this._area=t.area,this._equipment=t.equipment,this._tag=t.tag,this._channelId=t.channel_id,this._enabled=t.enabled,this._latching=t.latching,this._ackRequired=t.ack_required,this._autoClear=t.auto_clear,this._conditionTemplate=t.condition_template||"";const e=(t.condition_template||"").match(/\{\{\s*is_state\(\s*'([^']+)'\s*,\s*'([^']+)'\s*\)\s*\}\}/);e?(this._conditionMode="simple",this._conditionEntity=e[1],this._conditionState=e[2]):t.condition_template?this._conditionMode="template":this._conditionMode="none",this._notificationTitleTemplate=t.notification_title_template||"",this._notificationTextTemplate=t.notification_text_template||"",this._remindIntervalMin=null!=t.repeat_interval?String(t.repeat_interval/60):"",this._triggerDelaySec=null!=t.trigger_delay?String(t.trigger_delay):"",this._clearDelaySec=null!=t.clear_delay?String(t.clear_delay):"",this._actionLabel=t.action_label||"",this._actionService=t.action_service||"",this._actionEntity=t.action_entity||"",this._linkPagePath=t.link_page_path||"","analog"===t.trigger_type?(this._analogOperator=t.trigger_config.operator??">",this._analogThreshold=String(t.trigger_config.threshold??0),this._hysteresis=null!=t.hysteresis?String(t.hysteresis):""):"digital"===t.trigger_type?this._digitalTargetState=t.trigger_config.target_state??"on":"custom_state"===t.trigger_type&&(this._customMatchValues=(t.trigger_config.match_values??[]).join(", "))}else this._resetForm()}finally{this._loading=!1}}}_resetForm(){this._name="",this._description="",this._sourceEntityId="",this._triggerType="digital",this._priority=1,this._area="",this._equipment="",this._tag="",this._channelId=null,this._enabled=!0,this._latching=!1,this._ackRequired=!0,this._autoClear=!0,this._conditionTemplate="",this._conditionMode="none",this._conditionEntity="",this._conditionState="",this._notificationTitleTemplate="",this._notificationTextTemplate="",this._remindIntervalMin="",this._triggerDelaySec="",this._clearDelaySec="",this._actionLabel="",this._actionService="",this._actionEntity="",this._linkPagePath="",this._analogOperator=">",this._hysteresis="",this._analogThreshold="0",this._digitalTargetState="on",this._customMatchValues=""}get _dashboards(){const t=this.hass?.panels??{};return Object.values(t).filter(t=>"lovelace"===t.component_name).sort((t,e)=>(t.title||t.url_path).localeCompare(e.title||e.url_path))}_buildTriggerConfig(){switch(this._triggerType){case"analog":return{operator:this._analogOperator,threshold:parseFloat(this._analogThreshold)};case"digital":return{target_state:this._digitalTargetState};case"custom_state":return{match_values:this._customMatchValues.split(",").map(t=>t.trim()).filter(Boolean)};default:return{}}}async _save(){if(this.hass&&this._name.trim()&&this._sourceEntityId.trim()){this._saving=!0;try{const t={name:this._name.trim(),description:this._description,source_entity_id:this._sourceEntityId.trim(),trigger_type:this._triggerType,trigger_config:this._buildTriggerConfig(),priority:this._priority,area:this._area,equipment:this._equipment,tag:this._tag,channel_id:this._channelId,enabled:this._enabled,latching:this._latching,ack_required:this._ackRequired,auto_clear:this._autoClear,condition_template:"simple"===this._conditionMode&&this._conditionEntity?`{{ is_state('${this._conditionEntity}', '${this._conditionState}') }}`:"template"===this._conditionMode&&this._conditionTemplate||null,notification_title_template:this._notificationTitleTemplate||null,notification_text_template:this._notificationTextTemplate||null,hysteresis:this._hysteresis?parseFloat(this._hysteresis):null,repeat_interval:this._remindIntervalMin?Math.round(60*parseFloat(this._remindIntervalMin)):null,trigger_delay:this._triggerDelaySec?Math.round(parseFloat(this._triggerDelaySec)):null,clear_delay:this._clearDelaySec?Math.round(parseFloat(this._clearDelaySec)):null,action_label:this._actionLabel.trim()||null,action_service:this._actionService.trim()||null,action_entity:this._actionEntity.trim()||null,link_page_path:this._linkPagePath||null};this.alarmId?await(async(t,e,i)=>t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/update",alarm_id:e,...i}))(this.hass,this.alarmId,t):(await(async(t,e)=>t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/create",...e}))(this.hass,t),this._resetForm()),this.dispatchEvent(new CustomEvent("navigate",{detail:{view:"all"},bubbles:!0,composed:!0}))}finally{this._saving=!1}}}render(){return this._loading?R`<div class="empty-state">Loading...</div>`:R`
+    `]}connectedCallback(){super.connectedCallback(),this._load()}updated(t){t.has("alarmId")&&this._load()}async _ensureHaPickersLoaded(){if(customElements.get("ha-entity-picker"))return;const t=await(window.loadCardHelpers?.());if(!t)return;const e=await t.createCardElement({type:"entities",entities:[]});await(e?.constructor?.getConfigElement?.())}async _load(){if(this.hass){this._loading=!0;try{if(await this._ensureHaPickersLoaded(),this._channels=await Ht(this.hass),this.alarmId){const t=await(async(t,e)=>t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/get",alarm_id:e}))(this.hass,this.alarmId);this._name=t.name,this._description=t.description,this._sourceEntityId=t.source_entity_id,this._triggerType=t.trigger_type,this._priority=t.priority,this._area=t.area,this._equipment=t.equipment,this._tag=t.tag,this._channelId=t.channel_id,this._enabled=t.enabled,this._latching=t.latching,this._ackRequired=t.ack_required,this._autoClear=t.auto_clear,this._conditionTemplate=t.condition_template||"";const e=(t.condition_template||"").match(/\{\{\s*is_state\(\s*'([^']+)'\s*,\s*'([^']+)'\s*\)\s*\}\}/);e?(this._conditionMode="simple",this._conditionEntity=e[1],this._conditionState=e[2]):t.condition_template?this._conditionMode="template":this._conditionMode="none",this._notificationTitleTemplate=t.notification_title_template||"",this._notificationTextTemplate=t.notification_text_template||"",this._remindIntervalMin=null!=t.repeat_interval?String(t.repeat_interval/60):"",this._triggerDelaySec=null!=t.trigger_delay?String(t.trigger_delay):"",this._clearDelaySec=null!=t.clear_delay?String(t.clear_delay):"",this._actionLabel=t.action_label||"",this._actionService=t.action_service||"",this._actionEntity=t.action_entity||"",this._actionTarget=t.action_target?{...t.action_target}:t.action_entity?{entity_id:[t.action_entity]}:{},this._linkPagePath=t.link_page_path||"",this._linkViewPath=t.link_view_path||"",this._linkPagePath&&await this._loadViews(this._linkPagePath),"analog"===t.trigger_type?(this._analogOperator=t.trigger_config.operator??">",this._analogThreshold=String(t.trigger_config.threshold??0),this._hysteresis=null!=t.hysteresis?String(t.hysteresis):""):"digital"===t.trigger_type?this._digitalTargetState=t.trigger_config.target_state??"on":"custom_state"===t.trigger_type&&(this._customMatchValues=(t.trigger_config.match_values??[]).join(", "))}else this._resetForm()}finally{this._loading=!1}}}_resetForm(){this._name="",this._description="",this._sourceEntityId="",this._triggerType="digital",this._priority=1,this._area="",this._equipment="",this._tag="",this._channelId=null,this._enabled=!0,this._latching=!1,this._ackRequired=!0,this._autoClear=!0,this._conditionTemplate="",this._conditionMode="none",this._conditionEntity="",this._conditionState="",this._notificationTitleTemplate="",this._notificationTextTemplate="",this._remindIntervalMin="",this._triggerDelaySec="",this._clearDelaySec="",this._actionLabel="",this._actionService="",this._actionEntity="",this._actionTarget={},this._linkPagePath="",this._linkViewPath="",this._views=[],this._analogOperator=">",this._hysteresis="",this._analogThreshold="0",this._digitalTargetState="on",this._customMatchValues=""}get _dashboards(){const t=this.hass?.panels??{};return Object.values(t).filter(t=>"lovelace"===t.component_name).sort((t,e)=>(t.title||t.url_path).localeCompare(e.title||e.url_path))}async _loadViews(t){if(this._views=[],this.hass&&t)try{const e=await(async(t,e)=>t.connection.sendMessagePromise({type:"lovelace/config",url_path:e}))(this.hass,t);this._views=(e?.views??[]).filter(t=>t.path).map(t=>({path:t.path,title:t.title||t.path}))}catch(t){}}async _onDashboardChange(t){this._linkPagePath=t,this._linkViewPath="",await this._loadViews(t)}_buildTriggerConfig(){switch(this._triggerType){case"analog":return{operator:this._analogOperator,threshold:parseFloat(this._analogThreshold)};case"digital":return{target_state:this._digitalTargetState};case"custom_state":return{match_values:this._customMatchValues.split(",").map(t=>t.trim()).filter(Boolean)};default:return{}}}async _save(){if(this.hass&&this._name.trim()&&this._sourceEntityId.trim()){this._saving=!0;try{const t={name:this._name.trim(),description:this._description,source_entity_id:this._sourceEntityId.trim(),trigger_type:this._triggerType,trigger_config:this._buildTriggerConfig(),priority:this._priority,area:this._area,equipment:this._equipment,tag:this._tag,channel_id:this._channelId,enabled:this._enabled,latching:this._latching,ack_required:this._ackRequired,auto_clear:this._autoClear,condition_template:"simple"===this._conditionMode&&this._conditionEntity?`{{ is_state('${this._conditionEntity}', '${this._conditionState}') }}`:"template"===this._conditionMode&&this._conditionTemplate||null,notification_title_template:this._notificationTitleTemplate||null,notification_text_template:this._notificationTextTemplate||null,hysteresis:this._hysteresis?parseFloat(this._hysteresis):null,repeat_interval:this._remindIntervalMin?Math.round(60*parseFloat(this._remindIntervalMin)):null,trigger_delay:this._triggerDelaySec?Math.round(parseFloat(this._triggerDelaySec)):null,clear_delay:this._clearDelaySec?Math.round(parseFloat(this._clearDelaySec)):null,action_label:this._actionLabel.trim()||null,action_service:this._actionService.trim()||null,action_entity:this._actionEntity.trim()||null,action_target:this._actionTarget&&Object.keys(this._actionTarget).length>0?this._actionTarget:null,link_page_path:this._linkPagePath||null,link_view_path:this._linkViewPath||null};this.alarmId?await(async(t,e,i)=>t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/update",alarm_id:e,...i}))(this.hass,this.alarmId,t):(await(async(t,e)=>t.connection.sendMessagePromise({type:"scada_alarm_manager/alarm/create",...e}))(this.hass,t),this._resetForm()),this.dispatchEvent(new CustomEvent("navigate",{detail:{view:"all"},bubbles:!0,composed:!0}))}finally{this._saving=!1}}}render(){return this._loading?F`<div class="empty-state">Loading...</div>`:F`
       <div class="form-card">
         <h2>${this.alarmId?"Edit Alarm":"Create New Alarm"}</h2>
 
@@ -1625,7 +1632,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
             <label>Channel</label>
             <select title="Routes notifications to specific targets (mobile, persistent, etc.)" @change=${t=>{const e=t.target.value;this._channelId=e||null}}>
               <option value="" ?selected=${!this._channelId}>No channel</option>
-              ${this._channels.map(t=>R`<option value=${t.id} ?selected=${t.id===this._channelId}>${t.name}</option>`)}
+              ${this._channels.map(t=>F`<option value=${t.id} ?selected=${t.id===this._channelId}>${t.name}</option>`)}
             </select>
             <div class="hint">Channels define where notifications are sent. Create one in the Channels tab.</div>
           </div>
@@ -1662,7 +1669,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
             </select>
           </div>
 
-          ${"analog"===this._triggerType?R`
+          ${"analog"===this._triggerType?F`
             <div class="form-row">
               <div class="form-group">
                 <label>Operator</label>
@@ -1687,14 +1694,14 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
             </div>
           `:""}
 
-          ${"digital"===this._triggerType?R`
+          ${"digital"===this._triggerType?F`
             <div class="form-group">
               <label>Target State</label>
               <input type="text" .value=${this._digitalTargetState} @input=${t=>this._digitalTargetState=t.target.value} placeholder="on" />
             </div>
           `:""}
 
-          ${"custom_state"===this._triggerType?R`
+          ${"custom_state"===this._triggerType?F`
             <div class="form-group">
               <label>Match Values (comma-separated)</label>
               <input type="text" .value=${this._customMatchValues} @input=${t=>this._customMatchValues=t.target.value} placeholder="error, fault, offline" />
@@ -1754,7 +1761,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                 title="Advanced Jinja2 template for complex conditions"
                 @click=${()=>this._conditionMode="template"}>Template</button>
             </div>
-            ${"simple"===this._conditionMode?R`
+            ${"simple"===this._conditionMode?F`
               <div class="form-row">
                 <ha-entity-picker
                   .hass=${this.hass}
@@ -1768,7 +1775,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
                   <input type="text" .value=${this._conditionState} @input=${t=>this._conditionState=t.target.value} placeholder="home, on, true, etc." />
                 </div>
               </div>
-            `:"template"===this._conditionMode?R`
+            `:"template"===this._conditionMode?F`
               <textarea rows="2" .value=${this._conditionTemplate} @input=${t=>this._conditionTemplate=t.target.value} placeholder="e.g. {{ is_state('device_tracker.car', 'home') }}"></textarea>
             `:""}
           </div>
@@ -1791,35 +1798,49 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
 
         <div class="section">
           <h3>Notification Action &amp; Link (optional)</h3>
-          <div class="form-group">
-            <label>Link page</label>
-            <select title="Tapping the notification opens this dashboard; the persistent notification links to it"
-              @change=${t=>{this._linkPagePath=t.target.value}}>
-              <option value="" ?selected=${!this._linkPagePath}>Alarm Center (default)</option>
-              ${this._dashboards.map(t=>R`<option value=${t.url_path} ?selected=${t.url_path===this._linkPagePath}>${t.title||t.url_path}</option>`)}
-            </select>
-            <div class="hint">Where the alarm's notifications link to. Defaults to the Alarm Center.</div>
-          </div>
-
           <div class="form-row">
             <div class="form-group">
-              <label>Action button label</label>
-              <input type="text" .value=${this._actionLabel} @input=${t=>this._actionLabel=t.target.value} placeholder="e.g. Open door" />
+              <label>Link page</label>
+              <select title="Tapping the notification opens this dashboard; the persistent notification links to it"
+                @change=${t=>this._onDashboardChange(t.target.value)}>
+                <option value="" ?selected=${!this._linkPagePath}>Alarm Center (default)</option>
+                ${this._dashboards.map(t=>F`<option value=${t.url_path} ?selected=${t.url_path===this._linkPagePath}>${t.title||t.url_path}</option>`)}
+              </select>
+              <div class="hint">Where the alarm's notifications link to. Defaults to the Alarm Center.</div>
             </div>
-            <div class="form-group">
-              <label>Action service</label>
-              <input type="text" .value=${this._actionService} @input=${t=>this._actionService=t.target.value} placeholder="e.g. lock.unlock" />
-            </div>
+            ${this._linkPagePath&&this._views.length?F`<div class="form-group">
+                  <label>View</label>
+                  <select @change=${t=>{this._linkViewPath=t.target.value}}>
+                    <option value="" ?selected=${!this._linkViewPath}>Entire dashboard</option>
+                    ${this._views.map(t=>F`<option value=${t.path} ?selected=${t.path===this._linkViewPath}>${t.title}</option>`)}
+                  </select>
+                  <div class="hint">Optionally link to a specific view.</div>
+                </div>`:""}
           </div>
-          <div>
-            <ha-entity-picker
+
+          <div class="form-group">
+            <label>Action button label</label>
+            <input type="text" .value=${this._actionLabel} @input=${t=>this._actionLabel=t.target.value} placeholder="e.g. Open door" />
+            <div class="hint">Optional actionable button (push + alarm list/modal). Set a label, a service and a target; leave blank for none.</div>
+          </div>
+          <div class="form-group">
+            <label>Action service</label>
+            <ha-selector
               .hass=${this.hass}
-              .value=${this._actionEntity}
-              @value-changed=${t=>this._actionEntity=t.detail.value||""}
-              allow-custom-entity
-              .label=${"Action target entity"}
-            ></ha-entity-picker>
-            <div class="hint">Optional actionable button on the mobile push. Set a label + service (and target entity) — tapping it runs that service. Leave blank for no extra button.</div>
+              .selector=${{service:{}}}
+              .value=${this._actionService}
+              @value-changed=${t=>this._actionService=t.detail.value||""}
+            ></ha-selector>
+          </div>
+          <div class="form-group">
+            <label>Action target</label>
+            <ha-selector
+              .hass=${this.hass}
+              .selector=${{target:{}}}
+              .value=${this._actionTarget}
+              @value-changed=${t=>this._actionTarget=t.detail.value||{}}
+            ></ha-selector>
+            <div class="hint">Entity, device, or area the action runs against.</div>
           </div>
         </div>
 
@@ -1832,7 +1853,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
           </button>
         </div>
       </div>
-    `}};t([ut({attribute:!1})],se.prototype,"hass",void 0),t([ut()],se.prototype,"alarmId",void 0),t([gt()],se.prototype,"_channels",void 0),t([gt()],se.prototype,"_loading",void 0),t([gt()],se.prototype,"_saving",void 0),t([gt()],se.prototype,"_name",void 0),t([gt()],se.prototype,"_description",void 0),t([gt()],se.prototype,"_sourceEntityId",void 0),t([gt()],se.prototype,"_triggerType",void 0),t([gt()],se.prototype,"_priority",void 0),t([gt()],se.prototype,"_area",void 0),t([gt()],se.prototype,"_equipment",void 0),t([gt()],se.prototype,"_tag",void 0),t([gt()],se.prototype,"_channelId",void 0),t([gt()],se.prototype,"_enabled",void 0),t([gt()],se.prototype,"_latching",void 0),t([gt()],se.prototype,"_ackRequired",void 0),t([gt()],se.prototype,"_autoClear",void 0),t([gt()],se.prototype,"_conditionTemplate",void 0),t([gt()],se.prototype,"_conditionMode",void 0),t([gt()],se.prototype,"_conditionEntity",void 0),t([gt()],se.prototype,"_notificationTitleTemplate",void 0),t([gt()],se.prototype,"_notificationTextTemplate",void 0),t([gt()],se.prototype,"_conditionState",void 0),t([gt()],se.prototype,"_remindIntervalMin",void 0),t([gt()],se.prototype,"_triggerDelaySec",void 0),t([gt()],se.prototype,"_clearDelaySec",void 0),t([gt()],se.prototype,"_actionLabel",void 0),t([gt()],se.prototype,"_actionService",void 0),t([gt()],se.prototype,"_actionEntity",void 0),t([gt()],se.prototype,"_linkPagePath",void 0),t([gt()],se.prototype,"_analogOperator",void 0),t([gt()],se.prototype,"_analogThreshold",void 0),t([gt()],se.prototype,"_hysteresis",void 0),t([gt()],se.prototype,"_digitalTargetState",void 0),t([gt()],se.prototype,"_customMatchValues",void 0),se=t([ct("create-edit-view")],se);const oe=["active_unacknowledged","active_acknowledged","returned_to_normal_unacknowledged"];let re=class extends lt{constructor(){super(...arguments),this._alarms=[],this._channelCount=0,this._events=[],this._loading=!0}static{this.styles=[vt,n`
+    `}};t([gt({attribute:!1})],oe.prototype,"hass",void 0),t([gt()],oe.prototype,"alarmId",void 0),t([ut()],oe.prototype,"_channels",void 0),t([ut()],oe.prototype,"_loading",void 0),t([ut()],oe.prototype,"_saving",void 0),t([ut()],oe.prototype,"_name",void 0),t([ut()],oe.prototype,"_description",void 0),t([ut()],oe.prototype,"_sourceEntityId",void 0),t([ut()],oe.prototype,"_triggerType",void 0),t([ut()],oe.prototype,"_priority",void 0),t([ut()],oe.prototype,"_area",void 0),t([ut()],oe.prototype,"_equipment",void 0),t([ut()],oe.prototype,"_tag",void 0),t([ut()],oe.prototype,"_channelId",void 0),t([ut()],oe.prototype,"_enabled",void 0),t([ut()],oe.prototype,"_latching",void 0),t([ut()],oe.prototype,"_ackRequired",void 0),t([ut()],oe.prototype,"_autoClear",void 0),t([ut()],oe.prototype,"_conditionTemplate",void 0),t([ut()],oe.prototype,"_conditionMode",void 0),t([ut()],oe.prototype,"_conditionEntity",void 0),t([ut()],oe.prototype,"_notificationTitleTemplate",void 0),t([ut()],oe.prototype,"_notificationTextTemplate",void 0),t([ut()],oe.prototype,"_conditionState",void 0),t([ut()],oe.prototype,"_remindIntervalMin",void 0),t([ut()],oe.prototype,"_triggerDelaySec",void 0),t([ut()],oe.prototype,"_clearDelaySec",void 0),t([ut()],oe.prototype,"_actionLabel",void 0),t([ut()],oe.prototype,"_actionService",void 0),t([ut()],oe.prototype,"_actionEntity",void 0),t([ut()],oe.prototype,"_actionTarget",void 0),t([ut()],oe.prototype,"_linkPagePath",void 0),t([ut()],oe.prototype,"_linkViewPath",void 0),t([ut()],oe.prototype,"_views",void 0),t([ut()],oe.prototype,"_analogOperator",void 0),t([ut()],oe.prototype,"_analogThreshold",void 0),t([ut()],oe.prototype,"_hysteresis",void 0),t([ut()],oe.prototype,"_digitalTargetState",void 0),t([ut()],oe.prototype,"_customMatchValues",void 0),oe=t([dt("create-edit-view")],oe);const re=["active_unacknowledged","active_acknowledged","returned_to_normal_unacknowledged"];let ne=class extends lt{constructor(){super(...arguments),this._alarms=[],this._channelCount=0,this._events=[],this._loading=!0}static{this.styles=[vt,n`
       :host { display: block; padding: 16px; max-width: 800px; }
       .stats-grid {
         display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -1864,7 +1885,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       .freq-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--divider-color); font-size: 0.9em; }
       .info-row:last-child { border-bottom: none; }
-    `]}connectedCallback(){super.connectedCallback(),this._loadStats()}async _loadStats(){if(this.hass)try{const[t,e,i]=await Promise.all([Et(this.hass),Pt(this.hass),Ht(this.hass,{limit:500})]);this._alarms=t,this._channelCount=e.length,this._events=i}finally{this._loading=!1}}_getMostFrequent(){const t={};for(const e of this._events)if("triggered"===e.event_type){const i=this._alarms.find(t=>t.id===e.alarm_id),a=e.alarm_id;t[a]||(t[a]={count:0,name:e.alarm_name||"Unknown",priority:i?.priority??1}),t[a].count++}return Object.values(t).sort((t,e)=>e.count-t.count).slice(0,10)}_getAvgAckTime(){const t=this._events.filter(t=>"acknowledged"===t.event_type);if(0===t.length)return"—";const e={};for(const t of this._events)"triggered"===t.event_type&&(e[t.alarm_id]=t.timestamp);let i=0,a=0;for(const s of t){const t=e[s.alarm_id];if(t){const e=(new Date(s.timestamp).getTime()-new Date(t).getTime())/6e4;e>0&&e<1440&&(i+=e,a++)}}if(0===a)return"—";const s=i/a;return s<60?`${Math.round(s)} min`:`${(s/60).toFixed(1)} h`}render(){if(this._loading)return R`<div class="empty-state">Loading...</div>`;const t=this._alarms.filter(t=>oe.includes(t.runtime.state)).length,e=this._alarms.filter(t=>"shelved"===t.runtime.state).length,i=this._alarms.filter(t=>"disabled"===t.runtime.state).length,a=this._getMostFrequent(),s=a.length>0?a[0].count:1;return R`
+    `]}connectedCallback(){super.connectedCallback(),this._loadStats()}async _loadStats(){if(this.hass)try{const[t,e,i]=await Promise.all([St(this.hass),Ht(this.hass),Vt(this.hass,{limit:500})]);this._alarms=t,this._channelCount=e.length,this._events=i}finally{this._loading=!1}}_getMostFrequent(){const t={};for(const e of this._events)if("triggered"===e.event_type){const i=this._alarms.find(t=>t.id===e.alarm_id),a=e.alarm_id;t[a]||(t[a]={count:0,name:e.alarm_name||"Unknown",priority:i?.priority??1}),t[a].count++}return Object.values(t).sort((t,e)=>e.count-t.count).slice(0,10)}_getAvgAckTime(){const t=this._events.filter(t=>"acknowledged"===t.event_type);if(0===t.length)return"—";const e={};for(const t of this._events)"triggered"===t.event_type&&(e[t.alarm_id]=t.timestamp);let i=0,a=0;for(const s of t){const t=e[s.alarm_id];if(t){const e=(new Date(s.timestamp).getTime()-new Date(t).getTime())/6e4;e>0&&e<1440&&(i+=e,a++)}}if(0===a)return"—";const s=i/a;return s<60?`${Math.round(s)} min`:`${(s/60).toFixed(1)} h`}render(){if(this._loading)return F`<div class="empty-state">Loading...</div>`;const t=this._alarms.filter(t=>re.includes(t.runtime.state)).length,e=this._alarms.filter(t=>"shelved"===t.runtime.state).length,i=this._alarms.filter(t=>"disabled"===t.runtime.state).length,a=this._getMostFrequent(),s=a.length>0?a[0].count:1;return F`
       <h2>System Overview</h2>
       <div class="stats-grid">
         <div class="stat-card">
@@ -1893,15 +1914,15 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         </div>
       </div>
 
-      ${a.length>0?R`
+      ${a.length>0?F`
         <div class="section">
           <h3>Most Frequent Alarms (recent ${this._events.length} events)</h3>
-          ${a.map(t=>R`
+          ${a.map(t=>F`
             <div class="freq-row">
               <span class="freq-count">${t.count}</span>
               <span class="freq-bar" style="width:${Math.max(t.count/s*120,4)}px;background:${mt(t.priority)}"></span>
               <span class="freq-name">${t.name}</span>
-              <span style="font-size:0.8em;color:var(--secondary-text-color)">${zt[t.priority]}</span>
+              <span style="font-size:0.8em;color:var(--secondary-text-color)">${Nt[t.priority]}</span>
             </div>
           `)}
         </div>
@@ -1926,7 +1947,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       <p style="margin-top: 16px; font-size: 0.85em; color: var(--secondary-text-color);">
         To change global settings, go to Settings &rarr; Integrations &rarr; SCADA Alarm Manager &rarr; Options.
       </p>
-    `}};t([ut({attribute:!1})],re.prototype,"hass",void 0),t([gt()],re.prototype,"_alarms",void 0),t([gt()],re.prototype,"_channelCount",void 0),t([gt()],re.prototype,"_events",void 0),t([gt()],re.prototype,"_loading",void 0),re=t([ct("settings-view")],re);const ne=[{id:"active",label:"Active",icon:wt},{id:"all",label:"All Alarms",icon:"M3,5H9V11H3V5M5,7V9H7V7H5M11,7H21V9H11V7M11,15H21V17H11V15M5,20L1.5,16.5L2.91,15.09L5,17.17L9.59,12.59L11,14L5,20Z"},{id:"history",label:"History",icon:"M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3"},{id:"channels",label:"Channels",icon:"M12 10C10.9 10 10 10.9 10 12S10.9 14 12 14 14 13.1 14 12 13.1 10 12 10M18 12C18 8.7 15.3 6 12 6S6 8.7 6 12C6 14.2 7.2 16.1 9 17.2L10 15.5C8.8 14.8 8 13.5 8 12.1C8 9.9 9.8 8.1 12 8.1S16 9.9 16 12.1C16 13.6 15.2 14.9 14 15.5L15 17.2C16.8 16.2 18 14.2 18 12M12 2C6.5 2 2 6.5 2 12C2 15.7 4 18.9 7 20.6L8 18.9C5.6 17.5 4 14.9 4 12C4 7.6 7.6 4 12 4S20 7.6 20 12C20 15 18.4 17.5 16 18.9L17 20.6C20 18.9 22 15.7 22 12C22 6.5 17.5 2 12 2Z"},{id:"create-edit",label:"Create / Edit",icon:"M17,13H13V17H11V13H7V11H11V7H13V11H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"},{id:"settings",label:"Settings",icon:"M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"}],le=["active_unacknowledged","active_acknowledged","returned_to_normal_unacknowledged"];let de=class extends lt{constructor(){super(...arguments),this._activeTab="active",this._priorityFilter="",this._alarms=[],this._showHelp=!1,this._version="",this._handleNavigate=t=>{const{view:e,alarmId:i}=t.detail;this._activeTab=e,this._editAlarmId=i}}setConfig(t){this._config=t,t.default_tab&&(this._activeTab=t.default_tab)}getCardSize(){return 12}static getConfigElement(){return document.createElement("scada-alarm-overview-editor")}static getStubConfig(){return{type:"custom:scada-alarm-overview",title:"Alarm Center"}}static{this.styles=[vt,n`
+    `}};t([gt({attribute:!1})],ne.prototype,"hass",void 0),t([ut()],ne.prototype,"_alarms",void 0),t([ut()],ne.prototype,"_channelCount",void 0),t([ut()],ne.prototype,"_events",void 0),t([ut()],ne.prototype,"_loading",void 0),ne=t([dt("settings-view")],ne);const le=[{id:"active",label:"Active",icon:wt},{id:"all",label:"All Alarms",icon:"M3,5H9V11H3V5M5,7V9H7V7H5M11,7H21V9H11V7M11,15H21V17H11V15M5,20L1.5,16.5L2.91,15.09L5,17.17L9.59,12.59L11,14L5,20Z"},{id:"history",label:"History",icon:"M13.5,8H12V13L16.28,15.54L17,14.33L13.5,12.25V8M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3"},{id:"channels",label:"Channels",icon:"M12 10C10.9 10 10 10.9 10 12S10.9 14 12 14 14 13.1 14 12 13.1 10 12 10M18 12C18 8.7 15.3 6 12 6S6 8.7 6 12C6 14.2 7.2 16.1 9 17.2L10 15.5C8.8 14.8 8 13.5 8 12.1C8 9.9 9.8 8.1 12 8.1S16 9.9 16 12.1C16 13.6 15.2 14.9 14 15.5L15 17.2C16.8 16.2 18 14.2 18 12M12 2C6.5 2 2 6.5 2 12C2 15.7 4 18.9 7 20.6L8 18.9C5.6 17.5 4 14.9 4 12C4 7.6 7.6 4 12 4S20 7.6 20 12C20 15 18.4 17.5 16 18.9L17 20.6C20 18.9 22 15.7 22 12C22 6.5 17.5 2 12 2Z"},{id:"create-edit",label:"Create / Edit",icon:"M17,13H13V17H11V13H7V11H11V7H13V11H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z"},{id:"settings",label:"Settings",icon:"M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z"}],ce=["active_unacknowledged","active_acknowledged","returned_to_normal_unacknowledged"];let de=class extends lt{constructor(){super(...arguments),this._activeTab="active",this._priorityFilter="",this._alarms=[],this._showHelp=!1,this._version="",this._handleNavigate=t=>{const{view:e,alarmId:i}=t.detail;this._activeTab=e,this._editAlarmId=i}}setConfig(t){this._config=t,t.default_tab&&(this._activeTab=t.default_tab)}getCardSize(){return 12}static getConfigElement(){return document.createElement("scada-alarm-overview-editor")}static getStubConfig(){return{type:"custom:scada-alarm-overview",title:"Alarm Center"}}static{this.styles=[vt,n`
       :host {
         display: flex;
         flex-direction: column;
@@ -2037,16 +2058,16 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
         color: var(--primary-color, #009ac7);
         background: var(--secondary-background-color, #f5f5f5);
       }
-    `]}connectedCallback(){super.connectedCallback(),this.addEventListener("navigate",this._handleNavigate),this._loadAlarms(),this._loadVersion(),this._subscribe()}async _loadVersion(){if(this.hass)try{this._version=await(async t=>(await t.connection.sendMessagePromise({type:"scada_alarm_manager/version"})).version)(this.hass)}catch(t){}}disconnectedCallback(){super.disconnectedCallback(),this.removeEventListener("navigate",this._handleNavigate),this._unsub?.()}updated(t){t.has("hass")&&!t.get("hass")&&(this._loadAlarms(),this._loadVersion(),this._subscribe())}async _loadAlarms(){this.hass&&(this._alarms=await Et(this.hass))}async _subscribe(){this.hass&&(this._unsub=await Vt(this.hass,()=>this._loadAlarms()))}_setTab(t){this._activeTab=t,"create-edit"!==t&&(this._editAlarmId=void 0)}get _activeCount(){return this._alarms.filter(t=>le.includes(t.runtime.state)).length}get _criticalCount(){return this._alarms.filter(t=>le.includes(t.runtime.state)&&3===t.priority).length}_renderStatus(){const t=this._criticalCount,e=this._activeCount;let i,a,s;return t>0?(i="#f44336",a=yt,s=`${t} critical`):e>0?(i="#ff9800",a=bt,s=`${e} active`):(i="#4caf50",a="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z",s="All normal"),R`
+    `]}connectedCallback(){super.connectedCallback(),this.addEventListener("navigate",this._handleNavigate),this._loadAlarms(),this._loadVersion(),this._subscribe()}async _loadVersion(){if(this.hass)try{this._version=await(async t=>(await t.connection.sendMessagePromise({type:"scada_alarm_manager/version"})).version)(this.hass)}catch(t){}}disconnectedCallback(){super.disconnectedCallback(),this.removeEventListener("navigate",this._handleNavigate),this._unsub?.()}updated(t){t.has("hass")&&!t.get("hass")&&(this._loadAlarms(),this._loadVersion(),this._subscribe())}async _loadAlarms(){this.hass&&(this._alarms=await St(this.hass))}async _subscribe(){this.hass&&(this._unsub=await zt(this.hass,()=>this._loadAlarms()))}_setTab(t){this._activeTab=t,"create-edit"!==t&&(this._editAlarmId=void 0)}get _activeCount(){return this._alarms.filter(t=>ce.includes(t.runtime.state)).length}get _criticalCount(){return this._alarms.filter(t=>ce.includes(t.runtime.state)&&3===t.priority).length}_renderStatus(){const t=this._criticalCount,e=this._activeCount;let i,a,s;return t>0?(i="#f44336",a=yt,s=`${t} critical`):e>0?(i="#ff9800",a=bt,s=`${e} active`):(i="#4caf50",a="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z",s="All normal"),F`
       <div
         class="status"
         style=${`background:color-mix(in srgb, ${i} 14%, transparent); color:${i}`}
       >
         <ha-svg-icon .path=${a}></ha-svg-icon>${s}
       </div>
-    `}render(){if(!this._config)return R``;const t=this._config.show_header??!1,e=this._config.max_width??"",i="active"===this._activeTab||"all"===this._activeTab;return R`
+    `}render(){if(!this._config)return F``;const t=this._config.show_header??!1,e=this._config.max_width??"",i="active"===this._activeTab||"all"===this._activeTab;return F`
       <div style=${e?`max-width:${e};margin:0 auto`:""}>
-      ${t?R`
+      ${t?F`
         <div class="header">
           <ha-svg-icon .path=${wt} style="color: var(--primary-color)"></ha-svg-icon>
           <span class="title">${this._config.title??"Alarm Center"}</span>
@@ -2055,14 +2076,14 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       `:B}
 
       <div class="tabs">
-        ${ne.map(t=>R`
+        ${le.map(t=>F`
             <button
               class="tab ${this._activeTab===t.id?"active":""}"
               @click=${()=>this._setTab(t.id)}
             >
               <ha-svg-icon .path=${t.icon}></ha-svg-icon>
               <span>${t.label}</span>
-              ${"active"===t.id&&this._activeCount>0?R`<span class="count">${this._activeCount}</span>`:B}
+              ${"active"===t.id&&this._activeCount>0?F`<span class="count">${this._activeCount}</span>`:B}
             </button>
           `)}
         <button class="help-btn" title="Quick start guide" @click=${()=>this._showHelp=!0}>
@@ -2071,7 +2092,7 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       </div>
 
       <div class="content">
-        ${i?R`<alarm-kpi-strip
+        ${i?F`<alarm-kpi-strip
               .alarms=${this._alarms}
               .filterPriority=${this._priorityFilter}
               @priority-filter=${t=>{this._priorityFilter=t.detail.priority,this._priorityFilter&&"active"!==this._activeTab&&this._setTab("active")}}
@@ -2080,13 +2101,13 @@ const ct=t=>(e,i)=>{void 0!==i?i.addInitializer(()=>{customElements.define(t,e)}
       </div>
       <help-dialog .open=${this._showHelp} .version=${this._version} @close=${()=>this._showHelp=!1}></help-dialog>
       </div>
-    `}_renderView(){switch(this._activeTab){case"active":return R`<active-alarms-view
+    `}_renderView(){switch(this._activeTab){case"active":return F`<active-alarms-view
           .hass=${this.hass}
           .priorityFilter=${this._priorityFilter}
-        ></active-alarms-view>`;case"all":return R`<all-alarms-view
+        ></active-alarms-view>`;case"all":return F`<all-alarms-view
           .hass=${this.hass}
           .priorityFilter=${this._priorityFilter}
-        ></all-alarms-view>`;case"history":return R`<history-view .hass=${this.hass}></history-view>`;case"channels":return R`<channels-view .hass=${this.hass}></channels-view>`;case"create-edit":return R`<create-edit-view
+        ></all-alarms-view>`;case"history":return F`<history-view .hass=${this.hass}></history-view>`;case"channels":return F`<channels-view .hass=${this.hass}></channels-view>`;case"create-edit":return F`<create-edit-view
           .hass=${this.hass}
           .alarmId=${this._editAlarmId??""}
-        ></create-edit-view>`;case"settings":return R`<settings-view .hass=${this.hass}></settings-view>`;default:return R`<active-alarms-view .hass=${this.hass}></active-alarms-view>`}}};t([ut({attribute:!1})],de.prototype,"hass",void 0),t([gt()],de.prototype,"_config",void 0),t([gt()],de.prototype,"_activeTab",void 0),t([gt()],de.prototype,"_editAlarmId",void 0),t([gt()],de.prototype,"_priorityFilter",void 0),t([gt()],de.prototype,"_alarms",void 0),t([gt()],de.prototype,"_showHelp",void 0),t([gt()],de.prototype,"_version",void 0),de=t([ct("scada-alarm-overview")],de),window.customCards=window.customCards||[],window.customCards.push({type:"scada-alarm-overview",name:"SCADA Alarm Overview",description:"Full Alarm Center with tabs, KPI strip, and management views. Best in panel mode."});export{de as ScadaAlarmOverview};
+        ></create-edit-view>`;case"settings":return F`<settings-view .hass=${this.hass}></settings-view>`;default:return F`<active-alarms-view .hass=${this.hass}></active-alarms-view>`}}};t([gt({attribute:!1})],de.prototype,"hass",void 0),t([ut()],de.prototype,"_config",void 0),t([ut()],de.prototype,"_activeTab",void 0),t([ut()],de.prototype,"_editAlarmId",void 0),t([ut()],de.prototype,"_priorityFilter",void 0),t([ut()],de.prototype,"_alarms",void 0),t([ut()],de.prototype,"_showHelp",void 0),t([ut()],de.prototype,"_version",void 0),de=t([dt("scada-alarm-overview")],de),window.customCards=window.customCards||[],window.customCards.push({type:"scada-alarm-overview",name:"SCADA Alarm Overview",description:"Full Alarm Center with tabs, KPI strip, and management views. Best in panel mode."});export{de as ScadaAlarmOverview};

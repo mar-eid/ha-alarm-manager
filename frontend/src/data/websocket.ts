@@ -19,6 +19,26 @@ export const fetchVersion = async (hass: HomeAssistant): Promise<string> => {
   return result.version;
 };
 
+export const fetchDashboardConfig = async (
+  hass: HomeAssistant,
+  urlPath: string | null
+): Promise<any> => {
+  return hass.connection.sendMessagePromise({
+    type: "lovelace/config",
+    url_path: urlPath,
+  });
+};
+
+export const triggerAlarmAction = async (
+  hass: HomeAssistant,
+  alarmId: string
+): Promise<void> => {
+  await hass.connection.sendMessagePromise({
+    type: "scada_alarm_manager/alarm/trigger_action",
+    alarm_id: alarmId,
+  });
+};
+
 // --- Alarm CRUD ---
 
 export const fetchAlarms = async (

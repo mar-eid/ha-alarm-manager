@@ -92,18 +92,37 @@ class TestF9NotificationAction:
         # ACK + SHELVE still present
         assert len(actions) == 2
 
-    async def test_manager_runs_custom_action(self, hass: HomeAssistant, mock_database, mock_store):
+    async def test_manager_runs_custom_action_legacy_entity(self, hass: HomeAssistant, mock_database, mock_store):
+        # Back-compat: action_entity (no action_target) → entity_id target.
         manager = AlarmManager(hass, mock_database, mock_store)
         manager._alarms["a1"] = _alarm(action_service="lock.unlock", action_entity="lock.front")
         calls: list = []
 
         async def fake_call(domain, service, data=None, **kwargs):
-            calls.append((domain, service, data))
+            calls.append((domain, service, data, kwargs.get("target")))
 
         with patch.object(hass.services, "async_call", side_effect=fake_call):
             await manager.async_trigger_custom_action("a1")
 
-        assert ("lock", "unlock", {"entity_id": "lock.front"}) in calls
+        assert ("lock", "unlock", {}, {"entity_id": ["lock.front"]}) in calls
+
+    async def test_manager_runs_custom_action_with_target(self, hass: HomeAssistant, mock_database, mock_store):
+        # F15: action_target takes precedence and is passed as the service target.
+        manager = AlarmManager(hass, mock_database, mock_store)
+        manager._alarms["a1"] = _alarm(
+            action_service="light.turn_on",
+            action_entity="light.ignored",
+            action_target={"area_id": ["kitchen"]},
+        )
+        calls: list = []
+
+        async def fake_call(domain, service, data=None, **kwargs):
+            calls.append((domain, service, kwargs.get("target")))
+
+        with patch.object(hass.services, "async_call", side_effect=fake_call):
+            await manager.async_trigger_custom_action("a1")
+
+        assert ("light", "turn_on", {"area_id": ["kitchen"]}) in calls
 
     async def test_manager_custom_action_noop_when_unconfigured(
         self, hass: HomeAssistant, mock_database, mock_store
@@ -150,6 +169,46 @@ class TestF10PageLink:
         assert notify[0][2]["data"]["url"] == "/lovelace-alarms"
 
 
+class TestF13ViewLink:
+    def test_page_url_with_view(self, hass: HomeAssistant):
+        router = NotificationRouter(hass, MagicMock())
+        alarm = _alarm(link_page_path="lovelace-alarms", link_view_path="overview")
+        assert router._page_url(alarm) == "/lovelace-alarms/overview"
+
+    def test_page_url_dashboard_only(self, hass: HomeAssistant):
+        router = NotificationRouter(hass, MagicMock())
+        alarm = _alarm(link_page_path="lovelace-alarms")
+        assert router._page_url(alarm) == "/lovelace-alarms"
+
+    def test_page_url_default(self, hass: HomeAssistant):
+        router = NotificationRouter(hass, MagicMock())
+        assert router._page_url(_alarm()) == "/scada-alarm-manager"
+
+
+class TestF18TestAlarmNotification:
+    async def test_sends_real_alarm_notification(self, hass: HomeAssistant, mock_database, mock_store):
+        manager = AlarmManager(hass, mock_database, mock_store)
+        alarm = _alarm(priority=AlarmPriority.HIGH)
+        manager._alarms["a1"] = alarm
+        manager._channels["ch1"] = _channel()
+        router = AsyncMock()
+        manager.set_notification_router(router)
+
+        await manager.async_send_test_alarm_notification("a1")
+
+        router.async_send_alarm_notification.assert_awaited_once()
+        sent_alarm, sent_runtime = router.async_send_alarm_notification.call_args[0][:2]
+        assert sent_alarm is alarm
+        assert sent_runtime.state == AlarmState.ACTIVE_UNACKED
+
+    async def test_noop_when_alarm_missing(self, hass: HomeAssistant, mock_database, mock_store):
+        manager = AlarmManager(hass, mock_database, mock_store)
+        router = AsyncMock()
+        manager.set_notification_router(router)
+        await manager.async_send_test_alarm_notification("missing")
+        router.async_send_alarm_notification.assert_not_awaited()
+
+
 class TestNewFieldsPersist:
     async def test_roundtrip_action_and_link_fields(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -160,7 +219,9 @@ class TestNewFieldsPersist:
                     action_label="Open",
                     action_service="lock.unlock",
                     action_entity="lock.front",
+                    action_target={"area_id": ["kitchen"]},
                     link_page_path="lovelace-alarms",
+                    link_view_path="overview",
                 )
             )
             got = await db.async_get_alarm("a1")
@@ -168,5 +229,7 @@ class TestNewFieldsPersist:
             assert got.action_label == "Open"
             assert got.action_service == "lock.unlock"
             assert got.action_entity == "lock.front"
+            assert got.action_target == {"area_id": ["kitchen"]}
             assert got.link_page_path == "lovelace-alarms"
+            assert got.link_view_path == "overview"
             await db.async_close()

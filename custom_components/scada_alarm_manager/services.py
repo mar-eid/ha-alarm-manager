@@ -26,6 +26,7 @@ SERVICE_ENABLE = "enable"
 SERVICE_DISABLE = "disable"
 SERVICE_RESET = "reset"
 SERVICE_TEST_NOTIFICATION = "test_notification"
+SERVICE_TEST_ALARM_NOTIFICATION = "test_alarm_notification"
 
 # CRUD services (with response data)
 SERVICE_LIST_ALARMS = "list_alarms"
@@ -69,6 +70,7 @@ SCHEMA_DISABLE = vol.Schema({vol.Required("alarm_id"): cv.string})
 SCHEMA_RESET = vol.Schema({vol.Required("alarm_id"): cv.string})
 
 SCHEMA_TEST_NOTIFICATION = vol.Schema({vol.Required("channel_id"): cv.string})
+SCHEMA_TEST_ALARM_NOTIFICATION = vol.Schema({vol.Required("alarm_id"): cv.string})
 
 SCHEMA_TRIGGER = vol.Schema(
     {
@@ -111,7 +113,9 @@ SCHEMA_CREATE_ALARM = vol.Schema(
         vol.Optional("action_label"): vol.Any(cv.string, None),
         vol.Optional("action_service"): vol.Any(cv.string, None),
         vol.Optional("action_entity"): vol.Any(cv.string, None),
+        vol.Optional("action_target"): vol.Any(dict, None),
         vol.Optional("link_page_path"): vol.Any(cv.string, None),
+        vol.Optional("link_view_path"): vol.Any(cv.string, None),
     }
 )
 
@@ -143,7 +147,9 @@ SCHEMA_UPDATE_ALARM = vol.Schema(
         vol.Optional("action_label"): vol.Any(cv.string, None),
         vol.Optional("action_service"): vol.Any(cv.string, None),
         vol.Optional("action_entity"): vol.Any(cv.string, None),
+        vol.Optional("action_target"): vol.Any(dict, None),
         vol.Optional("link_page_path"): vol.Any(cv.string, None),
+        vol.Optional("link_view_path"): vol.Any(cv.string, None),
     }
 )
 
@@ -276,6 +282,11 @@ async def async_register_services(hass: HomeAssistant) -> None:
         if channel and manager._notification_router:
             await manager._notification_router.async_send_test_notification(channel)
 
+    async def handle_test_alarm_notification(call: ServiceCall) -> None:
+        """Send an alarm's actual rendered notification as a test (F18)."""
+        manager = _get_manager(hass)
+        await manager.async_send_test_alarm_notification(call.data["alarm_id"])
+
     # --- CRUD handlers (with response data) ---
 
     async def handle_list_alarms(call: ServiceCall) -> ServiceResponse:
@@ -321,7 +332,9 @@ async def async_register_services(hass: HomeAssistant) -> None:
             action_label=call.data.get("action_label"),
             action_service=call.data.get("action_service"),
             action_entity=call.data.get("action_entity"),
+            action_target=call.data.get("action_target"),
             link_page_path=call.data.get("link_page_path"),
+            link_view_path=call.data.get("link_view_path"),
         )
         alarm = await manager.async_create_alarm(alarm)
         return _alarm_with_state(manager, alarm.id)
@@ -356,7 +369,9 @@ async def async_register_services(hass: HomeAssistant) -> None:
             "action_label",
             "action_service",
             "action_entity",
+            "action_target",
             "link_page_path",
+            "link_view_path",
         ):
             if field in call.data:
                 setattr(alarm, field, call.data[field])
@@ -504,7 +519,9 @@ async def async_register_services(hass: HomeAssistant) -> None:
                 action_label=d.get("action_label"),
                 action_service=d.get("action_service"),
                 action_entity=d.get("action_entity"),
+                action_target=d.get("action_target"),
                 link_page_path=d.get("link_page_path"),
+                link_view_path=d.get("link_view_path"),
             )
             await manager.async_create_alarm(alarm)
             created += 1
@@ -548,6 +565,12 @@ async def async_register_services(hass: HomeAssistant) -> None:
         SERVICE_TEST_NOTIFICATION,
         handle_test_notification,
         schema=SCHEMA_TEST_NOTIFICATION,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_TEST_ALARM_NOTIFICATION,
+        handle_test_alarm_notification,
+        schema=SCHEMA_TEST_ALARM_NOTIFICATION,
     )
 
     # --- Register CRUD services (with response data) ---

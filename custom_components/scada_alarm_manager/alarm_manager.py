@@ -351,15 +351,40 @@ class AlarmManager:
         if alarm is None or not alarm.action_service or "." not in alarm.action_service:
             return
         domain, service = alarm.action_service.split(".", 1)
-        data = {"entity_id": alarm.action_entity} if alarm.action_entity else {}
+        # Prefer the F15 target (entity/device/area); fall back to the legacy single entity.
+        if alarm.action_target:
+            target = alarm.action_target
+        elif alarm.action_entity:
+            target = {"entity_id": [alarm.action_entity]}
+        else:
+            target = {}
         try:
-            await self.hass.services.async_call(domain, service, data)
+            await self.hass.services.async_call(domain, service, {}, target=target)
         except Exception:
             _LOGGER.warning(
                 "Failed to run custom action %s for alarm %s",
                 alarm.action_service,
                 alarm_id,
             )
+
+    async def async_send_test_alarm_notification(self, alarm_id: str) -> None:
+        """Send an alarm's actual rendered notification as a test (F18).
+
+        Synthesizes an ACTIVE_UNACKED runtime (reusing the alarm's last value if known)
+        and routes it through the normal notification path, so the test matches exactly
+        what a real activation would send.
+        """
+        alarm = self._alarms.get(alarm_id)
+        if alarm is None or self._notification_router is None:
+            return
+        current = self._runtime_states.get(alarm_id)
+        test_runtime = AlarmRuntimeState(
+            alarm_id=alarm_id,
+            state=AlarmState.ACTIVE_UNACKED,
+            triggered_at=datetime.now(timezone.utc),
+            last_value=current.last_value if current else None,
+        )
+        await self._notification_router.async_send_alarm_notification(alarm, test_runtime)
 
     async def async_shelve(
         self,

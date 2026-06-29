@@ -15,7 +15,7 @@ from .models import AlarmChannel, AlarmDefinition, AlarmEvent
 
 _LOGGER = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 
 CREATE_TABLES_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -46,7 +46,9 @@ CREATE TABLE IF NOT EXISTS alarm_definitions (
     action_label TEXT,
     action_service TEXT,
     action_entity TEXT,
+    action_target TEXT,
     link_page_path TEXT,
+    link_view_path TEXT,
     source_entity_id TEXT NOT NULL,
     trigger_type TEXT NOT NULL,
     trigger_config TEXT NOT NULL DEFAULT '{}',
@@ -231,6 +233,21 @@ class AlarmDatabase:
             _LOGGER.info(
                 "Migrated database to schema v7: added notification action + page link columns"
             )
+            current = 7
+
+        if current < 8:
+            # v8: action target (F15) + dashboard view link (F13) columns
+            for col in ("action_target", "link_view_path"):
+                try:
+                    await self._db.execute(
+                        f"ALTER TABLE alarm_definitions ADD COLUMN {col} TEXT"
+                    )
+                except Exception:
+                    pass
+            await self._db.execute("UPDATE schema_version SET version = ?", (8,))
+            _LOGGER.info(
+                "Migrated database to schema v8: added action_target/link_view_path columns"
+            )
 
     async def async_close(self) -> None:
         """Close database connection."""
@@ -254,10 +271,11 @@ class AlarmDatabase:
              enabled, latching, ack_required, auto_clear, condition_template,
              notification_title_template, notification_text_template,
              hysteresis, repeat_interval, escalation_delay, trigger_delay, clear_delay,
-             action_label, action_service, action_entity, link_page_path,
+             action_label, action_service, action_entity, action_target,
+             link_page_path, link_view_path,
              source_entity_id,
              trigger_type, trigger_config, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 alarm.id,
                 alarm.name,
@@ -282,7 +300,9 @@ class AlarmDatabase:
                 alarm.action_label,
                 alarm.action_service,
                 alarm.action_entity,
+                json.dumps(alarm.action_target) if alarm.action_target else None,
                 alarm.link_page_path,
+                alarm.link_view_path,
                 alarm.source_entity_id,
                 alarm.trigger_type.value,
                 json.dumps(alarm.trigger_config),
@@ -302,7 +322,8 @@ class AlarmDatabase:
             condition_template=?, notification_title_template=?,
             notification_text_template=?, hysteresis=?,
             repeat_interval=?, escalation_delay=?, trigger_delay=?, clear_delay=?,
-            action_label=?, action_service=?, action_entity=?, link_page_path=?,
+            action_label=?, action_service=?, action_entity=?, action_target=?,
+            link_page_path=?, link_view_path=?,
             source_entity_id=?, trigger_type=?, trigger_config=?, updated_at=?
             WHERE id=?""",
             (
@@ -328,7 +349,9 @@ class AlarmDatabase:
                 alarm.action_label,
                 alarm.action_service,
                 alarm.action_entity,
+                json.dumps(alarm.action_target) if alarm.action_target else None,
                 alarm.link_page_path,
+                alarm.link_view_path,
                 alarm.source_entity_id,
                 alarm.trigger_type.value,
                 json.dumps(alarm.trigger_config),
@@ -387,7 +410,9 @@ class AlarmDatabase:
             action_label=row["action_label"],
             action_service=row["action_service"],
             action_entity=row["action_entity"],
+            action_target=json.loads(row["action_target"]) if row["action_target"] else None,
             link_page_path=row["link_page_path"],
+            link_view_path=row["link_view_path"],
             source_entity_id=row["source_entity_id"],
             trigger_type=TriggerType(row["trigger_type"]),
             trigger_config=json.loads(row["trigger_config"]),
