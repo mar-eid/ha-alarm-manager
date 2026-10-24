@@ -8,14 +8,25 @@ import { customElement, property, state } from "lit/decorators.js";
 import { sharedStyles } from "../styles/shared-styles";
 import { fetchNoiseReport } from "../data/websocket";
 import "../components/severity-badge";
+import "../components/rel-time";
 import { formatDateTime } from "../utils/format";
 import { renderLoading } from "../utils/render";
 import {
+  PRIORITY_LABELS,
   STATE_LABELS,
+  type AlarmPriority,
   type HomeAssistant,
   type NoiseAlarmInfo,
+  type NoiseBand,
+  type NoisePrioritySplit,
   type NoiseReport,
 } from "../types";
+
+const BANDS: { id: NoiseBand; label: string; priorities: string }[] = [
+  { id: "low", label: "Low", priorities: `${PRIORITY_LABELS[0]} + ${PRIORITY_LABELS[1]}` },
+  { id: "medium", label: "Medium", priorities: PRIORITY_LABELS[2] },
+  { id: "high", label: "High", priorities: PRIORITY_LABELS[3] },
+];
 
 const PERIODS: { hours: number; label: string }[] = [
   { hours: 24, label: "24 h" },
@@ -96,6 +107,28 @@ export class NoiseView extends LitElement {
       }
       .deleted { font-style: italic; color: var(--secondary-text-color, #727272); }
       .footnote { font-size: 0.8em; color: var(--secondary-text-color, #727272); margin-top: 8px; }
+      .off-target {
+        color: color-mix(in srgb, var(--warning-color, #ffa600) 75%, var(--primary-text-color, #212121));
+        font-weight: 600;
+      }
+      .share-bar {
+        position: relative; height: 8px; border-radius: 4px; margin-top: 4px; min-width: 80px;
+        background: var(--secondary-background-color, #f0f0f0);
+      }
+      .share-bar .fill {
+        position: absolute; top: 0; bottom: 0; left: 0; border-radius: 4px;
+        background: var(--primary-color, #03a9f4); opacity: 0.6;
+      }
+      .share-bar .target {
+        position: absolute; top: -3px; bottom: -3px; width: 2px;
+        background: var(--primary-text-color, #212121);
+      }
+      .chips-inline { display: flex; flex-wrap: wrap; gap: 4px; }
+      .mini {
+        font-size: 0.8em; padding: 1px 8px; border-radius: 9999px; white-space: nowrap;
+        background: var(--secondary-background-color, #f0f0f0);
+      }
+      a.alarm-link { color: var(--primary-color, #03a9f4); text-decoration: none; }
     `,
   ];
 
@@ -185,6 +218,78 @@ export class NoiseView extends LitElement {
     return "Increase the trigger delay.";
   }
 
+  private _adviceNever(row: NoiseAlarmInfo): string {
+    if (row.deleted) return "";
+    if (row.source_entity_id && this.hass && !this.hass.states[row.source_entity_id]) {
+      return "The source entity does not exist. Point the alarm at the right entity, or delete it.";
+    }
+    if (row.trigger_type === "external") {
+      return "Triggered by an automation. Check that the automation still calls the trigger service.";
+    }
+    return "Check that the limit can actually be reached. Delete the alarm if it is not needed.";
+  }
+
+  /** A band is off target when low is more than 10 points under, or medium/high more than 10 over. */
+  private _offTarget(band: NoiseBand, share: number, target: number): boolean {
+    return band === "low" ? share < target - 10 : share > target + 10;
+  }
+
+  private _bandCell(band: NoiseBand, split: NoisePrioritySplit) {
+    if (split.total === 0) return html`<td class="num">–</td>`;
+    const b = split.bands[band];
+    return html`<td class="num">
+      <span class=${this._offTarget(band, b.share, b.target) ? "off-target" : ""}>${b.share} %</span>
+      <span class="sub">(${b.count})</span>
+      <div class="share-bar">
+        <div class="fill" style=${`width:${b.share}%`}></div>
+        <div class="target" style=${`left:${b.target}%`}></div>
+      </div>
+    </td>`;
+  }
+
+  private _renderPriority(r: NoiseReport) {
+    const p = r.priority;
+    const perPriority = ([0, 1, 2, 3] as AlarmPriority[])
+      .map((k) => `${PRIORITY_LABELS[k]} ${p.by_priority[k] ?? 0}`)
+      .join(" · ");
+    return html`
+      <section>
+        <h3>Priority distribution</h3>
+        <div class="desc">
+          Share of alarms per priority band compared with the recommended 80 / 15 / 5 % (the dark mark).
+          If too many alarms are high priority, nothing stands out when it really matters.
+        </div>
+        <div class="scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Band</th>
+                <th>Priorities</th>
+                <th class="num">Configured alarms</th>
+                <th class="num">Activations in period</th>
+                <th class="num">Recommended</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${BANDS.map(
+                (band) => html`<tr>
+                  <td><strong>${band.label}</strong></td>
+                  <td>${band.priorities}</td>
+                  ${this._bandCell(band.id, p.configured)}
+                  ${this._bandCell(band.id, p.activations)}
+                  <td class="num">${p.configured.bands[band.id].target} %</td>
+                </tr>`
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div class="desc" style="padding-top: 10px">
+          Enabled alarms: ${p.configured.total} (${perPriority}).
+        </div>
+      </section>
+    `;
+  }
+
   // --- Sections ---
 
   private _section(
@@ -222,6 +327,8 @@ export class NoiseView extends LitElement {
       { value: String(k.standing), name: `Standing (${k.stale} stale)`, warn: k.stale > 0 },
       { value: String(k.chattering), name: "Chattering alarms", warn: k.chattering > 0 },
       { value: String(k.fleeting), name: "Fleeting alarms", warn: k.fleeting > 0 },
+      { value: String(k.floods), name: `Alarm floods (${k.flood_share} % of time)`, warn: k.floods > 0 },
+      { value: String(k.never), name: `Not triggered in ${r.thresholds.never_days} d` },
       { value: String(k.hidden), name: "Shelved / disabled" },
     ];
     return html`<div class="kpis">
@@ -273,6 +380,30 @@ export class NoiseView extends LitElement {
       )}
 
       ${this._section(
+        "Most time in alarm",
+        "Total time each alarm was active in the period. An alarm that is active much of the time tells nobody anything new.",
+        ["Alarm", "Priority", "#Time in alarm", "#Share of period", "#Periods", "Suggested action", ""],
+        r.time_in_alarm,
+        (row: NoiseReport["time_in_alarm"][number]) => html`<tr>
+          ${this._nameCell(row)}
+          ${this._priorityCell(row)}
+          <td class="num">
+            ${formatDuration(row.seconds)}
+            ${row.ongoing ? html`<div class="sub">still active</div>` : nothing}
+          </td>
+          <td class="num">${row.share} %<div class="bar" style=${`width:${Math.max(4, row.share)}%`}></div></td>
+          <td class="num">${row.periods}</td>
+          <td class="advice">
+            ${row.share >= 50
+              ? "Active most of the time: fix the cause, change the limit, or make it a status instead of an alarm."
+              : ""}
+          </td>
+          ${this._editCell(row)}
+        </tr>`,
+        "No alarm was active in this period."
+      )}
+
+      ${this._section(
         "Standing alarms",
         `Alarms that are active right now, longest first. Active for more than ${t.stale_hours} h counts as stale: nobody is acting on it.`,
         ["Alarm", "Priority", "State", "#Active for", "Suggested action", ""],
@@ -320,6 +451,59 @@ export class NoiseView extends LitElement {
           ${this._editCell(row)}
         </tr>`,
         "No fleeting alarms in this period."
+      )}
+
+      ${this._section(
+        "Alarm floods",
+        `Periods with more than ${t.flood_count} activations within ${t.flood_window / 60} min, newest first. The alarm that started a flood is often the root cause, and the rest are consequences.`,
+        ["Started", "#Duration", "#Activations", "#Alarms", "Started by", "Most activations"],
+        r.floods,
+        (f: NoiseReport["floods"][number]) => html`<tr>
+          <td><rel-time .hass=${this.hass} .datetime=${f.start}></rel-time></td>
+          <td class="num">${formatDuration(f.duration)}</td>
+          <td class="num">${f.count}</td>
+          <td class="num">${f.alarms}</td>
+          <td class=${f.initiator.deleted ? "deleted" : ""}>
+            ${f.initiator.deleted
+              ? f.initiator.name
+              : html`<a
+                  class="alarm-link"
+                  href="#"
+                  @click=${(e: Event) => {
+                    e.preventDefault();
+                    this._edit(f.initiator.alarm_id);
+                  }}
+                  >${f.initiator.name}</a
+                >`}
+          </td>
+          <td>
+            <div class="chips-inline">
+              ${f.top.map((c) => html`<span class="mini">${c.name} × ${c.count}</span>`)}
+            </div>
+          </td>
+        </tr>`,
+        "No alarm floods in this period."
+      )}
+
+      ${this._renderPriority(r)}
+
+      ${this._section(
+        `Not triggered in ${t.never_days} days`,
+        `Enabled alarms older than ${t.never_days} days that have not activated in that time. They may be dead, or point at the wrong entity.`,
+        ["Alarm", "Priority", "Last activation", "Suggested action", ""],
+        r.never,
+        (row: NoiseReport["never"][number]) => html`<tr>
+          ${this._nameCell(row)}
+          ${this._priorityCell(row)}
+          <td>
+            ${row.last_triggered
+              ? html`<rel-time .hass=${this.hass} .datetime=${row.last_triggered}></rel-time>`
+              : "Never"}
+          </td>
+          <td class="advice">${this._adviceNever(row)}</td>
+          ${this._editCell(row)}
+        </tr>`,
+        `Every enabled alarm has activated in the last ${t.never_days} days.`
       )}
 
       ${this._section(

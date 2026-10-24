@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.26.0] - 2026-10-24
+## [0.27.0] - 2026-10-24
+
+Includes the Home Assistant design update (released as part of this version; it was merged as 0.26.0 but never tagged).
 
 ### Changed
 
@@ -29,6 +31,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Saving an alarm now checks required fields and shows an error when saving fails, instead of failing silently (#6).
 - The alarm action picker used a `service` selector that current Home Assistant no longer has (it rendered blank). It is now a searchable list of all actions that also accepts a typed value.
 - Editing an external alarm no longer wipes its trigger configuration on save.
+
+## [0.26.0] - 2026-10-24
+
+### Added
+
+- **F22 — more lists on the Noise tab.**
+  - **Most time in alarm**: total active time per alarm in the period, as a share of the period. A period that started before the chosen period, or is still running, is counted only within the period.
+  - **Alarm floods**: periods with more than 10 activations within 10 minutes. Shows which alarm started each flood (often the root cause) and which alarms activated most during it.
+  - **Priority distribution**: enabled alarms and activations per band (Low = Info + Warning, Medium = High, High = Critical), compared with the recommended 80 / 15 / 5 %. Bands more than 10 points off target are highlighted.
+  - **Not triggered in 90 days**: enabled alarms older than 90 days that have not activated in that time. Flags alarms whose source entity no longer exists.
+  - New key figures for floods (and the share of time spent in floods) and for alarms that have not triggered.
+  - Thresholds are defined in `const.py` (`NOISE_FLOOD_COUNT`, `NOISE_FLOOD_WINDOW`, `NOISE_NEVER_DAYS`, `NOISE_PRIORITY_TARGETS`).
 
 ## [0.25.0] - 2026-10-24
 
