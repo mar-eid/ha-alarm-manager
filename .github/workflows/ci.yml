@@ -32,7 +32,8 @@ jobs:
         with:
           python-version: "3.13"
       - name: Install ruff
-        run: pip install ruff>=0.8.0
+        # Pinned (and quoted) so new ruff releases cannot turn CI red; bump together with pyproject.toml.
+        run: pip install "ruff==0.15.15"
       - name: Ruff check
         run: ruff check custom_components/scada_alarm_manager/
       - name: Ruff format check

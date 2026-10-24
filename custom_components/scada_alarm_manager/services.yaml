@@ -307,7 +307,7 @@ create_alarm:
         entity:
     action_target:
       name: Action Target
-      description: Target for the action service as a dict, e.g. {entity_id: [...], device_id: [...], area_id: [...]}.
+      description: "Target for the action service as a dict, e.g. {entity_id: [...], device_id: [...], area_id: [...]}."
       required: false
       selector:
         object:

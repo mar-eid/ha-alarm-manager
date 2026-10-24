@@ -11,7 +11,7 @@ Domain: `scada_alarm_manager`
   - MAJOR: Breaking changes (config schema changes requiring migration, removed features)
   - MINOR: New features, backwards-compatible
   - PATCH: Bug fixes, backwards-compatible
-- **Current version**: 0.27.0
+- **Current version**: 0.27.1
 - Version is tracked in: `custom_components/scada_alarm_manager/manifest.json` and `pyproject.toml`
 - Both files MUST be updated together on version bumps
 - **Always bump the PATCH version** when making any code change (bug fix, refactor, etc.). Bump MINOR for new features, MAJOR for breaking changes.
@@ -52,7 +52,7 @@ Configured in `pyproject.toml` under `[tool.ruff]`. Rules:
 - A (builtins)
 - C4 (comprehensions)
 - SIM (simplify)
-- TCH (type-checking imports)
+- TC (type-checking imports)
 
 ### Testing
 

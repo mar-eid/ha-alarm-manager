@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from homeassistant.components.http import StaticPathConfig
-from homeassistant.components.lovelace.resources import ResourceStorageCollection
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.loader import async_get_integration
 
@@ -23,6 +22,10 @@ from .notification_router import NotificationRouter
 from .services import async_register_services, async_unregister_services
 from .store import AlarmStore
 from .websocket_api import async_register_websocket_commands
+
+if TYPE_CHECKING:
+    from homeassistant.components.lovelace.resources import ResourceStorageCollection
+    from homeassistant.config_entries import ConfigEntry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -79,9 +82,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         [
             StaticPathConfig(
                 f"/{DOMAIN}/frontend",
-                hass.config.path(
-                    "custom_components", DOMAIN, "frontend"
-                ),
+                hass.config.path("custom_components", DOMAIN, "frontend"),
                 cache_headers=False,
             )
         ]
@@ -103,24 +104,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         action = event.data.get("action", "")
 
         if action.startswith(NOTIFICATION_ACTION_ACK):
-            alarm_id = action[len(NOTIFICATION_ACTION_ACK):]
-            hass.async_create_task(
-                manager.async_acknowledge(alarm_id, user="mobile")
-            )
+            alarm_id = action[len(NOTIFICATION_ACTION_ACK) :]
+            hass.async_create_task(manager.async_acknowledge(alarm_id, user="mobile"))
         elif action.startswith(NOTIFICATION_ACTION_SHELVE):
-            alarm_id = action[len(NOTIFICATION_ACTION_SHELVE):]
-            hass.async_create_task(
-                manager.async_shelve(alarm_id, duration_minutes=15, user="mobile")
-            )
+            alarm_id = action[len(NOTIFICATION_ACTION_SHELVE) :]
+            hass.async_create_task(manager.async_shelve(alarm_id, duration_minutes=15, user="mobile"))
         elif action.startswith(NOTIFICATION_ACTION_CUSTOM):
-            alarm_id = action[len(NOTIFICATION_ACTION_CUSTOM):]
-            hass.async_create_task(
-                manager.async_trigger_custom_action(alarm_id)
-            )
+            alarm_id = action[len(NOTIFICATION_ACTION_CUSTOM) :]
+            hass.async_create_task(manager.async_trigger_custom_action(alarm_id))
 
-    hass.bus.async_listen(
-        "mobile_app_notification_action", _handle_notification_action
-    )
+    hass.bus.async_listen("mobile_app_notification_action", _handle_notification_action)
 
     # Forward entry setup to entity platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -169,8 +162,7 @@ async def _async_register_card_resources(hass: HomeAssistant) -> None:
 
         if "resources" not in lovelace_data:
             _LOGGER.warning(
-                "Lovelace resources not available (YAML mode?). "
-                "Add card resources manually: %s and %s",
+                "Lovelace resources not available (YAML mode?). Add card resources manually: %s and %s",
                 OVERVIEW_URL,
                 BANNER_URL,
             )
@@ -203,14 +195,9 @@ async def _async_register_card_resources(hass: HomeAssistant) -> None:
                     await resources.async_delete_item(item["id"])
                     _LOGGER.info("Removed stale resource: %s", item_url)
 
-            existing = any(
-                item.get("url", "") == versioned_url
-                for item in resources.async_items()
-            )
+            existing = any(item.get("url", "") == versioned_url for item in resources.async_items())
             if not existing:
-                await resources.async_create_item(
-                    {"res_type": "module", "url": versioned_url}
-                )
+                await resources.async_create_item({"res_type": "module", "url": versioned_url})
                 _LOGGER.info("Registered Lovelace resource: %s", versioned_url)
     except Exception:
         _LOGGER.exception("Could not auto-register card resources")

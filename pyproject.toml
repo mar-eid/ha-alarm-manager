@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ha-alarm-manager"
-version = "0.27.0"
+version = "0.27.1"
 description = "SCADA-style alarm management system for Home Assistant"
 requires-python = ">=3.13"
 license = "MIT"
@@ -17,7 +17,7 @@ include = ["custom_components*", "tests*"]
 
 [project.optional-dependencies]
 dev = [
-    "ruff>=0.8.0",
+    "ruff==0.15.15",
     "mypy>=1.13.0",
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",
@@ -30,7 +30,7 @@ target-version = "py313"
 line-length = 120
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "TCH"]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "TC"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["custom_components.scada_alarm_manager"]
