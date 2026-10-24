@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.28.0] - 2026-10-24
+
+### Changed
+
+- **Channel editor follows Home Assistant's design.** Frontend only; the saved channel format is unchanged.
+  - The New/Edit channel form is now built on HA's own `ha-form`, like the alarm editor, in sections: **General** (name, minimum priority as a dropdown), **Notification targets** (the existing target picker with per-target minimum priority) and **Delivery** (persistent notifications, mobile push and critical alerts as switches with help text).
+  - The form opens as its own page in the Channels tab instead of above the channel table, and saving without a name now says so instead of doing nothing. If HA's form components cannot be loaded, the form says so and asks for a reload.
+
 ## [0.27.1] - 2026-10-24
 
 ### Fixed

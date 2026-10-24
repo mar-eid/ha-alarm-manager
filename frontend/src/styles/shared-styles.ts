@@ -393,7 +393,35 @@ export const sharedStyles = css`
     color: var(--success-color, #43a047);
   }
 
-  /* --- Forms (legacy native inputs: channels form, card editors) --- */
+  /* --- Form sections (ha-form editors: alarm editor, channels form) --- */
+
+  .form-section {
+    background: var(--card-background-color, #fff);
+    border: 1px solid var(--divider-color, #e0e0e0);
+    border-radius: var(--ha-card-border-radius, 12px);
+    margin-bottom: 16px;
+  }
+
+  .form-section-header {
+    padding: 16px 16px 0;
+    font-size: 1.1em;
+    font-weight: 500;
+    color: var(--primary-text-color);
+  }
+
+  .form-section-header .sub {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.8em;
+    font-weight: 400;
+    color: var(--secondary-text-color);
+  }
+
+  .form-section-body {
+    padding: 16px;
+  }
+
+  /* --- Forms (legacy native inputs: card editors) --- */
 
   .form-group {
     margin-bottom: 16px;
