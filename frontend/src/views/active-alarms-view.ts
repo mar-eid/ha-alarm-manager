@@ -335,7 +335,7 @@ export class ActiveAlarmsView extends LitElement {
                   aria-label=${`${alarm.name}, ${STATE_LABELS[alarm.runtime.state] ?? alarm.runtime.state}`}
                   @click=${open} @keydown=${onActivateKey(open)}>
                   <td><severity-badge .priority=${alarm.priority}></severity-badge></td>
-                  <td><strong>${alarm.name}</strong>${alarm.area ? html`<br><span class="muted">${areaName(this.hass, alarm.area)}</span>` : ""}</td>
+                  <td class="name-cell"><strong>${alarm.name}</strong>${alarm.area ? html`<br><span class="muted">${areaName(this.hass, alarm.area)}</span>` : ""}</td>
                   <td>${renderStateChip(alarm.runtime.state)}</td>
                   <td class="mono">${alarm.source_entity_id}</td>
                   <td>${renderValue(this.hass, alarm)}</td>

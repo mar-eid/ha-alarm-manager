@@ -52,6 +52,7 @@ export class ScadaDialog extends LitElement {
         justify-content: flex-end;
         gap: 8px;
         width: 100%;
+        box-sizing: border-box;
       }
       dialog {
         width: min(var(--scada-dialog-width, 560px), calc(100vw - 32px));

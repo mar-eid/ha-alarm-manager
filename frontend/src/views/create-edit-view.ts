@@ -1,17 +1,181 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { sharedStyles } from "../styles/shared-styles";
 import { fetchAlarm, fetchChannels, createAlarm, updateAlarm, fetchDashboardConfig } from "../data/websocket";
 import type { HomeAssistant, AlarmChannel, AlarmPriority, TriggerType } from "../types";
+import { durationToSeconds, errorMessage, notify, secondsToDuration, type DurationValue } from "../utils/format";
+import { renderLoading } from "../utils/render";
+import { ensureHaComponents, whenDefined } from "../utils/ha-load";
 
 // HA native components - available globally in HA frontend
 declare global {
   interface HTMLElementTagNameMap {
-    "ha-entity-picker": any;
-    "ha-area-picker": any;
+    "ha-form": any;
     "ha-selector": any;
   }
 }
+
+/** Sentinels for "nothing selected" in select dropdowns. */
+const NO_CHANNEL = "__none__";
+const DEFAULT_PAGE = "__default__";
+const WHOLE_DASHBOARD = "__dashboard__";
+
+type ConditionMode = "none" | "simple" | "template";
+
+/** Everything the form edits, in ha-form's flat data shape. */
+interface FormData {
+  name: string;
+  description: string;
+  priority: string;
+  channel_id: string;
+  source_entity_id: string;
+  trigger_type: TriggerType;
+  operator: string;
+  threshold?: number;
+  hysteresis?: number;
+  target_state: string;
+  match_values: string[];
+  trigger_delay?: DurationValue;
+  clear_delay?: DurationValue;
+  area: string;
+  equipment: string;
+  tag: string;
+  enabled: boolean;
+  latching: boolean;
+  ack_required: boolean;
+  auto_clear: boolean;
+  suppress_milder: boolean;
+  repeat_interval?: DurationValue;
+  auto_ack_delay?: DurationValue;
+  condition_mode: ConditionMode;
+  condition_entity: string;
+  condition_state: string;
+  condition_template: string;
+  notification_title_template: string;
+  notification_text_template: string;
+  link_page_path: string;
+  link_view_path: string;
+  action_label: string;
+  action_service: string;
+  action_target?: Record<string, unknown>;
+}
+
+const emptyForm = (): FormData => ({
+  name: "",
+  description: "",
+  priority: "1",
+  channel_id: NO_CHANNEL,
+  source_entity_id: "",
+  trigger_type: "digital",
+  operator: ">",
+  threshold: 0,
+  hysteresis: undefined,
+  target_state: "on",
+  match_values: [],
+  trigger_delay: undefined,
+  clear_delay: undefined,
+  area: "",
+  equipment: "",
+  tag: "",
+  enabled: true,
+  latching: false,
+  ack_required: true,
+  auto_clear: true,
+  suppress_milder: true,
+  repeat_interval: undefined,
+  auto_ack_delay: undefined,
+  condition_mode: "none",
+  condition_entity: "",
+  condition_state: "",
+  condition_template: "",
+  notification_title_template: "",
+  notification_text_template: "",
+  link_page_path: DEFAULT_PAGE,
+  link_view_path: WHOLE_DASHBOARD,
+  action_label: "",
+  action_service: "",
+  action_target: undefined,
+});
+
+const LABELS: Record<string, string> = {
+  name: "Alarm name",
+  description: "Description",
+  priority: "Priority",
+  channel_id: "Channel",
+  source_entity_id: "Source entity",
+  trigger_type: "Trigger type",
+  operator: "Operator",
+  threshold: "Threshold",
+  hysteresis: "Hysteresis (deadband)",
+  target_state: "Target state",
+  match_values: "Match values",
+  trigger_delay: "On-delay",
+  clear_delay: "Clear delay",
+  area: "Area",
+  equipment: "Equipment",
+  tag: "Tag",
+  enabled: "Enabled",
+  latching: "Latching",
+  ack_required: "Acknowledge required",
+  auto_clear: "Auto clear",
+  suppress_milder: "Suppress milder alarms",
+  repeat_interval: "Reminder interval",
+  auto_ack_delay: "Auto-acknowledge after return to normal",
+  condition_mode: "Condition",
+  condition_entity: "Condition entity",
+  condition_state: "Expected state",
+  condition_template: "Condition template",
+  notification_title_template: "Title template",
+  notification_text_template: "Message template",
+  link_page_path: "Link to dashboard",
+  link_view_path: "View",
+  action_label: "Action button label",
+  action_service: "Action",
+  action_target: "Action target",
+};
+
+const HELPERS: Record<string, string> = {
+  source_entity_id: "The entity whose state this alarm monitors.",
+  channel_id: "Channels define where notifications go. Create one in the Channels tab.",
+  hysteresis: "Prevents rapid on/off: the alarm clears only when the value moves past the threshold by this much.",
+  match_values: "The alarm is active while the entity has any of these states.",
+  trigger_delay: "The condition must hold this long before the alarm activates. Empty = no delay.",
+  clear_delay: "The condition must stay cleared this long before the alarm returns to normal. Empty = no delay.",
+  enabled: "When off, the alarm is not evaluated.",
+  latching: "Stays active until manually reset, even if the condition clears.",
+  ack_required: "The alarm must be acknowledged before it can return to normal.",
+  auto_clear: "Clear automatically when the trigger condition is no longer met.",
+  suppress_milder:
+    "While active, milder alarms on the same sensor in the same direction are suppressed (e.g. Very Low suppresses Low).",
+  repeat_interval:
+    "Re-send the notification this often while the alarm is active and unacknowledged. Empty = no reminders.",
+  auto_ack_delay:
+    "Acknowledge automatically once the alarm has been back to normal this long. Empty = manual acknowledge. Good for event-type alarms.",
+  condition_template: "Jinja2 template that must render true, e.g. {{ is_state('device_tracker.car', 'home') }}",
+  notification_title_template: "Default: [Priority] Alarm name",
+  link_page_path: "Where the alarm's notifications link to.",
+  action_label: "Optional button on the push notification and in the alarm list. Needs a label, an action and a target.",
+  action_target: "Entity, device or area the action runs against.",
+};
+
+const PRIORITY_OPTIONS = [
+  { value: "0", label: "Info — panel only, no notifications" },
+  { value: "1", label: "Warning — persistent notification" },
+  { value: "2", label: "High — persistent + mobile push" },
+  { value: "3", label: "Critical — mobile push, bypasses Do Not Disturb" },
+];
+
+const OPERATOR_OPTIONS = [
+  { value: ">", label: "Greater than (>)" },
+  { value: ">=", label: "Greater or equal (>=)" },
+  { value: "<", label: "Less than (<)" },
+  { value: "<=", label: "Less or equal (<=)" },
+  { value: "==", label: "Equal (==)" },
+  { value: "!=", label: "Not equal (!=)" },
+];
+
+const DURATION = { duration: { enable_second: true } };
+const DURATION_DAYS = { duration: { enable_day: true, enable_second: true } };
 
 @customElement("create-edit-view")
 export class CreateEditView extends LitElement {
@@ -21,64 +185,61 @@ export class CreateEditView extends LitElement {
   @state() private _channels: AlarmChannel[] = [];
   @state() private _loading = true;
   @state() private _saving = false;
-
-  // Form fields
-  @state() private _name = "";
-  @state() private _description = "";
-  @state() private _sourceEntityId = "";
-  @state() private _triggerType: TriggerType = "digital";
-  @state() private _priority: AlarmPriority = 1;
-  @state() private _area = "";
-  @state() private _equipment = "";
-  @state() private _tag = "";
-  @state() private _channelId: string | null = null;
-  @state() private _enabled = true;
-  @state() private _latching = false;
-  @state() private _ackRequired = true;
-  @state() private _autoClear = true;
-  @state() private _suppressMilder = true;
-  @state() private _conditionTemplate = "";
-  @state() private _conditionMode: "none" | "simple" | "template" = "none";
-  @state() private _conditionEntity = "";
-  @state() private _notificationTitleTemplate = "";
-  @state() private _notificationTextTemplate = "";
-  @state() private _conditionState = "";
-  @state() private _remindIntervalMin = "";
-  @state() private _autoAckMin = "";
-  @state() private _triggerDelaySec = "";
-  @state() private _clearDelaySec = "";
-  @state() private _actionLabel = "";
-  @state() private _actionService = "";
-  @state() private _actionEntity = "";
-  @state() private _actionTarget: Record<string, unknown> = {};
-  @state() private _linkPagePath = "";
-  @state() private _linkViewPath = "";
+  @state() private _formAvailable = true;
+  @state() private _data: FormData = emptyForm();
   @state() private _views: { path: string; title: string }[] = [];
+  @state() private _error = "";
 
-  // Trigger config
-  @state() private _analogOperator = ">";
-  @state() private _analogThreshold = "0";
-  @state() private _hysteresis = "";
-  @state() private _digitalTargetState = "on";
-  @state() private _customMatchValues = "";
+  /** Not editable in the UI; kept so saving doesn't drop it. */
+  private _actionEntity = "";
+  /** Trigger config of external alarms is owned by the automation; preserved as-is. */
+  private _externalTriggerConfig: Record<string, unknown> = {};
 
   static styles = [
     sharedStyles,
     css`
-      :host { display: block; padding: 16px; max-width: 800px; }
-      .form-card {
-        background: var(--card-background-color, white);
+      :host { display: block; padding: 16px; max-width: 840px; margin: 0 auto; }
+      h2 { margin: 0 0 16px; font-size: 1.5em; font-weight: 400; }
+      .section {
+        background: var(--card-background-color, #fff);
         border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: 8px; padding: 24px;
+        border-radius: var(--ha-card-border-radius, 12px);
+        margin-bottom: 16px;
       }
-      h2 { margin-top: 0; }
-      .section { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--divider-color); }
-      .section h3 { margin-top: 0; font-size: 1em; color: var(--secondary-text-color); }
-      .form-row { display: flex; gap: 16px; flex-wrap: wrap; }
-      .form-row > * { flex: 1; min-width: 200px; }
-      .checkbox-group { display: flex; gap: 16px; align-items: center; margin: 12px 0; flex-wrap: wrap; }
-      .checkbox-group label { display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 0.9em; }
-      .success { color: var(--alarm-normal); margin-top: 8px; }
+      .section-header {
+        padding: 16px 16px 0;
+        font-size: 1.1em;
+        font-weight: 500;
+        color: var(--primary-text-color);
+      }
+      .section-header .sub {
+        display: block;
+        margin-top: 2px;
+        font-size: 0.8em;
+        font-weight: 400;
+        color: var(--secondary-text-color);
+      }
+      .section-body { padding: 16px; }
+      .vars {
+        margin-top: 8px;
+        font-size: 0.8em;
+        line-height: 1.6;
+        color: var(--secondary-text-color);
+      }
+      .vars code { font-family: var(--ha-font-family-code, monospace); }
+      .error {
+        margin-bottom: 16px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--error-color, #db4437) 12%, transparent);
+        color: color-mix(in srgb, var(--error-color, #db4437) 75%, var(--primary-text-color, #212121));
+      }
+      .footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 8px 0 24px;
+      }
     `,
   ];
 
@@ -94,135 +255,96 @@ export class CreateEditView extends LitElement {
   }
 
   /**
-   * Ensure HA's form components (ha-entity-picker, ha-area-picker) are registered.
+   * Ensure HA's form components (ha-form + selectors, ha-entity-picker, ha-area-picker)
+   * are registered.
    *
    * These are loaded automatically inside HA's card-editor dialog, but the Alarm Center
-   * panel does not run in that context, so the pickers can render blank. Forcing the
+   * panel does not run in that context, so the form can render blank. Forcing the
    * built-in `entities` card's config element to load pulls in those components.
+   * Waits at most a few seconds for ha-form; if it never shows up the view says so
+   * instead of hanging.
    */
   private async _ensureHaPickersLoaded() {
-    if (customElements.get("ha-entity-picker")) return;
-    const helpers = await (window as any).loadCardHelpers?.();
-    if (!helpers) return;
-    const card = await helpers.createCardElement({ type: "entities", entities: [] });
-    // Triggers HA's lazy import of the entities-card editor, which registers
-    // ha-entity-picker / ha-area-picker. The pickers upgrade automatically once
-    // defined, so there is no need to await their registration (awaiting could
-    // hang the form indefinitely if a future HA build stops registering them here).
-    await card?.constructor?.getConfigElement?.();
+    await ensureHaComponents();
+    this._formAvailable = await whenDefined("ha-form", 3000);
   }
 
   private async _load() {
     if (!this.hass) return;
     this._loading = true;
+    this._error = "";
     try {
       await this._ensureHaPickersLoaded();
       this._channels = await fetchChannels(this.hass);
       if (this.alarmId) {
         const alarm = await fetchAlarm(this.hass, this.alarmId);
-        this._name = alarm.name;
-        this._description = alarm.description;
-        this._sourceEntityId = alarm.source_entity_id;
-        this._triggerType = alarm.trigger_type;
-        this._priority = alarm.priority;
-        this._area = alarm.area;
-        this._equipment = alarm.equipment;
-        this._tag = alarm.tag;
-        this._channelId = alarm.channel_id;
-        this._enabled = alarm.enabled;
-        this._latching = alarm.latching;
-        this._ackRequired = alarm.ack_required;
-        this._autoClear = alarm.auto_clear;
-        this._suppressMilder = alarm.suppress_milder ?? true;
-        this._conditionTemplate = alarm.condition_template || "";
+        const cfg = alarm.trigger_config ?? {};
         // Parse simple condition: {{ is_state('entity', 'state') }}
         const simpleMatch = (alarm.condition_template || "").match(
           /\{\{\s*is_state\(\s*'([^']+)'\s*,\s*'([^']+)'\s*\)\s*\}\}/
         );
-        if (simpleMatch) {
-          this._conditionMode = "simple";
-          this._conditionEntity = simpleMatch[1];
-          this._conditionState = simpleMatch[2];
-        } else if (alarm.condition_template) {
-          this._conditionMode = "template";
-        } else {
-          this._conditionMode = "none";
-        }
-        this._notificationTitleTemplate = alarm.notification_title_template || "";
-        this._notificationTextTemplate = alarm.notification_text_template || "";
-        // repeat_interval is stored in seconds; the form edits minutes.
-        this._remindIntervalMin =
-          alarm.repeat_interval != null ? String(alarm.repeat_interval / 60) : "";
-        // auto_ack_delay is stored in seconds; the form edits minutes.
-        this._autoAckMin = alarm.auto_ack_delay != null ? String(alarm.auto_ack_delay / 60) : "";
-        this._triggerDelaySec = alarm.trigger_delay != null ? String(alarm.trigger_delay) : "";
-        this._clearDelaySec = alarm.clear_delay != null ? String(alarm.clear_delay) : "";
-        this._actionLabel = alarm.action_label || "";
-        this._actionService = alarm.action_service || "";
+        const conditionMode: ConditionMode = simpleMatch ? "simple" : alarm.condition_template ? "template" : "none";
         this._actionEntity = alarm.action_entity || "";
-        // Seed the target picker from action_target, falling back to the legacy single entity.
-        this._actionTarget = alarm.action_target
-          ? { ...alarm.action_target }
-          : alarm.action_entity
-          ? { entity_id: [alarm.action_entity] }
-          : {};
-        this._linkPagePath = alarm.link_page_path || "";
-        this._linkViewPath = alarm.link_view_path || "";
-        if (this._linkPagePath) await this._loadViews(this._linkPagePath);
-
-        if (alarm.trigger_type === "analog") {
-          this._analogOperator = alarm.trigger_config.operator ?? ">";
-          this._analogThreshold = String(alarm.trigger_config.threshold ?? 0);
-          this._hysteresis = alarm.hysteresis != null ? String(alarm.hysteresis) : "";
-        } else if (alarm.trigger_type === "digital") {
-          this._digitalTargetState = alarm.trigger_config.target_state ?? "on";
-        } else if (alarm.trigger_type === "custom_state") {
-          this._customMatchValues = (alarm.trigger_config.match_values ?? []).join(", ");
-        }
+        this._externalTriggerConfig = alarm.trigger_type === "external" ? { ...cfg } : {};
+        this._data = {
+          ...emptyForm(),
+          name: alarm.name,
+          description: alarm.description,
+          priority: String(alarm.priority),
+          channel_id: alarm.channel_id ?? NO_CHANNEL,
+          source_entity_id: alarm.source_entity_id,
+          trigger_type: alarm.trigger_type,
+          operator: alarm.trigger_type === "analog" ? cfg.operator ?? ">" : ">",
+          threshold: alarm.trigger_type === "analog" ? Number(cfg.threshold ?? 0) : 0,
+          hysteresis: alarm.hysteresis ?? undefined,
+          target_state: alarm.trigger_type === "digital" ? cfg.target_state ?? "on" : "on",
+          match_values: alarm.trigger_type === "custom_state" ? [...(cfg.match_values ?? [])] : [],
+          // All durations are stored in seconds.
+          trigger_delay: secondsToDuration(alarm.trigger_delay),
+          clear_delay: secondsToDuration(alarm.clear_delay),
+          area: alarm.area,
+          equipment: alarm.equipment,
+          tag: alarm.tag,
+          enabled: alarm.enabled,
+          latching: alarm.latching,
+          ack_required: alarm.ack_required,
+          auto_clear: alarm.auto_clear,
+          suppress_milder: alarm.suppress_milder ?? true,
+          repeat_interval: secondsToDuration(alarm.repeat_interval),
+          auto_ack_delay: secondsToDuration(alarm.auto_ack_delay),
+          condition_mode: conditionMode,
+          condition_entity: simpleMatch ? simpleMatch[1] : "",
+          condition_state: simpleMatch ? simpleMatch[2] : "",
+          condition_template: alarm.condition_template || "",
+          notification_title_template: alarm.notification_title_template || "",
+          notification_text_template: alarm.notification_text_template || "",
+          link_page_path: alarm.link_page_path || DEFAULT_PAGE,
+          link_view_path: alarm.link_view_path || WHOLE_DASHBOARD,
+          action_label: alarm.action_label || "",
+          action_service: alarm.action_service || "",
+          // Seed the target picker from action_target, falling back to the legacy single entity.
+          action_target: alarm.action_target
+            ? { ...alarm.action_target }
+            : alarm.action_entity
+            ? { entity_id: [alarm.action_entity] }
+            : undefined,
+        };
+        await this._loadViews(alarm.link_page_path || "");
       } else {
         this._resetForm();
       }
+    } catch (err) {
+      this._error = `Could not load the alarm: ${errorMessage(err)}`;
     } finally {
       this._loading = false;
     }
   }
 
   private _resetForm() {
-    this._name = "";
-    this._description = "";
-    this._sourceEntityId = "";
-    this._triggerType = "digital";
-    this._priority = 1;
-    this._area = "";
-    this._equipment = "";
-    this._tag = "";
-    this._channelId = null;
-    this._enabled = true;
-    this._latching = false;
-    this._ackRequired = true;
-    this._autoClear = true;
-    this._suppressMilder = true;
-    this._conditionTemplate = "";
-    this._conditionMode = "none";
-    this._conditionEntity = "";
-    this._conditionState = "";
-    this._notificationTitleTemplate = "";
-    this._notificationTextTemplate = "";
-    this._remindIntervalMin = "";
-    this._autoAckMin = "";
-    this._triggerDelaySec = "";
-    this._clearDelaySec = "";
-    this._actionLabel = "";
-    this._actionService = "";
-    this._actionEntity = "";
-    this._actionTarget = {};
-    this._linkPagePath = "";
-    this._linkViewPath = "";
+    this._data = emptyForm();
     this._views = [];
-    this._analogOperator = ">"; this._hysteresis = "";
-    this._analogThreshold = "0";
-    this._digitalTargetState = "on";
-    this._customMatchValues = "";
+    this._actionEntity = "";
+    this._externalTriggerConfig = {};
   }
 
   private get _dashboards(): { url_path: string; title?: string }[] {
@@ -245,364 +367,410 @@ export class CreateEditView extends LitElement {
     }
   }
 
-  private async _onDashboardChange(urlPath: string) {
-    this._linkPagePath = urlPath;
-    this._linkViewPath = "";
-    await this._loadViews(urlPath);
+  private get _serviceOptions(): string[] {
+    const services = this.hass?.services ?? {};
+    const out: string[] = [];
+    for (const domain of Object.keys(services)) {
+      for (const svc of Object.keys(services[domain] ?? {})) out.push(`${domain}.${svc}`);
+    }
+    return out.sort();
   }
 
+  private _onFormChange(e: CustomEvent) {
+    e.stopPropagation();
+    const next = { ...this._data, ...(e.detail.value as Partial<FormData>) };
+    if (next.link_page_path !== this._data.link_page_path) {
+      next.link_view_path = WHOLE_DASHBOARD;
+      this._loadViews(next.link_page_path === DEFAULT_PAGE ? "" : next.link_page_path);
+    }
+    this._data = next;
+  }
+
+  // --- Schemas, one per section. Built in JS (not ha-form `visible`) for older HA builds. ---
+
+  private get _generalSchema() {
+    return [
+      { name: "name", required: true, selector: { text: {} } },
+      { name: "description", selector: { text: { multiline: true } } },
+      {
+        name: "",
+        type: "grid",
+        schema: [
+          { name: "priority", required: true, selector: { select: { mode: "dropdown", options: PRIORITY_OPTIONS } } },
+          {
+            name: "channel_id",
+            required: true,
+            selector: {
+              select: {
+                mode: "dropdown",
+                options: [
+                  { value: NO_CHANNEL, label: "No channel" },
+                  ...this._channels.map((ch) => ({ value: ch.id, label: ch.name })),
+                ],
+              },
+            },
+          },
+        ],
+      },
+    ];
+  }
+
+  private get _triggerSchema() {
+    const d = this._data;
+    const unit: string | undefined = this.hass?.states?.[d.source_entity_id]?.attributes?.unit_of_measurement;
+    const numberSel = { number: { mode: "box", step: "any", ...(unit ? { unit_of_measurement: unit } : {}) } };
+    const typeOptions = [
+      { value: "analog", label: "Analog — numeric threshold" },
+      { value: "digital", label: "Digital — state match" },
+      { value: "custom_state", label: "Custom state — list of values" },
+      ...(d.trigger_type === "external" ? [{ value: "external", label: "External — set by automation" }] : []),
+    ];
+    const stateSel = d.source_entity_id ? { state: { entity_id: d.source_entity_id } } : { text: {} };
+    const schema: any[] = [
+      { name: "source_entity_id", required: true, selector: { entity: {} } },
+      { name: "trigger_type", required: true, selector: { select: { mode: "dropdown", options: typeOptions } } },
+    ];
+    if (d.trigger_type === "analog") {
+      schema.push({
+        name: "",
+        type: "grid",
+        schema: [
+          { name: "operator", required: true, selector: { select: { mode: "dropdown", options: OPERATOR_OPTIONS } } },
+          { name: "threshold", required: true, selector: numberSel },
+          { name: "hysteresis", selector: numberSel },
+        ],
+      });
+    } else if (d.trigger_type === "digital") {
+      schema.push({ name: "target_state", required: true, selector: stateSel });
+    } else if (d.trigger_type === "custom_state") {
+      schema.push({
+        name: "match_values",
+        required: true,
+        selector: { select: { multiple: true, custom_value: true, options: this._entityStates(d.source_entity_id) } },
+      });
+    }
+    schema.push({
+      name: "",
+      type: "grid",
+      schema: [
+        { name: "trigger_delay", selector: DURATION },
+        { name: "clear_delay", selector: DURATION },
+      ],
+    });
+    return schema;
+  }
+
+  /** Known states of an entity (for the match-values picker); custom values are allowed too. */
+  private _entityStates(entityId: string): string[] {
+    const st = this.hass?.states?.[entityId];
+    const known = new Set<string>(this._data.match_values);
+    if (st) known.add(st.state);
+    for (const opt of (st?.attributes?.options as string[] | undefined) ?? []) known.add(opt);
+    return [...known];
+  }
+
+  private get _locationSchema() {
+    return [
+      {
+        name: "",
+        type: "grid",
+        schema: [
+          { name: "area", selector: { area: {} } },
+          { name: "equipment", selector: { text: {} } },
+          { name: "tag", selector: { text: {} } },
+        ],
+      },
+    ];
+  }
+
+  private get _behaviorSchema() {
+    const flags: any[] = [
+      { name: "enabled", selector: { boolean: {} } },
+      { name: "latching", selector: { boolean: {} } },
+      { name: "ack_required", selector: { boolean: {} } },
+      { name: "auto_clear", selector: { boolean: {} } },
+    ];
+    if (this._data.trigger_type === "analog") flags.push({ name: "suppress_milder", selector: { boolean: {} } });
+    return [
+      { name: "", type: "grid", schema: flags },
+      {
+        name: "",
+        type: "grid",
+        schema: [
+          { name: "repeat_interval", selector: DURATION },
+          { name: "auto_ack_delay", selector: DURATION_DAYS },
+        ],
+      },
+    ];
+  }
+
+  private get _conditionSchema() {
+    const d = this._data;
+    const schema: any[] = [
+      {
+        name: "condition_mode",
+        selector: {
+          select: {
+            mode: "list",
+            options: [
+              { value: "none", label: "None — alarm triggers whenever the trigger is met" },
+              { value: "simple", label: "Entity state — e.g. the car must be home" },
+              { value: "template", label: "Template — advanced Jinja2 condition" },
+            ],
+          },
+        },
+      },
+    ];
+    if (d.condition_mode === "simple") {
+      schema.push({
+        name: "",
+        type: "grid",
+        schema: [
+          { name: "condition_entity", required: true, selector: { entity: {} } },
+          {
+            name: "condition_state",
+            required: true,
+            selector: d.condition_entity ? { state: { entity_id: d.condition_entity } } : { text: {} },
+          },
+        ],
+      });
+    } else if (d.condition_mode === "template") {
+      schema.push({ name: "condition_template", required: true, selector: { template: {} } });
+    }
+    return schema;
+  }
+
+  private get _notificationSchema() {
+    return [
+      { name: "notification_title_template", selector: { template: {} } },
+      { name: "notification_text_template", selector: { template: {} } },
+    ];
+  }
+
+  private get _linkActionSchema() {
+    const linkRow: any[] = [
+      {
+        name: "link_page_path",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: DEFAULT_PAGE, label: "Alarm Center (default)" },
+              ...this._dashboards.map((p) => ({ value: p.url_path, label: p.title || p.url_path })),
+            ],
+          },
+        },
+      },
+    ];
+    if (this._data.link_page_path !== DEFAULT_PAGE && this._views.length) {
+      linkRow.push({
+        name: "link_view_path",
+        selector: {
+          select: {
+            mode: "dropdown",
+            options: [
+              { value: WHOLE_DASHBOARD, label: "Entire dashboard" },
+              ...this._views.map((v) => ({ value: v.path, label: v.title })),
+            ],
+          },
+        },
+      });
+    }
+    return [
+      { name: "", type: "grid", schema: linkRow },
+      {
+        name: "",
+        type: "grid",
+        schema: [
+          { name: "action_label", selector: { text: {} } },
+          {
+            name: "action_service",
+            selector: { select: { mode: "dropdown", custom_value: true, options: this._serviceOptions } },
+          },
+        ],
+      },
+      { name: "action_target", selector: { target: {} } },
+    ];
+  }
+
+  private _computeLabel = (s: { name: string; required?: boolean }) => LABELS[s.name] ?? s.name;
+  private _computeHelper = (s: { name: string }) => HELPERS[s.name] ?? "";
+
+  // --- Save ---
+
   private _buildTriggerConfig(): Record<string, unknown> {
-    switch (this._triggerType) {
+    const d = this._data;
+    switch (d.trigger_type) {
       case "analog":
-        return { operator: this._analogOperator, threshold: parseFloat(this._analogThreshold) };
+        return { operator: d.operator, threshold: Number(d.threshold ?? 0) };
       case "digital":
-        return { target_state: this._digitalTargetState };
+        return { target_state: d.target_state };
       case "custom_state":
-        return { match_values: this._customMatchValues.split(",").map((v) => v.trim()).filter(Boolean) };
+        return { match_values: (d.match_values ?? []).map((v) => String(v).trim()).filter(Boolean) };
       default:
-        // "external" triggers are managed outside the form; preserve an empty config.
-        return {};
+        // "external" triggers are managed outside the form; keep their config untouched.
+        return { ...this._externalTriggerConfig };
     }
   }
 
+  private _validate(): string {
+    const d = this._data;
+    if (!d.name.trim()) return "Enter an alarm name.";
+    if (!d.source_entity_id.trim()) return "Choose a source entity.";
+    if (d.trigger_type === "analog" && (d.threshold === undefined || isNaN(Number(d.threshold)))) {
+      return "Enter a numeric threshold.";
+    }
+    if (d.trigger_type === "custom_state" && !(d.match_values ?? []).some((v) => String(v).trim())) {
+      return "Add at least one match value.";
+    }
+    if (d.condition_mode === "simple" && d.condition_entity && !d.condition_state) {
+      return "Enter the expected state for the condition entity.";
+    }
+    return "";
+  }
+
   private async _save() {
-    if (!this.hass || !this._name.trim() || !this._sourceEntityId.trim()) return;
+    if (!this.hass) return;
+    const invalid = this._validate();
+    if (invalid) {
+      this._error = invalid;
+      notify(this, invalid);
+      return;
+    }
+    this._error = "";
+    const d = this._data;
+    const hysteresis = typeof d.hysteresis === "number" && !isNaN(d.hysteresis) ? d.hysteresis : null;
     this._saving = true;
     try {
       const data = {
-        name: this._name.trim(),
-        description: this._description,
-        source_entity_id: this._sourceEntityId.trim(),
-        trigger_type: this._triggerType,
+        name: d.name.trim(),
+        description: d.description ?? "",
+        source_entity_id: d.source_entity_id.trim(),
+        trigger_type: d.trigger_type,
         trigger_config: this._buildTriggerConfig(),
-        priority: this._priority,
-        area: this._area,
-        equipment: this._equipment,
-        tag: this._tag,
-        channel_id: this._channelId,
-        enabled: this._enabled,
-        latching: this._latching,
-        ack_required: this._ackRequired,
-        auto_clear: this._autoClear,
-        suppress_milder: this._suppressMilder,
-        condition_template: this._conditionMode === "simple" && this._conditionEntity
-          ? `{{ is_state('${this._conditionEntity}', '${this._conditionState}') }}`
-          : this._conditionMode === "template" ? (this._conditionTemplate || null)
-          : null,
-        notification_title_template: this._notificationTitleTemplate || null,
-        notification_text_template: this._notificationTextTemplate || null,
-        hysteresis: this._hysteresis ? parseFloat(this._hysteresis) : null,
-        // Form edits minutes; repeat_interval is persisted in seconds.
-        repeat_interval: this._remindIntervalMin
-          ? Math.round(parseFloat(this._remindIntervalMin) * 60)
-          : null,
-        auto_ack_delay: this._autoAckMin ? Math.round(parseFloat(this._autoAckMin) * 60) : null,
-        trigger_delay: this._triggerDelaySec ? Math.round(parseFloat(this._triggerDelaySec)) : null,
-        clear_delay: this._clearDelaySec ? Math.round(parseFloat(this._clearDelaySec)) : null,
-        action_label: this._actionLabel.trim() || null,
-        action_service: this._actionService.trim() || null,
+        priority: Number(d.priority) as AlarmPriority,
+        area: d.area ?? "",
+        equipment: d.equipment ?? "",
+        tag: d.tag ?? "",
+        channel_id: d.channel_id && d.channel_id !== NO_CHANNEL ? d.channel_id : null,
+        enabled: d.enabled,
+        latching: d.latching,
+        ack_required: d.ack_required,
+        auto_clear: d.auto_clear,
+        suppress_milder: d.suppress_milder,
+        condition_template:
+          d.condition_mode === "simple" && d.condition_entity
+            ? `{{ is_state('${d.condition_entity}', '${d.condition_state}') }}`
+            : d.condition_mode === "template"
+            ? d.condition_template || null
+            : null,
+        notification_title_template: d.notification_title_template || null,
+        notification_text_template: d.notification_text_template || null,
+        hysteresis,
+        // All four durations are persisted in whole seconds; empty/zero = off (null).
+        repeat_interval: durationToSeconds(d.repeat_interval),
+        auto_ack_delay: durationToSeconds(d.auto_ack_delay),
+        trigger_delay: durationToSeconds(d.trigger_delay),
+        clear_delay: durationToSeconds(d.clear_delay),
+        action_label: (d.action_label ?? "").trim() || null,
+        action_service: (d.action_service ?? "").trim() || null,
         action_entity: this._actionEntity.trim() || null,
-        action_target: this._actionTarget && Object.keys(this._actionTarget).length > 0
-          ? this._actionTarget
-          : null,
-        link_page_path: this._linkPagePath || null,
-        link_view_path: this._linkViewPath || null,
+        action_target: d.action_target && Object.keys(d.action_target).length > 0 ? d.action_target : null,
+        link_page_path: d.link_page_path && d.link_page_path !== DEFAULT_PAGE ? d.link_page_path : null,
+        link_view_path:
+          d.link_page_path !== DEFAULT_PAGE && d.link_view_path && d.link_view_path !== WHOLE_DASHBOARD
+            ? d.link_view_path
+            : null,
       };
 
       if (this.alarmId) {
         await updateAlarm(this.hass, this.alarmId, data);
+        notify(this, `Saved: ${data.name}`);
       } else {
         await createAlarm(this.hass, data);
+        notify(this, `Created: ${data.name}`);
         this._resetForm();
       }
 
-      this.dispatchEvent(
-        new CustomEvent("navigate", { detail: { view: "all" }, bubbles: true, composed: true })
-      );
+      this._navigateBack();
+    } catch (err) {
+      this._error = `Saving failed: ${errorMessage(err)}`;
+      notify(this, this._error);
     } finally {
       this._saving = false;
     }
   }
 
-  render() {
-    if (this._loading) return html`<div class="empty-state">Loading...</div>`;
+  private _navigateBack() {
+    this.dispatchEvent(new CustomEvent("navigate", { detail: { view: "all" }, bubbles: true, composed: true }));
+  }
 
+  // --- Render ---
+
+  private _section(title: string, sub: string | undefined, schema: unknown[], extra: unknown = nothing) {
     return html`
-      <div class="form-card">
-        <h2>${this.alarmId ? "Edit Alarm" : "Create New Alarm"}</h2>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label>Alarm Name *</label>
-            <input type="text" .value=${this._name} @input=${(e: Event) => (this._name = (e.target as HTMLInputElement).value)} placeholder="e.g. Kitchen Temperature High" />
-          </div>
-          <div class="form-group">
-            <label>Priority</label>
-            <select title="Determines notification behavior and visual severity" .value=${String(this._priority)} @change=${(e: Event) => (this._priority = Number((e.target as HTMLSelectElement).value) as AlarmPriority)}>
-              <option value="0">Info — panel only, no notifications</option>
-              <option value="1">Warning — persistent notification</option>
-              <option value="2">High — persistent + mobile push</option>
-              <option value="3">Critical — mobile push, bypasses DND</option>
-            </select>
-          </div>
+      <section class="section">
+        <div class="section-header">${title}${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>
+        <div class="section-body">
+          <ha-form
+            .hass=${this.hass}
+            .data=${this._data}
+            .schema=${schema}
+            .computeLabel=${this._computeLabel}
+            .computeHelper=${this._computeHelper}
+            @value-changed=${this._onFormChange}
+          ></ha-form>
+          ${extra}
         </div>
+      </section>
+    `;
+  }
 
-        <div class="form-group">
-          <label>Description</label>
-          <textarea rows="2" .value=${this._description} @input=${(e: Event) => (this._description = (e.target as HTMLTextAreaElement).value)}></textarea>
-        </div>
+  render() {
+    if (this._loading) return renderLoading();
 
-        <div class="form-row">
-          <div>
-            <ha-entity-picker
-              .hass=${this.hass}
-              .value=${this._sourceEntityId}
-              @value-changed=${(e: CustomEvent) => this._sourceEntityId = e.detail.value}
-              allow-custom-entity
-              .label=${"Source Entity *"}
-            ></ha-entity-picker>
-            <div class="hint">The entity whose state is monitored by this alarm.</div>
-          </div>
-          <div class="form-group">
-            <label>Channel</label>
-            <select title="Routes notifications to specific targets (mobile, persistent, etc.)" @change=${(e: Event) => { const v = (e.target as HTMLSelectElement).value; this._channelId = v || null; }}>
-              <option value="" ?selected=${!this._channelId}>No channel</option>
-              ${this._channels.map((ch) => html`<option value=${ch.id} ?selected=${ch.id === this._channelId}>${ch.name}</option>`)}
-            </select>
-            <div class="hint">Channels define where notifications are sent. Create one in the Channels tab.</div>
-          </div>
-        </div>
+    if (!this._formAvailable) {
+      return html`<div class="error">
+        Home Assistant's form components could not be loaded. Reload the page (Ctrl+Shift+R) and try again.
+      </div>`;
+    }
 
-        <div class="section">
-          <h3>Location / Equipment</h3>
-          <div class="form-row">
-            <ha-area-picker
-              .hass=${this.hass}
-              .value=${this._area}
-              @value-changed=${(e: CustomEvent) => this._area = e.detail.value || ""}
-              .label=${"Area"}
-            ></ha-area-picker>
-            <div class="form-group">
-              <label>Equipment</label>
-              <input type="text" .value=${this._equipment} @input=${(e: Event) => (this._equipment = (e.target as HTMLInputElement).value)} placeholder="Oven" />
-            </div>
-            <div class="form-group">
-              <label>Tag</label>
-              <input type="text" .value=${this._tag} @input=${(e: Event) => (this._tag = (e.target as HTMLInputElement).value)} placeholder="TT-101" />
-            </div>
-          </div>
-        </div>
+    const external = this._data.trigger_type === "external";
+    return html`
+      <h2>${this.alarmId ? "Edit alarm" : "Create alarm"}</h2>
+      ${this._error ? html`<div class="error" role="alert">${this._error}</div>` : nothing}
 
-        <div class="section">
-          <h3>Trigger Configuration</h3>
-          <div class="form-group">
-            <label>Trigger Type</label>
-            <select title="How the alarm evaluates the source entity" .value=${this._triggerType} @change=${(e: Event) => (this._triggerType = (e.target as HTMLSelectElement).value as TriggerType)}>
-              <option value="analog">Analog — numeric threshold (>, <, etc.)</option>
-              <option value="digital">Digital (state match)</option>
-              <option value="custom_state">Custom State (value list)</option>
-            </select>
-          </div>
+      ${this._section("General", undefined, this._generalSchema)}
+      ${this._section(
+        "Trigger",
+        external ? "This alarm is raised and cleared by an automation or blueprint." : "When the alarm becomes active.",
+        this._triggerSchema
+      )}
+      ${this._section("Location", "Used for grouping and filtering.", this._locationSchema)}
+      ${this._section("Behavior", undefined, this._behaviorSchema)}
+      ${this._section(
+        "Condition",
+        "Optional gate: the alarm only fires while the condition is true, e.g. low battery only when the device is home.",
+        this._conditionSchema
+      )}
+      ${this._section(
+        "Notification text",
+        "Optional Jinja2 templates that override the default notification.",
+        this._notificationSchema,
+        html`<div class="vars">
+          Variables:
+          ${["name", "value", "unit", "area", "equipment", "friendly_name", "threshold", "operator", "priority"].map(
+            (v, i) => html`${i ? ", " : ""}<code>{{ ${v} }}</code>`
+          )}
+        </div>`
+      )}
+      ${this._section("Link and action", "Optional.", this._linkActionSchema)}
 
-          ${this._triggerType === "analog" ? html`
-            <div class="form-row">
-              <div class="form-group">
-                <label>Operator</label>
-                <select .value=${this._analogOperator} @change=${(e: Event) => (this._analogOperator = (e.target as HTMLSelectElement).value)}>
-                  <option value=">">Greater than (&gt;)</option>
-                  <option value=">=">Greater or equal (&gt;=)</option>
-                  <option value="<">Less than (&lt;)</option>
-                  <option value="<=">Less or equal (&lt;=)</option>
-                  <option value="==">Equal (==)</option>
-                  <option value="!=">Not equal (!=)</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>Threshold</label>
-                <input type="number" step="any" .value=${this._analogThreshold} @input=${(e: Event) => (this._analogThreshold = (e.target as HTMLInputElement).value)} />
-              </div>
-              <div class="form-group">
-                <label>Hysteresis (deadband)</label>
-                <input type="number" step="any" title="Prevents chattering: alarm triggers at threshold but won't clear until value passes threshold +/- this value" .value=${this._hysteresis} @input=${(e: Event) => (this._hysteresis = (e.target as HTMLInputElement).value)} placeholder="e.g. 2" />
-                <div class="hint">Prevents rapid on/off. Alarm clears only when value moves past threshold +/- this value.</div>
-              </div>
-            </div>
-          ` : ""}
-
-          ${this._triggerType === "digital" ? html`
-            <div class="form-group">
-              <label>Target State</label>
-              <input type="text" .value=${this._digitalTargetState} @input=${(e: Event) => (this._digitalTargetState = (e.target as HTMLInputElement).value)} placeholder="on" />
-            </div>
-          ` : ""}
-
-          ${this._triggerType === "custom_state" ? html`
-            <div class="form-group">
-              <label>Match Values (comma-separated)</label>
-              <input type="text" .value=${this._customMatchValues} @input=${(e: Event) => (this._customMatchValues = (e.target as HTMLInputElement).value)} placeholder="error, fault, offline" />
-            </div>
-          ` : ""}
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Trigger on-delay (seconds)</label>
-              <input type="number" min="0" step="1"
-                title="The condition must hold continuously for this many seconds before the alarm activates"
-                .value=${this._triggerDelaySec}
-                @input=${(e: Event) => (this._triggerDelaySec = (e.target as HTMLInputElement).value)}
-                placeholder="0 = no delay" />
-              <div class="hint">If the condition clears before the delay elapses, no alarm is raised.</div>
-            </div>
-            <div class="form-group">
-              <label>Clear delay (seconds)</label>
-              <input type="number" min="0" step="1"
-                title="The condition must stay cleared for this many seconds before the alarm returns to normal"
-                .value=${this._clearDelaySec}
-                @input=${(e: Event) => (this._clearDelaySec = (e.target as HTMLInputElement).value)}
-                placeholder="0 = no delay" />
-              <div class="hint">If the condition re-triggers before the delay elapses, the alarm stays active.</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="section">
-          <h3>Behavior</h3>
-          <div class="checkbox-group">
-            <label title="When disabled, the alarm won't evaluate or trigger"><input type="checkbox" .checked=${this._enabled} @change=${(e: Event) => (this._enabled = (e.target as HTMLInputElement).checked)} /> Enabled</label>
-            <label title="Latching alarms stay active until manually reset, even if condition clears"><input type="checkbox" .checked=${this._latching} @change=${(e: Event) => (this._latching = (e.target as HTMLInputElement).checked)} /> Latching</label>
-            <label title="Require user to acknowledge alarm before it can return to normal"><input type="checkbox" .checked=${this._ackRequired} @change=${(e: Event) => (this._ackRequired = (e.target as HTMLInputElement).checked)} /> Acknowledge Required</label>
-            <label title="Automatically clear alarm when the trigger condition is no longer met"><input type="checkbox" .checked=${this._autoClear} @change=${(e: Event) => (this._autoClear = (e.target as HTMLInputElement).checked)} /> Auto Clear</label>
-            ${this._triggerType === "analog" ? html`<label title="While this alarm is active, milder alarms on the same sensor in the same direction are suppressed (e.g. Very Low suppresses Low). They come back when this alarm clears."><input type="checkbox" .checked=${this._suppressMilder} @change=${(e: Event) => (this._suppressMilder = (e.target as HTMLInputElement).checked)} /> Suppress Milder Alarms</label>` : ""}
-          </div>
-          <div class="form-group">
-            <label>Remind interval (minutes)</label>
-            <input type="number" min="0" step="any"
-              title="Re-send the notification this often while the alarm stays active and unacknowledged"
-              .value=${this._remindIntervalMin}
-              @input=${(e: Event) => (this._remindIntervalMin = (e.target as HTMLInputElement).value)}
-              placeholder="e.g. 30" />
-            <div class="hint">Leave empty for no reminders. Reminders repeat only while the alarm is active and unacknowledged, and stop on acknowledge or return to normal.</div>
-          </div>
-          <div class="form-group">
-            <label>Auto-acknowledge after return to normal (minutes)</label>
-            <input type="number" min="0" step="any"
-              title="Acknowledge automatically once the alarm has been back to normal (RTN, unacknowledged) this long"
-              .value=${this._autoAckMin}
-              @input=${(e: Event) => (this._autoAckMin = (e.target as HTMLInputElement).value)}
-              placeholder="e.g. 15" />
-            <div class="hint">Leave empty to require a manual acknowledge. Good for event-type alarms (doorbell, washing machine done). Never acknowledges while the condition is still active.</div>
-          </div>
-          <div class="form-group">
-            <label>Condition (optional — alarm only fires when condition is true)</label>
-            <div class="hint" style="margin-bottom:8px">Use a condition to gate the alarm. Example: only alert on low battery when the device is at home.</div>
-            <div style="display:flex;gap:4px;margin-bottom:8px">
-              <button class="btn btn-small" style=${this._conditionMode === "none" ? "background:var(--primary-color);color:#fff" : "background:var(--secondary-background-color)"}
-                title="No additional condition — alarm triggers whenever the threshold is met"
-                @click=${() => (this._conditionMode = "none")}>None</button>
-              <button class="btn btn-small" style=${this._conditionMode === "simple" ? "background:var(--primary-color);color:#fff" : "background:var(--secondary-background-color)"}
-                title="Simple condition: pick an entity and expected state (e.g. car must be home)"
-                @click=${() => (this._conditionMode = "simple")}>Entity state</button>
-              <button class="btn btn-small" style=${this._conditionMode === "template" ? "background:var(--primary-color);color:#fff" : "background:var(--secondary-background-color)"}
-                title="Advanced Jinja2 template for complex conditions"
-                @click=${() => (this._conditionMode = "template")}>Template</button>
-            </div>
-            ${this._conditionMode === "simple" ? html`
-              <div class="form-row">
-                <ha-entity-picker
-                  .hass=${this.hass}
-                  .value=${this._conditionEntity}
-                  @value-changed=${(e: CustomEvent) => (this._conditionEntity = e.detail.value)}
-                  allow-custom-entity
-                  .label=${"Condition entity"}
-                ></ha-entity-picker>
-                <div class="form-group">
-                  <label>Expected state</label>
-                  <input type="text" .value=${this._conditionState} @input=${(e: Event) => (this._conditionState = (e.target as HTMLInputElement).value)} placeholder="home, on, true, etc." />
-                </div>
-              </div>
-            ` : this._conditionMode === "template" ? html`
-              <textarea rows="2" .value=${this._conditionTemplate} @input=${(e: Event) => (this._conditionTemplate = (e.target as HTMLTextAreaElement).value)} placeholder="e.g. {{ is_state('device_tracker.car', 'home') }}"></textarea>
-            ` : ""}
-          </div>
-        </div>
-
-        <div class="section">
-          <h3>Notification Templates (optional Jinja2)</h3>
-          <div class="form-group">
-            <label>Title template</label>
-            <input type="text" .value=${this._notificationTitleTemplate} @input=${(e: Event) => (this._notificationTitleTemplate = (e.target as HTMLInputElement).value)} placeholder="Default: [Priority] Alarm Name" />
-          </div>
-          <div class="form-group">
-            <label>Message template</label>
-            <textarea rows="2" .value=${this._notificationTextTemplate} @input=${(e: Event) => (this._notificationTextTemplate = (e.target as HTMLTextAreaElement).value)} placeholder="e.g. {{ name }} har lite batteri, kun {{ value }}{{ unit }} igjen"></textarea>
-          </div>
-          <div style="font-size: 0.8em; color: var(--secondary-text-color); margin-top: -8px;">
-            Variables: {{ name }}, {{ value }}, {{ unit }}, {{ area }}, {{ equipment }}, {{ friendly_name }}, {{ threshold }}, {{ operator }}, {{ priority }}
-          </div>
-        </div>
-
-        <div class="section">
-          <h3>Notification Action &amp; Link (optional)</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Link page</label>
-              <select title="Tapping the notification opens this dashboard; the persistent notification links to it"
-                @change=${(e: Event) => this._onDashboardChange((e.target as HTMLSelectElement).value)}>
-                <option value="" ?selected=${!this._linkPagePath}>Alarm Center (default)</option>
-                ${this._dashboards.map(
-                  (p) => html`<option value=${p.url_path} ?selected=${p.url_path === this._linkPagePath}>${p.title || p.url_path}</option>`
-                )}
-              </select>
-              <div class="hint">Where the alarm's notifications link to. Defaults to the Alarm Center.</div>
-            </div>
-            ${this._linkPagePath && this._views.length
-              ? html`<div class="form-group">
-                  <label>View</label>
-                  <select @change=${(e: Event) => { this._linkViewPath = (e.target as HTMLSelectElement).value; }}>
-                    <option value="" ?selected=${!this._linkViewPath}>Entire dashboard</option>
-                    ${this._views.map(
-                      (v) => html`<option value=${v.path} ?selected=${v.path === this._linkViewPath}>${v.title}</option>`
-                    )}
-                  </select>
-                  <div class="hint">Optionally link to a specific view.</div>
-                </div>`
-              : ""}
-          </div>
-
-          <div class="form-group">
-            <label>Action button label</label>
-            <input type="text" .value=${this._actionLabel} @input=${(e: Event) => (this._actionLabel = (e.target as HTMLInputElement).value)} placeholder="e.g. Open door" />
-            <div class="hint">Optional actionable button (push + alarm list/modal). Set a label, a service and a target; leave blank for none.</div>
-          </div>
-          <div class="form-group">
-            <label>Action service</label>
-            <ha-selector
-              .hass=${this.hass}
-              .selector=${{ service: {} }}
-              .value=${this._actionService}
-              @value-changed=${(e: CustomEvent) => (this._actionService = e.detail.value || "")}
-            ></ha-selector>
-          </div>
-          <div class="form-group">
-            <label>Action target</label>
-            <ha-selector
-              .hass=${this.hass}
-              .selector=${{ target: {} }}
-              .value=${this._actionTarget}
-              @value-changed=${(e: CustomEvent) => (this._actionTarget = e.detail.value || {})}
-            ></ha-selector>
-            <div class="hint">Entity, device, or area the action runs against.</div>
-          </div>
-        </div>
-
-        <div class="actions" style="margin-top: 24px;">
-          <button class="btn btn-primary" ?disabled=${this._saving} @click=${this._save}>
-            ${this._saving ? "Saving..." : this.alarmId ? "Update Alarm" : "Create Alarm"}
-          </button>
-          <button class="btn" style="background: var(--secondary-background-color)" @click=${() => this.dispatchEvent(new CustomEvent("navigate", { detail: { view: "all" }, bubbles: true, composed: true }))}>
-            Cancel
-          </button>
-        </div>
+      <div class="footer">
+        <button class="btn btn-plain" @click=${this._navigateBack}>Cancel</button>
+        <button class="btn btn-primary" ?disabled=${this._saving} @click=${this._save}>
+          ${this._saving ? "Saving…" : this.alarmId ? "Save" : "Create"}
+        </button>
       </div>
     `;
   }

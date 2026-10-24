@@ -114,6 +114,10 @@ export const sharedStyles = css`
     border-radius: 2px;
   }
 
+  td.name-cell {
+    min-width: 180px;
+  }
+
   .muted {
     font-size: 0.8em;
     color: var(--secondary-text-color, #727272);

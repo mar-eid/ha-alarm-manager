@@ -274,7 +274,7 @@ export class AllAlarmsView extends LitElement {
     return html`
       <tr class="clickable" tabindex="0" aria-label=${`${alarm.name}, open details`} @click=${open} @keydown=${onActivateKey(open)}>
         <td><severity-badge .priority=${alarm.priority}></severity-badge></td>
-        <td>
+        <td class="name-cell">
           <strong>${alarm.name}</strong>
           ${alarm.runtime.state === "shelved" && alarm.runtime.shelved_until
             ? html`<br /><span class="name-sub">Until ${formatDateTime(this.hass, alarm.runtime.shelved_until)}</span>`

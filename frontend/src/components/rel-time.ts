@@ -1,14 +1,16 @@
 /**
  * Relative time ("5 minutes ago") with the exact time as tooltip, refreshed every 30 s.
  * Same format everywhere in the Alarm Center; follows the user's HA locale.
+ *
+ * Both bundles (alarm-overview.js and alarm-banner.js) include this element, so it is
+ * registered only if the other bundle hasn't done so already.
  */
 
 import { LitElement, html, css } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { property } from "lit/decorators.js";
 import { formatDateTime, formatRelative } from "../utils/format";
 import type { HomeAssistant } from "../types";
 
-@customElement("rel-time")
 export class RelTime extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @property() datetime: string | null = null;
@@ -37,6 +39,8 @@ export class RelTime extends LitElement {
     >`;
   }
 }
+
+if (!customElements.get("rel-time")) customElements.define("rel-time", RelTime);
 
 declare global {
   interface HTMLElementTagNameMap {
