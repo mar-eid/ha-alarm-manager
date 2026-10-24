@@ -330,6 +330,16 @@ create_alarm:
       default: true
       selector:
         boolean:
+    auto_ack_delay:
+      name: Auto-Acknowledge Delay
+      description: Seconds an alarm may sit returned-to-normal and unacknowledged before it is acknowledged automatically. Never applies while the condition is still active. Empty = off.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 2592000
+          unit_of_measurement: s
+          mode: box
 
 update_alarm:
   name: Update Alarm
@@ -507,6 +517,16 @@ update_alarm:
       required: false
       selector:
         boolean:
+    auto_ack_delay:
+      name: Auto-Acknowledge Delay
+      description: Seconds an alarm may sit returned-to-normal and unacknowledged before it is acknowledged automatically. Never applies while the condition is still active. Empty = off.
+      required: false
+      selector:
+        number:
+          min: 0
+          max: 2592000
+          unit_of_measurement: s
+          mode: box
 
 delete_alarm:
   name: Delete Alarm

@@ -177,6 +177,7 @@ export class AlarmDetailDialog extends LitElement {
                 <span class="flag ${a.auto_clear ? "active" : ""}">Auto Clear</span>
                 ${a.trigger_type === "analog" ? html`<span class="flag ${a.suppress_milder ? "active" : ""}">Suppress Milder</span>` : ""}
               </div>
+              ${a.auto_ack_delay ? html`<div class="field"><span class="field-label">Auto-acknowledge</span><span class="field-value">${Math.round(a.auto_ack_delay / 60)} min after return to normal</span></div>` : ""}
               ${a.suppressed_by ? html`<div class="field"><span class="field-label">Suppressed by</span><span class="field-value">${a.suppressed_by.name}</span></div>` : ""}
             </div>
 

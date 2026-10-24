@@ -53,6 +53,7 @@ class AlarmEventType(StrEnum):
     UPDATED = "updated"
     DELETED = "deleted"
     SUPPRESSED = "suppressed"
+    AUTO_ACKNOWLEDGED = "auto_acknowledged"
 
 
 # Default configuration values

@@ -51,6 +51,7 @@ class AlarmDefinition:
     link_page_path: str | None = None
     link_view_path: str | None = None
     suppress_milder: bool = True
+    auto_ack_delay: int | None = None
     id: str = field(default_factory=_new_id)
     created_at: datetime = field(default_factory=_now)
     updated_at: datetime = field(default_factory=_now)
@@ -85,6 +86,7 @@ class AlarmDefinition:
             "link_page_path": self.link_page_path,
             "link_view_path": self.link_view_path,
             "suppress_milder": self.suppress_milder,
+            "auto_ack_delay": self.auto_ack_delay,
             "source_entity_id": self.source_entity_id,
             "trigger_type": self.trigger_type.value,
             "trigger_config": self.trigger_config,
@@ -123,6 +125,7 @@ class AlarmDefinition:
             link_page_path=data.get("link_page_path"),
             link_view_path=data.get("link_view_path"),
             suppress_milder=data.get("suppress_milder", True),
+            auto_ack_delay=data.get("auto_ack_delay"),
             source_entity_id=data["source_entity_id"],
             trigger_type=TriggerType(data["trigger_type"]),
             trigger_config=data["trigger_config"],
@@ -194,6 +197,7 @@ class AlarmRuntimeState:
     previous_state: AlarmState | None = None
     last_notification_at: datetime | None = None
     last_value: str | None = None
+    returned_at: datetime | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to dictionary."""
@@ -207,6 +211,7 @@ class AlarmRuntimeState:
             "previous_state": self.previous_state.value if self.previous_state else None,
             "last_notification_at": self.last_notification_at.isoformat() if self.last_notification_at else None,
             "last_value": self.last_value,
+            "returned_at": self.returned_at.isoformat() if self.returned_at else None,
         }
 
 

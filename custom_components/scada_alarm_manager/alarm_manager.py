@@ -936,6 +936,20 @@ class AlarmManager:
                 _LOGGER.info("Shelve expired for alarm %s", alarm_id)
                 await self.async_unshelve(alarm_id, user="system")
 
+        # Auto-acknowledge alarms that have sat returned-to-normal long enough (F20).
+        # Alarms already in RTN before returned_at existed fall back to triggered_at.
+        for alarm_id, runtime in list(self._runtime_states.items()):
+            if runtime.state != AlarmState.RTN_UNACKED:
+                continue
+            alarm = self._alarms.get(alarm_id)
+            if alarm is None or not alarm.auto_ack_delay:
+                continue
+            baseline = runtime.returned_at or runtime.triggered_at
+            if baseline is None or (utc_now - baseline).total_seconds() < alarm.auto_ack_delay:
+                continue
+            new_runtime, events = sm.auto_acknowledge(runtime, now=utc_now)
+            await self._async_apply_transition(alarm_id, new_runtime, events)
+
         # Check notification repeats (reminders for unacknowledged alarms)
         if self._notification_router:
             for alarm_id, runtime in list(self._runtime_states.items()):
@@ -978,6 +992,7 @@ class AlarmManager:
                         previous_state=runtime.previous_state,
                         last_notification_at=utc_now,
                         last_value=runtime.last_value,
+                        returned_at=runtime.returned_at,
                     )
                     self._runtime_states[alarm_id] = updated
                     await self._database.async_save_runtime_state(updated)

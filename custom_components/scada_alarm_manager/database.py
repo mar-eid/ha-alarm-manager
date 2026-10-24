@@ -15,7 +15,7 @@ from .models import AlarmChannel, AlarmDefinition, AlarmEvent
 
 _LOGGER = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 
 CREATE_TABLES_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS alarm_definitions (
     link_page_path TEXT,
     link_view_path TEXT,
     suppress_milder INTEGER NOT NULL DEFAULT 1,
+    auto_ack_delay INTEGER,
     source_entity_id TEXT NOT NULL,
     trigger_type TEXT NOT NULL,
     trigger_config TEXT NOT NULL DEFAULT '{}',
@@ -95,7 +96,8 @@ CREATE TABLE IF NOT EXISTS alarm_runtime_states (
     shelved_until TEXT,
     previous_state TEXT,
     last_notification_at TEXT,
-    last_value TEXT
+    last_value TEXT,
+    returned_at TEXT
 );
 """
 
@@ -261,6 +263,20 @@ class AlarmDatabase:
                 pass
             await self._db.execute("UPDATE schema_version SET version = ?", (9,))
             _LOGGER.info("Migrated database to schema v9: added suppress_milder column")
+            current = 9
+
+        if current < 10:
+            # v10: auto-acknowledge after return to normal (F20)
+            for table, col, typ in (
+                ("alarm_definitions", "auto_ack_delay", "INTEGER"),
+                ("alarm_runtime_states", "returned_at", "TEXT"),
+            ):
+                try:
+                    await self._db.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
+                except Exception:
+                    pass
+            await self._db.execute("UPDATE schema_version SET version = ?", (10,))
+            _LOGGER.info("Migrated database to schema v10: added auto_ack_delay/returned_at columns")
 
     async def async_close(self) -> None:
         """Close database connection."""
@@ -285,10 +301,11 @@ class AlarmDatabase:
              notification_title_template, notification_text_template,
              hysteresis, repeat_interval, escalation_delay, trigger_delay, clear_delay,
              action_label, action_service, action_entity, action_target,
-             link_page_path, link_view_path, suppress_milder,
+             link_page_path, link_view_path, suppress_milder, auto_ack_delay,
              source_entity_id,
              trigger_type, trigger_config, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 alarm.id,
                 alarm.name,
@@ -317,6 +334,7 @@ class AlarmDatabase:
                 alarm.link_page_path,
                 alarm.link_view_path,
                 int(alarm.suppress_milder),
+                alarm.auto_ack_delay,
                 alarm.source_entity_id,
                 alarm.trigger_type.value,
                 json.dumps(alarm.trigger_config),
@@ -337,7 +355,7 @@ class AlarmDatabase:
             notification_text_template=?, hysteresis=?,
             repeat_interval=?, escalation_delay=?, trigger_delay=?, clear_delay=?,
             action_label=?, action_service=?, action_entity=?, action_target=?,
-            link_page_path=?, link_view_path=?, suppress_milder=?,
+            link_page_path=?, link_view_path=?, suppress_milder=?, auto_ack_delay=?,
             source_entity_id=?, trigger_type=?, trigger_config=?, updated_at=?
             WHERE id=?""",
             (
@@ -367,6 +385,7 @@ class AlarmDatabase:
                 alarm.link_page_path,
                 alarm.link_view_path,
                 int(alarm.suppress_milder),
+                alarm.auto_ack_delay,
                 alarm.source_entity_id,
                 alarm.trigger_type.value,
                 json.dumps(alarm.trigger_config),
@@ -429,6 +448,7 @@ class AlarmDatabase:
             link_page_path=row["link_page_path"],
             link_view_path=row["link_view_path"],
             suppress_milder=bool(row["suppress_milder"]),
+            auto_ack_delay=row["auto_ack_delay"],
             source_entity_id=row["source_entity_id"],
             trigger_type=TriggerType(row["trigger_type"]),
             trigger_config=json.loads(row["trigger_config"]),
@@ -633,8 +653,8 @@ class AlarmDatabase:
         await self._conn.execute(
             """INSERT OR REPLACE INTO alarm_runtime_states
             (alarm_id, state, triggered_at, acked_at, acked_by,
-             shelved_until, previous_state, last_notification_at, last_value)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+             shelved_until, previous_state, last_notification_at, last_value, returned_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 runtime.alarm_id,
                 runtime.state.value,
@@ -645,6 +665,7 @@ class AlarmDatabase:
                 runtime.previous_state.value if runtime.previous_state else None,
                 runtime.last_notification_at.isoformat() if runtime.last_notification_at else None,
                 runtime.last_value,
+                runtime.returned_at.isoformat() if runtime.returned_at else None,
             ),
         )
         await self._conn.commit()
@@ -667,6 +688,9 @@ class AlarmDatabase:
                     previous_state=AlarmState(row["previous_state"]) if row["previous_state"] else None,
                     last_notification_at=datetime.fromisoformat(row["last_notification_at"]) if row["last_notification_at"] else None,
                     last_value=row["last_value"],
+                    returned_at=(
+                        datetime.fromisoformat(row["returned_at"]) if row["returned_at"] else None
+                    ),
                 )
         return result
 

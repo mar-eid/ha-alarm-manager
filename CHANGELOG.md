@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.24.0] - 2026-10-24
+
+### Added
+
+- **F20 — auto-acknowledge after return to normal.** New per-alarm setting **Auto-acknowledge after return to normal** (`auto_ack_delay`, seconds; the editor takes minutes). An alarm that has been back to normal but unacknowledged (RTN) for that long is acknowledged automatically. Its notification is dismissed and a new `auto_acknowledged` history event is logged with user `auto`.
+  - Intended for event-type alarms such as the doorbell or "washing machine done", which otherwise sit in RTN for hours or days waiting for someone to acknowledge them.
+  - Never applies to an alarm that is still active: only `returned_to_normal_unacknowledged` qualifies. A re-trigger restarts the clock.
+  - Off by default (empty). Existing alarms are unchanged.
+
+### Database
+
+- Schema migrated to **v10**: adds `auto_ack_delay` to `alarm_definitions` and `returned_at` to `alarm_runtime_states`. Alarms already in RTN when you upgrade measure from `triggered_at` until they next return to normal.
+
 ## [0.23.0] - 2026-10-24
 
 ### Added

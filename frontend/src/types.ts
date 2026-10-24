@@ -92,6 +92,7 @@ export interface AlarmDefinition {
   link_page_path: string | null;
   link_view_path: string | null;
   suppress_milder: boolean;
+  auto_ack_delay: number | null;
   source_entity_id: string;
   trigger_type: TriggerType;
   trigger_config: Record<string, any>;
@@ -109,6 +110,7 @@ export interface AlarmRuntimeState {
   previous_state: AlarmState | null;
   last_notification_at: string | null;
   last_value: string | null;
+  returned_at?: string | null;
 }
 
 export interface AlarmWithState extends AlarmDefinition {

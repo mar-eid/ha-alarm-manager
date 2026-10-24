@@ -44,6 +44,7 @@ export class CreateEditView extends LitElement {
   @state() private _notificationTextTemplate = "";
   @state() private _conditionState = "";
   @state() private _remindIntervalMin = "";
+  @state() private _autoAckMin = "";
   @state() private _triggerDelaySec = "";
   @state() private _clearDelaySec = "";
   @state() private _actionLabel = "";
@@ -152,6 +153,8 @@ export class CreateEditView extends LitElement {
         // repeat_interval is stored in seconds; the form edits minutes.
         this._remindIntervalMin =
           alarm.repeat_interval != null ? String(alarm.repeat_interval / 60) : "";
+        // auto_ack_delay is stored in seconds; the form edits minutes.
+        this._autoAckMin = alarm.auto_ack_delay != null ? String(alarm.auto_ack_delay / 60) : "";
         this._triggerDelaySec = alarm.trigger_delay != null ? String(alarm.trigger_delay) : "";
         this._clearDelaySec = alarm.clear_delay != null ? String(alarm.clear_delay) : "";
         this._actionLabel = alarm.action_label || "";
@@ -206,6 +209,7 @@ export class CreateEditView extends LitElement {
     this._notificationTitleTemplate = "";
     this._notificationTextTemplate = "";
     this._remindIntervalMin = "";
+    this._autoAckMin = "";
     this._triggerDelaySec = "";
     this._clearDelaySec = "";
     this._actionLabel = "";
@@ -292,6 +296,7 @@ export class CreateEditView extends LitElement {
         repeat_interval: this._remindIntervalMin
           ? Math.round(parseFloat(this._remindIntervalMin) * 60)
           : null,
+        auto_ack_delay: this._autoAckMin ? Math.round(parseFloat(this._autoAckMin) * 60) : null,
         trigger_delay: this._triggerDelaySec ? Math.round(parseFloat(this._triggerDelaySec)) : null,
         clear_delay: this._clearDelaySec ? Math.round(parseFloat(this._clearDelaySec)) : null,
         action_label: this._actionLabel.trim() || null,
@@ -477,6 +482,15 @@ export class CreateEditView extends LitElement {
               @input=${(e: Event) => (this._remindIntervalMin = (e.target as HTMLInputElement).value)}
               placeholder="e.g. 30" />
             <div class="hint">Leave empty for no reminders. Reminders repeat only while the alarm is active and unacknowledged, and stop on acknowledge or return to normal.</div>
+          </div>
+          <div class="form-group">
+            <label>Auto-acknowledge after return to normal (minutes)</label>
+            <input type="number" min="0" step="any"
+              title="Acknowledge automatically once the alarm has been back to normal (RTN, unacknowledged) this long"
+              .value=${this._autoAckMin}
+              @input=${(e: Event) => (this._autoAckMin = (e.target as HTMLInputElement).value)}
+              placeholder="e.g. 15" />
+            <div class="hint">Leave empty to require a manual acknowledge. Good for event-type alarms (doorbell, washing machine done). Never acknowledges while the condition is still active.</div>
           </div>
           <div class="form-group">
             <label>Condition (optional — alarm only fires when condition is true)</label>

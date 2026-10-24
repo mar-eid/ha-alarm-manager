@@ -171,6 +171,7 @@ async def ws_alarm_get(
         vol.Optional("link_page_path"): vol.Any(str, None),
         vol.Optional("link_view_path"): vol.Any(str, None),
         vol.Optional("suppress_milder", default=True): bool,
+        vol.Optional("auto_ack_delay"): vol.Any(int, None),
     }
 )
 @websocket_api.async_response
@@ -211,6 +212,7 @@ async def ws_alarm_create(
         link_page_path=msg.get("link_page_path"),
         link_view_path=msg.get("link_view_path"),
         suppress_milder=msg.get("suppress_milder", True),
+        auto_ack_delay=msg.get("auto_ack_delay"),
     )
     alarm = await manager.async_create_alarm(alarm)
     connection.send_result(msg["id"], _alarm_with_state(manager, alarm.id))
@@ -249,6 +251,7 @@ async def ws_alarm_create(
         vol.Optional("link_page_path"): vol.Any(str, None),
         vol.Optional("link_view_path"): vol.Any(str, None),
         vol.Optional("suppress_milder"): bool,
+        vol.Optional("auto_ack_delay"): vol.Any(int, None),
     }
 )
 @websocket_api.async_response
@@ -273,7 +276,7 @@ async def ws_alarm_update(
         "hysteresis", "repeat_interval", "escalation_delay",
         "trigger_delay", "clear_delay",
         "action_label", "action_service", "action_entity", "action_target",
-        "link_page_path", "link_view_path", "suppress_milder",
+        "link_page_path", "link_view_path", "suppress_milder", "auto_ack_delay",
     ):
         if field in msg:
             setattr(alarm, field, msg[field])

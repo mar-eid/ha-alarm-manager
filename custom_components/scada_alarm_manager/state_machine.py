@@ -47,6 +47,7 @@ def condition_met(
             state=AlarmState.ACTIVE_UNACKED,
             triggered_at=ts,
             last_value=value,
+            returned_at=None,
         )
         events.append(
             AlarmEvent(
@@ -106,6 +107,7 @@ def condition_cleared(
                 runtime,
                 state=AlarmState.RTN_UNACKED,
                 last_value=value,
+                returned_at=ts,
             )
             events.append(
                 AlarmEvent(
@@ -239,6 +241,7 @@ def acknowledge(
             triggered_at=None,
             acked_at=ts,
             acked_by=user,
+            returned_at=None,
         )
         events.append(
             AlarmEvent(
@@ -253,6 +256,39 @@ def acknowledge(
         return new_runtime, events
 
     return runtime, events
+
+
+def auto_acknowledge(
+    runtime: AlarmRuntimeState,
+    *,
+    now: datetime | None = None,
+) -> tuple[AlarmRuntimeState, list[AlarmEvent]]:
+    """Acknowledge an alarm that has sat returned-to-normal past its auto_ack_delay (F20).
+
+    Only RTN_UNACKED qualifies: the condition is already gone, so this never hides an
+    active alarm. Logged as its own event type so it doesn't skew operator ack statistics.
+    """
+    ts = now or _now()
+    if runtime.state != AlarmState.RTN_UNACKED:
+        return runtime, []
+
+    new_runtime = replace(
+        runtime,
+        state=AlarmState.NORMAL,
+        triggered_at=None,
+        acked_at=ts,
+        acked_by="auto",
+        returned_at=None,
+    )
+    event = AlarmEvent(
+        alarm_id=runtime.alarm_id,
+        event_type=AlarmEventType.AUTO_ACKNOWLEDGED,
+        timestamp=ts,
+        old_state=AlarmState.RTN_UNACKED,
+        new_state=AlarmState.NORMAL,
+        user="auto",
+    )
+    return new_runtime, [event]
 
 
 def shelve(

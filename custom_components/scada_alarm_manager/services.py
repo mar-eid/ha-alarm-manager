@@ -117,6 +117,7 @@ SCHEMA_CREATE_ALARM = vol.Schema(
         vol.Optional("link_page_path"): vol.Any(cv.string, None),
         vol.Optional("link_view_path"): vol.Any(cv.string, None),
         vol.Optional("suppress_milder", default=True): cv.boolean,
+        vol.Optional("auto_ack_delay"): vol.Any(vol.Coerce(int), None),
     }
 )
 
@@ -152,6 +153,7 @@ SCHEMA_UPDATE_ALARM = vol.Schema(
         vol.Optional("link_page_path"): vol.Any(cv.string, None),
         vol.Optional("link_view_path"): vol.Any(cv.string, None),
         vol.Optional("suppress_milder"): cv.boolean,
+        vol.Optional("auto_ack_delay"): vol.Any(vol.Coerce(int), None),
     }
 )
 
@@ -340,6 +342,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
             link_page_path=call.data.get("link_page_path"),
             link_view_path=call.data.get("link_view_path"),
             suppress_milder=call.data.get("suppress_milder", True),
+            auto_ack_delay=call.data.get("auto_ack_delay"),
         )
         alarm = await manager.async_create_alarm(alarm)
         return _alarm_with_state(manager, alarm.id)
@@ -378,6 +381,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
             "link_page_path",
             "link_view_path",
             "suppress_milder",
+            "auto_ack_delay",
         ):
             if field in call.data:
                 setattr(alarm, field, call.data[field])
@@ -529,6 +533,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
                 link_page_path=d.get("link_page_path"),
                 link_view_path=d.get("link_view_path"),
                 suppress_milder=d.get("suppress_milder", True),
+                auto_ack_delay=d.get("auto_ack_delay"),
             )
             await manager.async_create_alarm(alarm)
             created += 1
