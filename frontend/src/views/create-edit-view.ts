@@ -200,26 +200,6 @@ export class CreateEditView extends LitElement {
     css`
       :host { display: block; padding: 16px; max-width: 840px; margin: 0 auto; }
       h2 { margin: 0 0 16px; font-size: 1.5em; font-weight: 400; }
-      .section {
-        background: var(--card-background-color, #fff);
-        border: 1px solid var(--divider-color, #e0e0e0);
-        border-radius: var(--ha-card-border-radius, 12px);
-        margin-bottom: 16px;
-      }
-      .section-header {
-        padding: 16px 16px 0;
-        font-size: 1.1em;
-        font-weight: 500;
-        color: var(--primary-text-color);
-      }
-      .section-header .sub {
-        display: block;
-        margin-top: 2px;
-        font-size: 0.8em;
-        font-weight: 400;
-        color: var(--secondary-text-color);
-      }
-      .section-body { padding: 16px; }
       .vars {
         margin-top: 8px;
         font-size: 0.8em;
@@ -709,9 +689,9 @@ export class CreateEditView extends LitElement {
 
   private _section(title: string, sub: string | undefined, schema: unknown[], extra: unknown = nothing) {
     return html`
-      <section class="section">
-        <div class="section-header">${title}${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>
-        <div class="section-body">
+      <section class="form-section">
+        <div class="form-section-header">${title}${sub ? html`<span class="sub">${sub}</span>` : nothing}</div>
+        <div class="form-section-body">
           <ha-form
             .hass=${this.hass}
             .data=${this._data}

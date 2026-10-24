@@ -124,10 +124,17 @@ export interface AlarmWithState extends AlarmDefinition {
   suppressed_by?: { id: string; name: string } | null;
 }
 
+/** A notify target with its own minimum priority. */
+export interface NotificationTargetEntry {
+  target: string;
+  min_priority: number;
+}
+
 export interface AlarmChannel {
   id: string;
   name: string;
-  notification_targets: string[];
+  /** Older channels store plain service names; newer ones store per-target entries. */
+  notification_targets: Array<string | NotificationTargetEntry>;
   min_priority: AlarmPriority;
   persistent_notification: boolean;
   mobile_push: boolean;
