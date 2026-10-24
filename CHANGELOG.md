@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.25.0] - 2026-10-24
+## [0.26.0] - 2026-10-24
 
 ### Changed
 
@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Dialogs** (alarm details, shelve, quick start guide, delete confirmations) use HA's `ha-dialog` when available and a native modal dialog otherwise. They close with Escape, keep focus inside and go full screen on phones. Deleting a channel now asks in a dialog instead of the browser's `confirm()`.
   - **All Alarms:** row actions are in a three-dot menu instead of up to five colored buttons; click a column header to sort; **Group by area** with collapsible groups; tables scroll sideways on narrow screens.
   - **Values** show with unit and HA's own state formatting (`hass.formatEntityState`), falling back to the last recorded value. Long external alarm messages are clamped to two lines with the full text as tooltip.
-  - **Times** are relative ("5 minutes ago") with the exact time as tooltip, in the user's HA language and time format, everywhere.
+  - **Times** are relative ("5 minutes ago") with the exact time as tooltip, in the user's HA language and time format, everywhere (including the new Noise tab).
   - **Feedback:** loading shows HA's spinner, confirmations and errors use HA's own toast (`hass-notification`), and "No active alarms" has an icon.
   - **Alarm details** show the channel name and a readable trigger sentence (e.g. "Below 20%, hysteresis 3%") instead of raw JSON, plus delays, reminder and auto-acknowledge.
   - **KPI strip:** the priority filter is one shared filter with the Priority column filter on the Active and All tabs, shows as a removable chip, and no longer jumps to the Active tab.
@@ -29,6 +29,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Saving an alarm now checks required fields and shows an error when saving fails, instead of failing silently (#6).
 - The alarm action picker used a `service` selector that current Home Assistant no longer has (it rendered blank). It is now a searchable list of all actions that also accepts a typed value.
 - Editing an external alarm no longer wipes its trigger configuration on save.
+
+## [0.25.0] - 2026-10-24
+
+### Added
+
+- **F21 — alarm noise analysis (Noise tab).** A new **Noise** tab in the Alarm Center helps you find and clean up alarm noise, following the ISA-18.2 / EEMUA 191 "bad actor" practice. Choose a period of 24 h, 7 days or 30 days. The tab shows:
+  - **Key figures**: activations in the period, average per day, share from the top 10, standing/stale, chattering, fleeting, and shelved/disabled.
+  - **Top 10 most frequent**: activation count, share of the total, and suppressed count. Suppressed activations are not counted as noise.
+  - **Standing alarms**: alarms active right now, longest first. More than 24 h counts as stale.
+  - **Chattering alarms**: 3 or more activations within 60 s.
+  - **Fleeting alarms**: activations that ended within 10 s.
+  - **Shelved and disabled**: alarms that are hidden right now, and for how long.
+  - Each row has a suggested action (for example, add hysteresis or a trigger delay) and an **Edit** button.
+  - Thresholds are defaults from the standards and are defined in `const.py`.
+- New WebSocket command `scada_alarm_manager/noise_report` (`hours`, 1–8760, default 168). It reads the full event log, without the 500-row limit of `event/list`.
+- The `default_tab: noise` option for the Alarm Center card.
 
 ## [0.24.0] - 2026-10-24
 

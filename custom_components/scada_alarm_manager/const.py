@@ -63,6 +63,14 @@ DEFAULT_HISTORY_RETENTION_DAYS = 90
 DEFAULT_SHELVE_DURATION = 15  # minutes
 DEFAULT_SCAN_INTERVAL = 30  # seconds for periodic checks
 
+# Alarm noise analysis thresholds (ISA-18.2 / EEMUA 191 defaults)
+NOISE_DEFAULT_HOURS = 168  # report period: 7 days
+NOISE_TOP_COUNT = 10  # size of the "most frequent" list
+NOISE_CHATTER_COUNT = 3  # activations ...
+NOISE_CHATTER_WINDOW = 60  # ... within this many seconds = chattering
+NOISE_FLEETING_SECONDS = 10  # active for less than this = fleeting
+NOISE_STALE_HOURS = 24  # active for longer than this = stale (standing)
+
 # Event names
 EVENT_ALARM_STATE_CHANGED = f"{DOMAIN}_state_changed"
 EVENT_ALARM_CREATED = f"{DOMAIN}_alarm_created"

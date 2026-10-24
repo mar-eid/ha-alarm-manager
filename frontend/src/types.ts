@@ -159,3 +159,49 @@ export interface AlarmStateChange {
   priority_name: string;
   channel_id: string | null;
 }
+
+// --- Noise analysis (F21) ---
+
+export interface NoiseAlarmInfo {
+  alarm_id: string;
+  name: string;
+  deleted: boolean;
+  priority?: AlarmPriority;
+  area?: string;
+  tag?: string;
+  source_entity_id?: string;
+  trigger_type?: TriggerType;
+  hysteresis?: number | null;
+  trigger_delay?: number | null;
+  clear_delay?: number | null;
+}
+
+export interface NoiseReport {
+  hours: number;
+  start: string;
+  end: string;
+  thresholds: {
+    top_count: number;
+    chatter_count: number;
+    chatter_window: number;
+    fleeting_seconds: number;
+    stale_hours: number;
+  };
+  kpis: {
+    activations: number;
+    per_day: number;
+    alarms_with_activations: number;
+    top_share: number;
+    suppressed: number;
+    standing: number;
+    stale: number;
+    chattering: number;
+    fleeting: number;
+    hidden: number;
+  };
+  top: (NoiseAlarmInfo & { count: number; share: number; suppressed: number; last: string })[];
+  standing: (NoiseAlarmInfo & { state: AlarmState; since: string; duration: number; stale: boolean })[];
+  chattering: (NoiseAlarmInfo & { bursts: number; max_burst: number; count: number })[];
+  fleeting: (NoiseAlarmInfo & { fleeting: number; activations: number; shortest: number })[];
+  hidden: (NoiseAlarmInfo & { kind: "shelved" | "disabled"; since: string | null; until: string | null })[];
+}

@@ -7,7 +7,7 @@
 <p align="center">
   Industrial-style alarm management for Home Assistant
   <br>
-  <strong>v0.25.0</strong>
+  <strong>v0.26.0</strong>
 </p>
 
 <p align="center">
@@ -46,6 +46,7 @@ A SCADA-inspired alarm system for Home Assistant. Define alarm rules on any enti
 | **HA-native selectors** | Entity picker, area picker in create/edit forms |
 | **Column filtering** | Filter tables by priority, name, state, entity, channel |
 | **Alarm detail dialog** | Click any alarm row for full details |
+| **Noise analysis** | Noise tab with top 10 most frequent, standing, chattering, fleeting and shelved/disabled alarms, with suggested fixes (ISA-18.2 / EEMUA 191) |
 | **External triggers** | `trigger` and `clear` services for hybrid automation/blueprint integration |
 | **Priority notifications** | Persistent, mobile push, and critical alerts based on priority level |
 | **Actionable notifications** | ACK or shelve directly from Companion App push notifications |
@@ -92,7 +93,7 @@ title: Alarm Center
 default_tab: active
 ```
 
-**Card options:** `title`, `default_tab` (active, all, history, channels, create-edit, statistics; the old value `settings` still works)
+**Card options:** `title`, `default_tab` (active, all, history, noise, channels, create-edit, statistics; the old value `settings` still works)
 
 ### SCADA Alarm Banner
 

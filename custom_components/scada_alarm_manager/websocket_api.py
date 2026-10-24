@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import voluptuous as vol
@@ -13,8 +13,16 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.loader import async_get_integration
 
 from .alarm_manager import AlarmManager
-from .const import DOMAIN, EVENT_ALARM_STATE_CHANGED, AlarmEventType, AlarmPriority, TriggerType
+from .const import (
+    DOMAIN,
+    EVENT_ALARM_STATE_CHANGED,
+    NOISE_DEFAULT_HOURS,
+    AlarmEventType,
+    AlarmPriority,
+    TriggerType,
+)
 from .models import AlarmChannel, AlarmDefinition
+from .noise_report import compute_noise_report
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,6 +55,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_channel_update)
     websocket_api.async_register_command(hass, ws_channel_delete)
     websocket_api.async_register_command(hass, ws_event_list)
+    websocket_api.async_register_command(hass, ws_noise_report)
     websocket_api.async_register_command(hass, ws_subscribe)
     websocket_api.async_register_command(hass, ws_version)
     websocket_api.async_register_command(hass, ws_alarm_trigger_action)
@@ -646,6 +655,43 @@ async def ws_event_list(
         event_dicts.append(d)
 
     connection.send_result(msg["id"], {"events": event_dicts})
+
+
+# --- Noise Analysis ---
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "scada_alarm_manager/noise_report",
+        vol.Optional("hours", default=NOISE_DEFAULT_HOURS): vol.All(vol.Coerce(int), vol.Range(min=1, max=8760)),
+    }
+)
+@websocket_api.async_response
+async def ws_noise_report(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Build the alarm noise (bad actor) report for the given period."""
+    manager = _get_manager(hass)
+    hours = msg.get("hours", NOISE_DEFAULT_HOURS)
+    now = datetime.now(UTC)
+    database = manager._database
+
+    rows = await database.async_get_noise_rows(now - timedelta(hours=hours))
+    disabled_since = await database.async_get_latest_event_times(AlarmEventType.DISABLED)
+    shelved_since = await database.async_get_latest_event_times(AlarmEventType.SHELVED)
+
+    report = compute_noise_report(
+        rows,
+        manager.alarms,
+        manager.runtime_states,
+        disabled_since,
+        shelved_since,
+        now,
+        hours,
+    )
+    connection.send_result(msg["id"], report)
 
 
 # --- Subscription ---
