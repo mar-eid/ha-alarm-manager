@@ -74,6 +74,7 @@ export class ScadaAlarmOverviewEditor extends LitElement {
             <option value="active">Active</option>
             <option value="all">All Alarms</option>
             <option value="history">History</option>
+            <option value="noise">Noise</option>
             <option value="channels">Channels</option>
             <option value="create-edit">Create / Edit</option>
             <option value="settings">Settings</option>

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.25.0] - 2026-10-24
+
+### Added
+
+- **F21 — alarm noise analysis (Noise tab).** A new **Noise** tab in the Alarm Center helps you find and clean up alarm noise, following the ISA-18.2 / EEMUA 191 "bad actor" practice. Choose a period of 24 h, 7 days or 30 days. The tab shows:
+  - **Key figures**: activations in the period, average per day, share from the top 10, standing/stale, chattering, fleeting, and shelved/disabled.
+  - **Top 10 most frequent**: activation count, share of the total, and suppressed count. Suppressed activations are not counted as noise.
+  - **Standing alarms**: alarms active right now, longest first. More than 24 h counts as stale.
+  - **Chattering alarms**: 3 or more activations within 60 s.
+  - **Fleeting alarms**: activations that ended within 10 s.
+  - **Shelved and disabled**: alarms that are hidden right now, and for how long.
+  - Each row has a suggested action (for example, add hysteresis or a trigger delay) and an **Edit** button.
+  - Thresholds are defaults from the standards and are defined in `const.py`.
+- New WebSocket command `scada_alarm_manager/noise_report` (`hours`, 1–8760, default 168). It reads the full event log, without the 500-row limit of `event/list`.
+- The `default_tab: noise` option for the Alarm Center card.
+
 ## [0.24.0] - 2026-10-24
 
 ### Added

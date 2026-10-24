@@ -9,7 +9,7 @@
  * YAML:
  *   type: custom:scada-alarm-overview
  *   title: Alarm Center        # optional, shown in header
- *   default_tab: active        # optional: active|all|history|channels|create-edit|settings
+ *   default_tab: active        # optional: active|all|history|noise|channels|create-edit|settings
  */
 
 import { LitElement, html, css, nothing, type PropertyValues } from "lit";
@@ -19,6 +19,7 @@ import {
   mdiBellRing,
   mdiFormatListChecks,
   mdiHistory,
+  mdiChartBar,
   mdiBroadcast,
   mdiPlusBox,
   mdiCog,
@@ -36,11 +37,12 @@ import "./components/help-dialog";
 import "./views/active-alarms-view";
 import "./views/all-alarms-view";
 import "./views/history-view";
+import "./views/noise-view";
 import "./views/channels-view";
 import "./views/create-edit-view";
 import "./views/settings-view";
 
-type TabId = "active" | "all" | "history" | "channels" | "create-edit" | "settings";
+type TabId = "active" | "all" | "history" | "noise" | "channels" | "create-edit" | "settings";
 
 interface OverviewConfig {
   type: string;
@@ -54,6 +56,7 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: "active", label: "Active", icon: mdiBellRing },
   { id: "all", label: "All Alarms", icon: mdiFormatListChecks },
   { id: "history", label: "History", icon: mdiHistory },
+  { id: "noise", label: "Noise", icon: mdiChartBar },
   { id: "channels", label: "Channels", icon: mdiBroadcast },
   { id: "create-edit", label: "Create / Edit", icon: mdiPlusBox },
   { id: "settings", label: "Settings", icon: mdiCog },
@@ -372,6 +375,8 @@ export class ScadaAlarmOverview extends LitElement {
         ></all-alarms-view>`;
       case "history":
         return html`<history-view .hass=${this.hass}></history-view>`;
+      case "noise":
+        return html`<noise-view .hass=${this.hass}></noise-view>`;
       case "channels":
         return html`<channels-view .hass=${this.hass}></channels-view>`;
       case "create-edit":

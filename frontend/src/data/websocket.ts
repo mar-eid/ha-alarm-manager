@@ -8,6 +8,7 @@ import type {
   AlarmStateChange,
   AlarmWithState,
   HomeAssistant,
+  NoiseReport,
 } from "../types";
 
 // --- Integration metadata ---
@@ -220,6 +221,18 @@ export const fetchEvents = async (
     ...params,
   });
   return result.events;
+};
+
+// --- Noise analysis ---
+
+export const fetchNoiseReport = async (
+  hass: HomeAssistant,
+  hours: number
+): Promise<NoiseReport> => {
+  return hass.connection.sendMessagePromise({
+    type: "scada_alarm_manager/noise_report",
+    hours,
+  });
 };
 
 // --- Subscription ---
