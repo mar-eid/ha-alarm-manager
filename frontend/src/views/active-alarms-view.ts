@@ -1,4 +1,4 @@
-import { LitElement, html, css, nothing } from "lit";
+import { LitElement, html, css, nothing, unsafeCSS } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import {
   mdiMagnify,
@@ -7,9 +7,12 @@ import {
   mdiViewList,
   mdiViewGrid,
 } from "@mdi/js";
-import { sharedStyles, getPriorityColor, getStateColor } from "../styles/shared-styles";
+import { sharedStyles, getPriorityColor } from "../styles/shared-styles";
 import { fetchAlarms, fetchChannels, acknowledgeAlarm, acknowledgeAllAlarms, shelveAlarm, unshelveAlarm, triggerAlarmAction, subscribeAlarmChanges } from "../data/websocket";
-import { STATE_LABELS, PRIORITY_LABELS, type HomeAssistant, type AlarmWithState, type AlarmChannel } from "../types";
+import { STATE_LABELS, PRIORITY_LABELS, type HomeAssistant, type AlarmWithState, type AlarmChannel, type AlarmPriority } from "../types";
+import { areaName, errorMessage, notify } from "../utils/format";
+import { onActivateKey, renderEmpty, renderLoading, renderStateChip, renderValue } from "../utils/render";
+import "../components/rel-time";
 import "../components/severity-badge";
 import "../components/alarm-detail-dialog";
 import "../components/shelve-dialog";
@@ -29,10 +32,8 @@ export class ActiveAlarmsView extends LitElement {
   @state() private _shelveTarget?: AlarmWithState;
   @state() private _layout: "table" | "cards" = "table";
   @state() private _search = "";
-  @state() private _toast = "";
 
-  // Column filters
-  @state() private _filterPriority = "";
+  // Column filters (the priority filter is shared with the KPI strip via `priorityFilter`)
   @state() private _filterState = "";
   @state() private _filterTag = "";
   @state() private _filterChannel = "";
@@ -44,10 +45,6 @@ export class ActiveAlarmsView extends LitElement {
       :host { display: block; padding: 16px; }
       .toolbar {
         display: flex; gap: 8px; margin-bottom: 14px; align-items: center; flex-wrap: wrap;
-      }
-      .count-badge {
-        display: inline-flex; align-items: center; gap: 4px;
-        padding: 4px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 600;
       }
       .search-box {
         display: flex; align-items: center; gap: 6px; flex: 1; min-width: 180px; max-width: 320px;
@@ -65,16 +62,12 @@ export class ActiveAlarmsView extends LitElement {
         background: var(--card-background-color, #fff); color: var(--primary-text-color);
       }
       .search-box .clear {
-        cursor: pointer; --mdc-icon-size: 16px; display: flex; align-items: center;
+        display: flex; align-items: center; justify-content: center;
+        width: 24px; height: 24px; padding: 0; border: none; border-radius: 50%;
+        background: none; cursor: pointer; color: inherit; --mdc-icon-size: 16px;
       }
-      .ack-all {
-        display: inline-flex; align-items: center; gap: 5px; height: 34px; padding: 0 14px;
-        border: none; border-radius: 9999px; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600;
-        background: var(--primary-color, #03a9f4); color: #fff; --mdc-icon-size: 17px;
-        transition: opacity .15s;
-      }
-      .ack-all:hover { opacity: 0.85; }
-      .ack-all:disabled { opacity: 0.4; cursor: default; }
+      .search-box .clear:hover { background: var(--scada-hover-color); }
+      .search-box:focus-within { border-color: var(--primary-color, #03a9f4); }
       .layout-toggle {
         display: flex; gap: 2px; margin-left: auto; --mdc-icon-size: 18px;
       }
@@ -83,33 +76,19 @@ export class ActiveAlarmsView extends LitElement {
         border: 1px solid var(--divider-color, #e0e0e0); background: transparent; cursor: pointer;
         color: var(--secondary-text-color); border-radius: 6px;
       }
-      .layout-toggle button.active {
-        background: var(--primary-color); color: #fff; border-color: var(--primary-color);
+      .layout-toggle button[aria-pressed="true"] {
+        background: var(--primary-color); color: var(--text-primary-color, #fff); border-color: var(--primary-color);
       }
       .flashing { animation: flash 1s infinite alternate; }
       @keyframes flash { from { opacity: 1; } to { opacity: 0.5; } }
       @media (prefers-reduced-motion: reduce) { .flashing { animation: none; } }
-      .alarm-row-critical { border-left: 3px solid var(--alarm-critical); }
-      .alarm-row-high { border-left: 3px solid var(--alarm-high); }
-      tbody tr { cursor: pointer; }
-      .time-ago { font-size: 0.8em; color: var(--secondary-text-color); }
-      .filter-row input, .filter-row select {
-        width: 100%; padding: 4px 6px; font-size: 0.8em;
-        border: 1px solid var(--divider-color, #ccc); border-radius: 4px;
-        background: var(--card-background-color, white);
-        color: var(--primary-text-color, #333);
-      }
+      .alarm-row-critical td:first-child { box-shadow: inset 3px 0 0 ${unsafeCSS(getPriorityColor(3))}; }
+      .alarm-row-high td:first-child { box-shadow: inset 3px 0 0 ${unsafeCSS(getPriorityColor(2))}; }
+      .row-actions { white-space: nowrap; }
       .cards-grid {
         display: grid; gap: 14px;
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
       }
-      .toast {
-        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 999;
-        padding: 10px 20px; border-radius: 9999px; font-size: 13px; font-weight: 500;
-        background: var(--primary-text-color, #333); color: var(--card-background-color, #fff);
-        box-shadow: 0 4px 16px rgba(0,0,0,.2); animation: toast-in .25s ease;
-      }
-      @keyframes toast-in { from { opacity: 0; transform: translateX(-50%) translateY(10px); } }
     `,
   ];
 
@@ -157,15 +136,14 @@ export class ActiveAlarmsView extends LitElement {
   private get _filtered(): AlarmWithState[] {
     return this._alarms
       .filter((a) => {
-        const pf = this.priorityFilter || this._filterPriority;
-        if (pf && String(a.priority) !== pf) return false;
+        if (this.priorityFilter && String(a.priority) !== this.priorityFilter) return false;
         if (this._filterState && a.runtime.state !== this._filterState) return false;
         if (this._filterTag && a.tag !== this._filterTag) return false;
         if (this._filterChannel && a.channel_id !== this._filterChannel) return false;
         if (this._search) {
           const q = this._search.toLowerCase();
           if (!a.name.toLowerCase().includes(q) &&
-              !a.area.toLowerCase().includes(q) &&
+              !areaName(this.hass, a.area).toLowerCase().includes(q) &&
               !a.source_entity_id.toLowerCase().includes(q)) return false;
         }
         return true;
@@ -174,21 +152,34 @@ export class ActiveAlarmsView extends LitElement {
   }
 
   private _showToast(msg: string) {
-    this._toast = msg;
-    setTimeout(() => (this._toast = ""), 2600);
+    notify(this, msg);
+  }
+
+  private async _run(action: () => Promise<unknown>, success?: string) {
+    try {
+      await action();
+      if (success) this._showToast(success);
+    } catch (err) {
+      this._showToast(`Failed: ${errorMessage(err)}`);
+    }
+  }
+
+  private _setPriorityFilter(priority: string) {
+    this.dispatchEvent(new CustomEvent("priority-filter", { detail: { priority }, bubbles: true, composed: true }));
   }
 
   private async _ack(alarmId: string) {
     if (!this.hass) return;
-    await acknowledgeAlarm(this.hass, alarmId);
-    this._showToast("Alarm acknowledged");
+    await this._run(() => acknowledgeAlarm(this.hass!, alarmId), "Alarm acknowledged");
     this._loadAlarms();
   }
 
   private async _ackAll() {
     if (!this.hass) return;
-    const result = await acknowledgeAllAlarms(this.hass);
-    this._showToast(`Acknowledged ${result.acknowledged} alarms`);
+    await this._run(async () => {
+      const result = await acknowledgeAllAlarms(this.hass!);
+      this._showToast(`Acknowledged ${result.acknowledged} alarms`);
+    });
     this._loadAlarms();
   }
 
@@ -198,23 +189,21 @@ export class ActiveAlarmsView extends LitElement {
 
   private async _unshelve(alarmId: string) {
     if (!this.hass) return;
-    await unshelveAlarm(this.hass, alarmId);
-    this._showToast("Alarm unshelved");
+    await this._run(() => unshelveAlarm(this.hass!, alarmId), "Alarm unshelved");
     this._loadAlarms();
   }
 
   private async _triggerAction(alarmId: string) {
     if (!this.hass) return;
-    await triggerAlarmAction(this.hass, alarmId);
-    this._showToast("Action triggered");
+    await this._run(() => triggerAlarmAction(this.hass!, alarmId), "Action triggered");
   }
 
   private async _testAlarm(alarmId: string) {
     if (!this.hass) return;
-    await this.hass.callService("scada_alarm_manager", "test_alarm_notification", {
-      alarm_id: alarmId,
-    });
-    this._showToast("Test notification sent");
+    await this._run(
+      () => this.hass!.callService("scada_alarm_manager", "test_alarm_notification", { alarm_id: alarmId }),
+      "Test notification sent"
+    );
   }
 
   private _edit(alarmId: string) {
@@ -228,16 +217,9 @@ export class ActiveAlarmsView extends LitElement {
   }
 
   render() {
-    if (this._loading) return html`<div class="empty-state">Loading...</div>`;
+    if (this._loading) return renderLoading();
 
-    if (this._alarms.length === 0) {
-      return html`
-        <div class="empty-state">
-          <div class="icon">&#x2714;</div>
-          <div>No active alarms</div>
-        </div>
-      `;
-    }
+    if (this._alarms.length === 0) return renderEmpty("No active alarms");
 
     const filtered = this._filtered;
     const unackedCount = this._alarms.filter((a) => UNACKED.includes(a.runtime.state)).length;
@@ -245,22 +227,29 @@ export class ActiveAlarmsView extends LitElement {
 
     return html`
       <div class="toolbar">
-        <span class="count-badge" style="background: ${getPriorityColor(3)}22; color: ${getPriorityColor(3)}">
-          ${this._alarms.length} active
-        </span>
+        <span class="status-chip" style=${`--c:${getPriorityColor(3)}`}>${this._alarms.length} active</span>
         ${filtered.length !== this._alarms.length
           ? html`<span style="font-size: 0.85em; color: var(--secondary-text-color);">(${filtered.length} shown)</span>`
           : ""}
 
         <div class="search-box">
           <ha-svg-icon .path=${mdiMagnify}></ha-svg-icon>
-          <input type="text" placeholder="Search alarms..."
+          <input type="text" placeholder="Search alarms..." aria-label="Search alarms"
             .value=${this._search}
             @input=${(e: Event) => (this._search = (e.target as HTMLInputElement).value)} />
           ${this._search
-            ? html`<span class="clear" @click=${() => (this._search = "")}><ha-svg-icon .path=${mdiClose}></ha-svg-icon></span>`
+            ? html`<button class="clear" aria-label="Clear search" title="Clear search" @click=${() => (this._search = "")}>
+                <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+              </button>`
             : nothing}
         </div>
+
+        ${this.priorityFilter
+          ? html`<button class="filter-chip" title="Clear priority filter" @click=${() => this._setPriorityFilter("")}>
+              Priority: ${PRIORITY_LABELS[Number(this.priorityFilter) as AlarmPriority]}
+              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
+            </button>`
+          : nothing}
 
         <select class="toolbar-filter" title="Filter by tag"
           .value=${this._filterTag}
@@ -276,16 +265,16 @@ export class ActiveAlarmsView extends LitElement {
           ${this._channels.map((ch) => html`<option value=${ch.id}>${ch.name}</option>`)}
         </select>
 
-        <button class="ack-all" ?disabled=${unackedCount === 0} @click=${this._ackAll} title="Acknowledge all unacknowledged alarms">
+        <button class="btn btn-primary" ?disabled=${unackedCount === 0} @click=${this._ackAll} title="Acknowledge all unacknowledged alarms">
           <ha-svg-icon .path=${mdiCheckAll}></ha-svg-icon>
           ACK All${unackedCount > 0 ? ` (${unackedCount})` : ""}
         </button>
 
         <div class="layout-toggle">
-          <button class="${this._layout === "table" ? "active" : ""}" @click=${() => (this._layout = "table")} title="Table view">
+          <button aria-pressed=${this._layout === "table" ? "true" : "false"} @click=${() => (this._layout = "table")} title="Table view" aria-label="Table view">
             <ha-svg-icon .path=${mdiViewList}></ha-svg-icon>
           </button>
-          <button class="${this._layout === "cards" ? "active" : ""}" @click=${() => (this._layout = "cards")} title="Cards view">
+          <button aria-pressed=${this._layout === "cards" ? "true" : "false"} @click=${() => (this._layout = "cards")} title="Cards view" aria-label="Cards view">
             <ha-svg-icon .path=${mdiViewGrid}></ha-svg-icon>
           </button>
         </div>
@@ -295,6 +284,7 @@ export class ActiveAlarmsView extends LitElement {
         <div class="cards-grid">
           ${filtered.map((a) => html`
             <alarm-tile-card
+              .hass=${this.hass}
               .alarm=${a}
               @ack-alarm=${(e: CustomEvent) => this._ack(e.detail.id)}
               @shelve-alarm=${(e: CustomEvent) => this._shelve(e.detail.alarm)}
@@ -302,6 +292,7 @@ export class ActiveAlarmsView extends LitElement {
             </alarm-tile-card>`)}
         </div>
       ` : html`
+        <div class="table-wrap">
         <table>
           <thead>
             <tr>
@@ -315,14 +306,14 @@ export class ActiveAlarmsView extends LitElement {
             </tr>
             <tr class="filter-row">
               <th>
-                <select @change=${(e: Event) => (this._filterPriority = (e.target as HTMLSelectElement).value)}>
-                  <option value="">All</option>
-                  ${([0, 1, 2, 3] as const).map((p) => html`<option value=${p}>${PRIORITY_LABELS[p]}</option>`)}
+                <select aria-label="Filter by priority" @change=${(e: Event) => this._setPriorityFilter((e.target as HTMLSelectElement).value)}>
+                  <option value="" ?selected=${!this.priorityFilter}>All</option>
+                  ${([3, 2, 1, 0] as const).map((p) => html`<option value=${p} ?selected=${this.priorityFilter === String(p)}>${PRIORITY_LABELS[p]}</option>`)}
                 </select>
               </th>
               <th></th>
               <th>
-                <select @change=${(e: Event) => (this._filterState = (e.target as HTMLSelectElement).value)}>
+                <select aria-label="Filter by state" @change=${(e: Event) => (this._filterState = (e.target as HTMLSelectElement).value)}>
                   <option value="">All</option>
                   ${activeStates.map((s) => html`<option value=${s}>${STATE_LABELS[s]}</option>`)}
                 </select>
@@ -337,26 +328,33 @@ export class ActiveAlarmsView extends LitElement {
             ${filtered.map((alarm) => {
               const rowClass = alarm.priority >= 3 ? "alarm-row-critical" : alarm.priority >= 2 ? "alarm-row-high" : "";
               const isUnacked = UNACKED.includes(alarm.runtime.state);
+              const open = () => (this._detailAlarm = alarm);
+              const stop = (e: Event) => e.stopPropagation();
               return html`
-                <tr class="${rowClass} ${alarm.priority >= 3 && isUnacked ? "flashing" : ""}" @click=${() => (this._detailAlarm = alarm)}>
+                <tr class="clickable ${rowClass} ${alarm.priority >= 3 && isUnacked ? "flashing" : ""}" tabindex="0"
+                  aria-label=${`${alarm.name}, ${STATE_LABELS[alarm.runtime.state] ?? alarm.runtime.state}`}
+                  @click=${open} @keydown=${onActivateKey(open)}>
                   <td><severity-badge .priority=${alarm.priority}></severity-badge></td>
-                  <td><strong>${alarm.name}</strong>${alarm.area ? html`<br><span class="time-ago">${alarm.area}</span>` : ""}</td>
-                  <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${getStateColor(alarm.runtime.state)}" title="${STATE_LABELS[alarm.runtime.state] ?? alarm.runtime.state}"></span></td>
-                  <td style="font-size:0.85em">${alarm.source_entity_id}</td>
-                  <td>${alarm.runtime.last_value ?? "-"}</td>
-                  <td class="time-ago">${alarm.runtime.triggered_at ? new Date(alarm.runtime.triggered_at).toLocaleString() : "-"}</td>
-                  <td class="actions">
-                    ${isUnacked ? html`<button class="btn btn-primary btn-small" title="Acknowledge this alarm" @click=${(e: Event) => { e.stopPropagation(); this._ack(alarm.id); }}>ACK</button>` : ""}
-                    <button class="btn btn-small" style="background: var(--alarm-shelved); color: white;" title="Temporarily suppress this alarm" @click=${(e: Event) => { e.stopPropagation(); this._shelve(alarm); }}>Shelve</button>
+                  <td><strong>${alarm.name}</strong>${alarm.area ? html`<br><span class="muted">${areaName(this.hass, alarm.area)}</span>` : ""}</td>
+                  <td>${renderStateChip(alarm.runtime.state)}</td>
+                  <td class="mono">${alarm.source_entity_id}</td>
+                  <td>${renderValue(this.hass, alarm)}</td>
+                  <td class="muted"><rel-time .hass=${this.hass} .datetime=${alarm.runtime.triggered_at}></rel-time></td>
+                  <td class="row-actions" @keydown=${stop}>
+                    ${isUnacked ? html`<button class="btn btn-primary btn-small" title="Acknowledge this alarm" @click=${(e: Event) => { stop(e); this._ack(alarm.id); }}>ACK</button>` : ""}
+                    <button class="btn btn-shelve btn-small" title="Temporarily suppress this alarm" @click=${(e: Event) => { stop(e); this._shelve(alarm); }}>Shelve</button>
                   </td>
                 </tr>
               `;
             })}
           </tbody>
         </table>
+        </div>
       `}
 
       <alarm-detail-dialog
+        .hass=${this.hass}
+        .channels=${this._channels}
         .alarm=${this._detailAlarm}
         .open=${!!this._detailAlarm}
         @close=${() => (this._detailAlarm = undefined)}
@@ -374,14 +372,12 @@ export class ActiveAlarmsView extends LitElement {
         .alarmName=${this._shelveTarget?.name ?? ""}
         @dialog-closed=${() => (this._shelveTarget = undefined)}
         @shelve-confirm=${async (e: CustomEvent) => {
-          await shelveAlarm(this.hass!, e.detail.alarmId, e.detail.minutes);
           this._shelveTarget = undefined;
-          this._showToast("Alarm shelved");
+          await this._run(() => shelveAlarm(this.hass!, e.detail.alarmId, e.detail.minutes), "Alarm shelved");
           this._loadAlarms();
         }}
       ></shelve-dialog>
 
-      ${this._toast ? html`<div class="toast">${this._toast}</div>` : nothing}
     `;
   }
 }

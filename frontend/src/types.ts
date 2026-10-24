@@ -20,6 +20,18 @@ export interface HomeAssistant {
   language: string;
   user: { id: string; name: string; is_admin: boolean };
   panels?: Record<string, { title?: string; url_path: string; component_name?: string }>;
+  /** User locale settings (HA 2023.x+). */
+  locale?: {
+    language: string;
+    number_format?: string;
+    time_format?: string;
+    date_format?: string;
+    time_zone?: string;
+  };
+  config?: { time_zone?: string };
+  areas?: Record<string, { area_id: string; name: string }>;
+  /** Formats a state with unit/translation the way HA's own UI does (HA 2023.9+). */
+  formatEntityState?: (stateObj: HassState, state?: string) => string;
 }
 
 export interface HassState {
@@ -36,13 +48,6 @@ export const PRIORITY_LABELS: Record<AlarmPriority, string> = {
   1: "Warning",
   2: "High",
   3: "Critical",
-};
-
-export const PRIORITY_COLORS: Record<AlarmPriority, string> = {
-  0: "#2196F3",
-  1: "#FF9800",
-  2: "#FF5722",
-  3: "#F44336",
 };
 
 export type AlarmState =

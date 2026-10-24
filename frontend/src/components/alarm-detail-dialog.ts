@@ -1,79 +1,123 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css, nothing, type PropertyValues } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { sharedStyles, getPriorityColor, getStateColor } from "../styles/shared-styles";
-import { PRIORITY_LABELS, STATE_LABELS, type AlarmWithState } from "../types";
+import { sharedStyles } from "../styles/shared-styles";
+import { PRIORITY_LABELS, type AlarmChannel, type AlarmWithState, type HomeAssistant } from "../types";
+import { areaName, channelName, describeTrigger, formatDateTime, formatDuration } from "../utils/format";
+import { renderStateChip, renderValue } from "../utils/render";
+import "./scada-dialog";
+import "./severity-badge";
+import "./rel-time";
+
+const TRIGGER_TYPE_LABELS: Record<string, string> = {
+  analog: "Analog threshold",
+  digital: "Digital (state match)",
+  custom_state: "Custom state (value list)",
+  external: "External",
+};
 
 @customElement("alarm-detail-dialog")
 export class AlarmDetailDialog extends LitElement {
+  @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) alarm?: AlarmWithState;
+  @property({ attribute: false }) channels: AlarmChannel[] = [];
   @property({ type: Boolean }) open = false;
+
+  /** Last shown alarm, kept so the content doesn't vanish during the close animation. */
+  private _shown?: AlarmWithState;
 
   static styles = [
     sharedStyles,
     css`
-      .overlay {
-        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        display: flex; align-items: center; justify-content: center;
-        z-index: 1000;
+      .title-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
       }
-      .dialog {
-        background: var(--card-background-color, white);
-        border-radius: 12px;
-        width: 90%; max-width: 600px; max-height: 80vh;
-        overflow-y: auto;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      .title-row .meta {
+        font-size: 0.85em;
+        color: var(--secondary-text-color);
       }
-      .dialog-header {
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 16px 20px;
-        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      .section {
+        margin-bottom: 20px;
       }
-      .dialog-header h2 { margin: 0; font-size: 1.1em; }
-      .close-btn {
-        background: none; border: none; font-size: 1.4em;
-        cursor: pointer; color: var(--secondary-text-color);
-        padding: 4px 8px; border-radius: 4px;
-      }
-      .close-btn:hover { background: var(--secondary-background-color, #f5f5f5); }
-      .dialog-body { padding: 20px; }
-      .section { margin-bottom: 20px; }
       .section-title {
-        font-size: 0.8em; font-weight: 600; text-transform: uppercase;
-        color: var(--secondary-text-color); margin-bottom: 8px;
+        font-size: 0.8em;
+        font-weight: 500;
+        text-transform: uppercase;
+        color: var(--secondary-text-color);
+        margin-bottom: 4px;
         letter-spacing: 0.5px;
       }
-      .field { display: flex; justify-content: space-between; padding: 6px 0; }
-      .field-label { color: var(--secondary-text-color); font-size: 0.9em; }
-      .field-value { font-weight: 500; font-size: 0.9em; text-align: right; max-width: 60%; word-break: break-all; }
-      .entity-link {
-        color: var(--primary-color);
-        cursor: pointer;
-        font-weight: 500;
+      .field {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 16px;
+        padding: 6px 0;
+        border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      }
+      .field:last-child {
+        border-bottom: none;
+      }
+      .field-label {
+        flex: none;
+        color: var(--secondary-text-color);
+        font-size: 0.9em;
+      }
+      .field-value {
         font-size: 0.9em;
         text-align: right;
-        max-width: 60%;
-        word-break: break-all;
+        min-width: 0;
+        overflow-wrap: anywhere;
       }
-      .entity-link:hover { text-decoration: underline; }
-      .priority-dot {
-        display: inline-block; width: 10px; height: 10px;
-        border-radius: 50%; margin-right: 6px; vertical-align: middle;
+      .field-value .value-text {
+        max-width: none;
+        -webkit-line-clamp: 6;
       }
-      .description { font-size: 0.9em; color: var(--primary-text-color); padding: 8px 0; }
-      .flags { display: flex; gap: 8px; flex-wrap: wrap; }
-      .flag {
-        padding: 3px 10px; border-radius: 12px; font-size: 0.75em; font-weight: 600;
-        background: var(--secondary-background-color, #f5f5f5);
+      .entity-link {
+        padding: 0;
+        border: none;
+        background: none;
+        font: inherit;
+        font-size: 0.9em;
+        color: var(--primary-color);
+        cursor: pointer;
+        text-align: right;
+        overflow-wrap: anywhere;
+      }
+      .entity-link:hover {
+        text-decoration: underline;
+      }
+      .description {
+        font-size: 0.9em;
         color: var(--primary-text-color);
+        margin: 0 0 16px;
       }
-      .flag.active { background: var(--primary-color); color: white; }
-      .dialog-footer {
-        display: flex; gap: 8px; justify-content: flex-end; padding: 12px 20px;
-        border-top: 1px solid var(--divider-color, #e0e0e0);
+      .flags {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 6px 0;
+      }
+      .flag {
+        padding: 2px 10px;
+        border-radius: 8px;
+        font-size: 0.8em;
+        border: 1px solid var(--divider-color, #e0e0e0);
+        color: var(--secondary-text-color);
+      }
+      .flag.on {
+        border-color: transparent;
+        background: color-mix(in srgb, var(--primary-color, #03a9f4) 14%, transparent);
+        color: var(--primary-text-color);
       }
     `,
   ];
+
+  willUpdate(changed: PropertyValues) {
+    if (changed.has("alarm") && this.alarm) this._shown = this.alarm;
+  }
 
   private _close() {
     this.open = false;
@@ -84,141 +128,112 @@ export class AlarmDetailDialog extends LitElement {
     this.dispatchEvent(new CustomEvent(type, { detail, bubbles: true, composed: true }));
   }
 
+  private _act(type: string, detail: Record<string, unknown>) {
+    this._emit(type, detail);
+    this._close();
+  }
+
   private _openEntityInfo() {
-    this.dispatchEvent(
-      new CustomEvent("hass-more-info", {
-        detail: { entityId: this.alarm?.source_entity_id },
-        bubbles: true,
-        composed: true,
-      }),
-    );
+    this._emit("hass-more-info", { entityId: this._shown?.source_entity_id });
+  }
+
+  private _field(label: string, value: unknown) {
+    return html`<div class="field"><span class="field-label">${label}</span><span class="field-value">${value}</span></div>`;
+  }
+
+  private _time(iso: string | null | undefined) {
+    return iso ? html`<rel-time .hass=${this.hass} .datetime=${iso}></rel-time>` : "—";
+  }
+
+  private _renderBody(a: AlarmWithState) {
+    const r = a.runtime;
+    const hass = this.hass;
+    return html`
+      <div class="title-row">
+        <severity-badge .priority=${a.priority}></severity-badge>
+        ${renderStateChip(r.state)}
+        <span class="meta">${PRIORITY_LABELS[a.priority]}</span>
+      </div>
+      ${a.description ? html`<p class="description">${a.description}</p>` : nothing}
+
+      <div class="section">
+        <div class="section-title">Status</div>
+        ${this._field("Value", renderValue(hass, a))}
+        ${this._field("Triggered", this._time(r.triggered_at))}
+        ${r.returned_at ? this._field("Returned to normal", this._time(r.returned_at)) : nothing}
+        ${r.acked_at ? this._field("Acknowledged", html`${this._time(r.acked_at)}${r.acked_by ? ` by ${r.acked_by}` : ""}`) : nothing}
+        ${r.shelved_until ? this._field("Shelved until", formatDateTime(hass, r.shelved_until)) : nothing}
+        ${a.suppressed_by ? this._field("Suppressed by", a.suppressed_by.name) : nothing}
+      </div>
+
+      <div class="section">
+        <div class="section-title">Definition</div>
+        <div class="field">
+          <span class="field-label">Source entity</span>
+          <button class="entity-link" @click=${this._openEntityInfo}>${a.source_entity_id}</button>
+        </div>
+        ${this._field("Trigger", html`${describeTrigger(hass, a)}<br /><span class="muted">${TRIGGER_TYPE_LABELS[a.trigger_type] ?? a.trigger_type}</span>`)}
+        ${a.trigger_delay ? this._field("On-delay", formatDuration(a.trigger_delay)) : nothing}
+        ${a.clear_delay ? this._field("Clear delay", formatDuration(a.clear_delay)) : nothing}
+        ${this._field("Channel", a.channel_id ? channelName(this.channels, a.channel_id) : "No channel")}
+        ${a.area ? this._field("Area", areaName(hass, a.area)) : nothing}
+        ${a.equipment ? this._field("Equipment", a.equipment) : nothing}
+        ${a.tag ? this._field("Tag", a.tag) : nothing}
+      </div>
+
+      <div class="section">
+        <div class="section-title">Behavior</div>
+        <div class="flags">
+          <span class="flag ${a.enabled ? "on" : ""}">Enabled</span>
+          <span class="flag ${a.latching ? "on" : ""}">Latching</span>
+          <span class="flag ${a.ack_required ? "on" : ""}">Acknowledge required</span>
+          <span class="flag ${a.auto_clear ? "on" : ""}">Auto clear</span>
+          ${a.trigger_type === "analog" ? html`<span class="flag ${a.suppress_milder ? "on" : ""}">Suppress milder</span>` : nothing}
+        </div>
+        ${a.repeat_interval ? this._field("Reminder", `Every ${formatDuration(a.repeat_interval)}`) : nothing}
+        ${a.auto_ack_delay ? this._field("Auto-acknowledge", `${formatDuration(a.auto_ack_delay)} after return to normal`) : nothing}
+      </div>
+
+      <div class="section">
+        <div class="section-title">Metadata</div>
+        ${this._field("Alarm ID", html`<span class="mono">${a.id}</span>`)}
+        ${this._field("Created", formatDateTime(hass, a.created_at))}
+        ${this._field("Updated", formatDateTime(hass, a.updated_at))}
+      </div>
+    `;
+  }
+
+  private _renderFooter(a: AlarmWithState) {
+    const s = a.runtime.state;
+    const unacked = s === "active_unacknowledged" || s === "returned_to_normal_unacknowledged";
+    const external = a.trigger_type === "external";
+    return html`
+      ${external
+        ? html`<button slot="footer" class="btn btn-plain" disabled title="External alarms are managed by automations/blueprints and can't be edited here">Edit</button>`
+        : html`<button slot="footer" class="btn btn-plain" @click=${() => this._act("edit-alarm", { id: a.id })}>Edit</button>`}
+      ${a.channel_id
+        ? html`<button slot="footer" class="btn btn-plain" title="Send this alarm's real notification as a test" @click=${() => this._act("test-alarm", { id: a.id })}>Test notification</button>`
+        : nothing}
+      ${a.action_service
+        ? html`<button slot="footer" class="btn" title="Run this alarm's configured action" @click=${() => this._act("trigger-action", { id: a.id })}>${a.action_label || "Action"}</button>`
+        : nothing}
+      ${s === "shelved"
+        ? html`<button slot="footer" class="btn btn-shelve" @click=${() => this._act("unshelve-alarm", { id: a.id })}>Unshelve</button>`
+        : s !== "disabled"
+        ? html`<button slot="footer" class="btn btn-shelve" @click=${() => this._act("shelve-alarm", { alarm: a })}>Shelve</button>`
+        : nothing}
+      ${unacked
+        ? html`<button slot="footer" class="btn btn-primary" @click=${() => this._act("ack-alarm", { id: a.id })}>Acknowledge</button>`
+        : nothing}
+    `;
   }
 
   render() {
-    if (!this.open || !this.alarm) return html``;
-    const a = this.alarm;
-    const r = a.runtime;
-
+    const a = this.alarm ?? this._shown;
     return html`
-      <div class="overlay" @click=${this._close}>
-        <div class="dialog" @click=${(e: Event) => e.stopPropagation()}>
-          <div class="dialog-header">
-            <h2>
-              <span class="priority-dot" style="background: ${getPriorityColor(a.priority)}"></span>
-              ${a.name}
-            </h2>
-            <button class="close-btn" @click=${this._close}>&times;</button>
-          </div>
-          <div class="dialog-body">
-            ${a.description ? html`<div class="description">${a.description}</div>` : ""}
-
-            <div class="section">
-              <div class="section-title">State</div>
-              <div class="field">
-                <span class="field-label">Current State</span>
-                <span class="field-value"><span class="badge" style="background: ${getStateColor(r.state)}">${STATE_LABELS[r.state] ?? r.state}</span></span>
-              </div>
-              <div class="field">
-                <span class="field-label">Last Value</span>
-                <span class="field-value">${r.last_value ?? "-"}</span>
-              </div>
-              <div class="field">
-                <span class="field-label">Triggered At</span>
-                <span class="field-value">${r.triggered_at ? new Date(r.triggered_at).toLocaleString() : "-"}</span>
-              </div>
-              ${r.acked_at ? html`
-                <div class="field">
-                  <span class="field-label">Acknowledged At</span>
-                  <span class="field-value">${new Date(r.acked_at).toLocaleString()}</span>
-                </div>
-                <div class="field">
-                  <span class="field-label">Acknowledged By</span>
-                  <span class="field-value">${r.acked_by ?? "-"}</span>
-                </div>
-              ` : ""}
-              ${r.shelved_until ? html`
-                <div class="field">
-                  <span class="field-label">Shelved Until</span>
-                  <span class="field-value">${new Date(r.shelved_until).toLocaleString()}</span>
-                </div>
-              ` : ""}
-            </div>
-
-            <div class="section">
-              <div class="section-title">Definition</div>
-              <div class="field">
-                <span class="field-label">Priority</span>
-                <span class="field-value">${PRIORITY_LABELS[a.priority]}</span>
-              </div>
-              <div class="field">
-                <span class="field-label">Source Entity</span>
-                <span class="entity-link" @click=${this._openEntityInfo}>${a.source_entity_id}</span>
-              </div>
-              <div class="field">
-                <span class="field-label">Trigger Type</span>
-                <span class="field-value">${a.trigger_type}</span>
-              </div>
-              <div class="field">
-                <span class="field-label">Trigger Config</span>
-                <span class="field-value">${JSON.stringify(a.trigger_config)}</span>
-              </div>
-              ${a.area ? html`<div class="field"><span class="field-label">Area</span><span class="field-value">${a.area}</span></div>` : ""}
-              ${a.equipment ? html`<div class="field"><span class="field-label">Equipment</span><span class="field-value">${a.equipment}</span></div>` : ""}
-              ${a.tag ? html`<div class="field"><span class="field-label">Tag</span><span class="field-value">${a.tag}</span></div>` : ""}
-              ${a.channel_id ? html`<div class="field"><span class="field-label">Channel ID</span><span class="field-value">${a.channel_id}</span></div>` : ""}
-            </div>
-
-            <div class="section">
-              <div class="section-title">Behavior</div>
-              <div class="flags">
-                <span class="flag ${a.enabled ? "active" : ""}">Enabled</span>
-                <span class="flag ${a.latching ? "active" : ""}">Latching</span>
-                <span class="flag ${a.ack_required ? "active" : ""}">ACK Required</span>
-                <span class="flag ${a.auto_clear ? "active" : ""}">Auto Clear</span>
-                ${a.trigger_type === "analog" ? html`<span class="flag ${a.suppress_milder ? "active" : ""}">Suppress Milder</span>` : ""}
-              </div>
-              ${a.auto_ack_delay ? html`<div class="field"><span class="field-label">Auto-acknowledge</span><span class="field-value">${Math.round(a.auto_ack_delay / 60)} min after return to normal</span></div>` : ""}
-              ${a.suppressed_by ? html`<div class="field"><span class="field-label">Suppressed by</span><span class="field-value">${a.suppressed_by.name}</span></div>` : ""}
-            </div>
-
-            <div class="section">
-              <div class="section-title">Metadata</div>
-              <div class="field">
-                <span class="field-label">Alarm ID</span>
-                <span class="field-value">${a.id}</span>
-              </div>
-              <div class="field">
-                <span class="field-label">Created</span>
-                <span class="field-value">${new Date(a.created_at).toLocaleString()}</span>
-              </div>
-              <div class="field">
-                <span class="field-label">Updated</span>
-                <span class="field-value">${new Date(a.updated_at).toLocaleString()}</span>
-              </div>
-            </div>
-            <div class="dialog-footer">
-              ${r.state === "active_unacknowledged" || r.state === "returned_to_normal_unacknowledged"
-                ? html`<button class="btn btn-primary" @click=${() => { this._emit("ack-alarm", { id: a.id }); this._close(); }}>Acknowledge</button>`
-                : ""}
-              ${r.state !== "shelved" && r.state !== "disabled"
-                ? html`<button class="btn" style="background: var(--alarm-shelved, #9c27b0); color: white;" @click=${() => { this._emit("shelve-alarm", { alarm: a }); this._close(); }}>Shelve</button>`
-                : ""}
-              ${r.state === "shelved"
-                ? html`<button class="btn" style="background: var(--alarm-shelved, #9c27b0); color: white;" @click=${() => { this._emit("unshelve-alarm", { id: a.id }); this._close(); }}>Unshelve</button>`
-                : ""}
-              ${a.action_service
-                ? html`<button class="btn btn-primary" title="Run this alarm's configured action" @click=${() => { this._emit("trigger-action", { id: a.id }); this._close(); }}>${a.action_label || "Action"}</button>`
-                : ""}
-              ${a.channel_id
-                ? html`<button class="btn" style="background: #607D8B; color: white;" title="Send this alarm's real notification as a test" @click=${() => { this._emit("test-alarm", { id: a.id }); this._close(); }}>Test</button>`
-                : ""}
-              ${a.trigger_type === "external"
-                ? html`<button class="btn" style="background: var(--secondary-background-color, #f5f5f5); opacity: 0.5; cursor: not-allowed;" disabled title="External alarms are managed by automations/blueprints and can't be edited here">Edit</button>`
-                : html`<button class="btn" style="background: var(--secondary-background-color, #f5f5f5);" @click=${() => { this._emit("edit-alarm", { id: a.id }); this._close(); }}>Edit</button>`}
-            </div>
-          </div>
-        </div>
-      </div>
+      <scada-dialog .open=${this.open && !!this.alarm} heading=${a?.name ?? ""} @dialog-closed=${this._close}>
+        ${a ? this._renderBody(a) : nothing} ${a ? this._renderFooter(a) : nothing}
+      </scada-dialog>
     `;
   }
 }

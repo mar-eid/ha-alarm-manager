@@ -1,14 +1,8 @@
 /**
  * Severity KPI strip for the SCADA Alarm Center.
  * Shows total/critical/high/warning/info/unacked/shelved counts + a severity bar.
- * Clicking a priority tile emits `priority-filter` ({ priority: "0".."3" | "" }).
- *
- * Place at: frontend/src/components/alarm-kpi-strip.ts
- * Use in alarm-overview.ts above <active-alarms-view>:
- *   <alarm-kpi-strip .alarms=${this._alarms}
- *     .filterPriority=${this._priorityFilter}
- *     @priority-filter=${(e) => { this._priorityFilter = e.detail.priority; }}>
- *   </alarm-kpi-strip>
+ * Clicking a priority tile toggles the shared priority filter and emits
+ * `priority-filter` ({ priority: "0".."3" | "" }).
  */
 
 import { LitElement, html, css, nothing } from "lit";
@@ -58,6 +52,7 @@ export class AlarmKpiStrip extends LitElement {
       }
       .tile {
         flex: 1;
+        color: inherit;
         min-width: 120px;
         display: flex;
         align-items: center;
@@ -76,6 +71,10 @@ export class AlarmKpiStrip extends LitElement {
       }
       .tile[data-clickable]:hover {
         box-shadow: 0 0 0 1px var(--c);
+      }
+      .tile:focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: 2px;
       }
       .tile.sel {
         border-color: var(--c);
@@ -143,20 +142,27 @@ export class AlarmKpiStrip extends LitElement {
     icon: string,
     filter: string | null
   ) {
-    const clickable = filter !== null;
-    const selected = clickable && this.filterPriority === filter;
+    const content = html`
+      <div class="ic"><ha-svg-icon .path=${icon}></ha-svg-icon></div>
+      <div>
+        <div class="num ${count === 0 ? "zero" : ""}">${count}</div>
+        <div class="lbl">${label}</div>
+      </div>
+    `;
+    if (filter === null) {
+      return html`<div class="tile" style=${`--c:${color}`}>${content}</div>`;
+    }
+    const selected = this.filterPriority === filter;
     return html`
       <button
         class="tile ${selected ? "sel" : ""}"
         style=${`--c:${color}`}
-        ?data-clickable=${clickable}
-        @click=${() => clickable && this._emit(this.filterPriority === filter ? "" : (filter as string))}
+        data-clickable
+        aria-pressed=${selected ? "true" : "false"}
+        title=${selected ? `Clear the ${label} filter` : `Show only ${label} alarms`}
+        @click=${() => this._emit(selected ? "" : filter)}
       >
-        <div class="ic"><ha-svg-icon .path=${icon}></ha-svg-icon></div>
-        <div>
-          <div class="num ${count === 0 ? "zero" : ""}">${count}</div>
-          <div class="lbl">${label}</div>
-        </div>
+        ${content}
       </button>
     `;
   }
@@ -171,12 +177,12 @@ export class AlarmKpiStrip extends LitElement {
 
     return html`
       <div class="kpis">
-        ${this._tile("#5e5e5e", total, "Active alarms", mdiBellRing, null)}
+        ${this._tile("var(--state-icon-color, #44739e)", total, "Active alarms", mdiBellRing, null)}
         ${ORDER.map((p) =>
           this._tile(getPriorityColor(p), byP(p), PRIORITY_LABELS[p], PRIORITY_ICON[p], String(p))
         )}
-        ${this._tile("#ff9800", unacked, "Unacknowledged", mdiBellAlert, null)}
-        ${this._tile("#9c27b0", shelved, "Shelved", mdiBellSleep, null)}
+        ${this._tile("var(--warning-color, #ffa600)", unacked, "Unacknowledged", mdiBellAlert, null)}
+        ${this._tile("var(--purple-color, #926bc7)", shelved, "Shelved", mdiBellSleep, null)}
       </div>
       ${total > 0
         ? html`

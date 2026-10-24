@@ -69,14 +69,14 @@ export class ScadaAlarmOverviewEditor extends LitElement {
       <div class="row">
         <div class="form-group">
           <label>Default tab</label>
-          <select .value=${this._config.default_tab ?? "active"}
+          <select .value=${(this._config.default_tab === "settings" ? "statistics" : this._config.default_tab) ?? "active"}
             @change=${(e: Event) => this._update("default_tab", (e.target as HTMLSelectElement).value)}>
             <option value="active">Active</option>
             <option value="all">All Alarms</option>
             <option value="history">History</option>
             <option value="channels">Channels</option>
             <option value="create-edit">Create / Edit</option>
-            <option value="settings">Settings</option>
+            <option value="statistics">Statistics</option>
           </select>
         </div>
         <div class="form-group">
