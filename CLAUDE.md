@@ -52,7 +52,7 @@ Configured in `pyproject.toml` under `[tool.ruff]`. Rules:
 - A (builtins)
 - C4 (comprehensions)
 - SIM (simplify)
-- TCH (type-checking imports)
+- TC (type-checking imports)
 
 ### Testing
 

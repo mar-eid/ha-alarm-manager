@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, State, callback
@@ -12,20 +12,20 @@ from homeassistant.helpers.event import async_call_later, async_track_state_chan
 from . import state_machine as sm
 from .const import (
     DEFAULT_SCAN_INTERVAL,
-    DOMAIN,
     EVENT_ALARM_STATE_CHANGED,
     AlarmEventType,
     AlarmPriority,
     AlarmState,
     TriggerType,
 )
-from .database import AlarmDatabase
 from .models import AlarmChannel, AlarmDefinition, AlarmEvent, AlarmRuntimeState
-from .store import AlarmStore
 from .trigger_evaluator import TriggerEvaluator
 
 if TYPE_CHECKING:
     from homeassistant.helpers.event import EventStateChangedData
+
+    from .database import AlarmDatabase
+    from .store import AlarmStore
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -170,9 +170,7 @@ class AlarmManager:
                 runtime = saved_states[alarm.id]
                 # If alarm was disabled in config, force disabled state
                 if not alarm.enabled:
-                    runtime = AlarmRuntimeState(
-                        alarm_id=alarm.id, state=AlarmState.DISABLED
-                    )
+                    runtime = AlarmRuntimeState(alarm_id=alarm.id, state=AlarmState.DISABLED)
                 self._runtime_states[alarm.id] = runtime
                 _LOGGER.debug(
                     "Restored runtime state for %s: %s",
@@ -255,9 +253,7 @@ class AlarmManager:
             await self._async_evaluate_alarm(alarm, entity_state)
 
         # Sync store
-        await self._store.async_save(
-            list(self._alarms.values()), list(self._channels.values())
-        )
+        await self._store.async_save(list(self._alarms.values()), list(self._channels.values()))
 
         # Notify entity platforms
         self._notify_entity_updates()
@@ -297,9 +293,7 @@ class AlarmManager:
             await self._async_reevaluate_milder(old_alarm)
 
         # Sync store
-        await self._store.async_save(
-            list(self._alarms.values()), list(self._channels.values())
-        )
+        await self._store.async_save(list(self._alarms.values()), list(self._channels.values()))
 
         self._notify_entity_updates()
         return alarm
@@ -334,9 +328,7 @@ class AlarmManager:
         await self._async_reevaluate_milder(alarm)
 
         # Sync store
-        await self._store.async_save(
-            list(self._alarms.values()), list(self._channels.values())
-        )
+        await self._store.async_save(list(self._alarms.values()), list(self._channels.values()))
 
         self._notify_entity_updates()
 
@@ -346,33 +338,25 @@ class AlarmManager:
         """Create a new alarm channel."""
         await self._database.async_create_channel(channel)
         self._channels[channel.id] = channel
-        await self._store.async_save(
-            list(self._alarms.values()), list(self._channels.values())
-        )
+        await self._store.async_save(list(self._alarms.values()), list(self._channels.values()))
         return channel
 
     async def async_update_channel(self, channel: AlarmChannel) -> AlarmChannel:
         """Update an existing alarm channel."""
         await self._database.async_update_channel(channel)
         self._channels[channel.id] = channel
-        await self._store.async_save(
-            list(self._alarms.values()), list(self._channels.values())
-        )
+        await self._store.async_save(list(self._alarms.values()), list(self._channels.values()))
         return channel
 
     async def async_delete_channel(self, channel_id: str) -> None:
         """Delete an alarm channel."""
         self._channels.pop(channel_id, None)
         await self._database.async_delete_channel(channel_id)
-        await self._store.async_save(
-            list(self._alarms.values()), list(self._channels.values())
-        )
+        await self._store.async_save(list(self._alarms.values()), list(self._channels.values()))
 
     # --- Alarm Actions ---
 
-    async def async_acknowledge(
-        self, alarm_id: str, user: str | None = None
-    ) -> None:
+    async def async_acknowledge(self, alarm_id: str, user: str | None = None) -> None:
         """Acknowledge an alarm."""
         runtime = self._runtime_states.get(alarm_id)
         if runtime is None:
@@ -449,7 +433,7 @@ class AlarmManager:
         test_runtime = AlarmRuntimeState(
             alarm_id=alarm_id,
             state=AlarmState.ACTIVE_UNACKED,
-            triggered_at=datetime.now(timezone.utc),
+            triggered_at=datetime.now(UTC),
             last_value=current.last_value if current else None,
         )
         await self._notification_router.async_send_alarm_notification(alarm, test_runtime)
@@ -470,9 +454,7 @@ class AlarmManager:
         new_runtime, events = sm.shelve(runtime, duration_minutes, user)
         await self._async_apply_transition(alarm_id, new_runtime, events)
 
-    async def async_unshelve(
-        self, alarm_id: str, user: str | None = None
-    ) -> None:
+    async def async_unshelve(self, alarm_id: str, user: str | None = None) -> None:
         """Unshelve an alarm."""
         runtime = self._runtime_states.get(alarm_id)
         if runtime is None:
@@ -487,9 +469,7 @@ class AlarmManager:
             entity_state = self.hass.states.get(alarm.source_entity_id)
             await self._async_evaluate_alarm(alarm, entity_state)
 
-    async def async_enable(
-        self, alarm_id: str, user: str | None = None
-    ) -> None:
+    async def async_enable(self, alarm_id: str, user: str | None = None) -> None:
         """Enable a disabled alarm."""
         runtime = self._runtime_states.get(alarm_id)
         if runtime is None:
@@ -510,9 +490,7 @@ class AlarmManager:
         entity_state = self.hass.states.get(alarm.source_entity_id)
         await self._async_evaluate_alarm(alarm, entity_state)
 
-    async def async_disable(
-        self, alarm_id: str, user: str | None = None
-    ) -> None:
+    async def async_disable(self, alarm_id: str, user: str | None = None) -> None:
         """Disable an alarm."""
         runtime = self._runtime_states.get(alarm_id)
         if runtime is None:
@@ -531,9 +509,7 @@ class AlarmManager:
         alarm.enabled = False
         await self._database.async_update_alarm(alarm)
 
-    async def async_reset(
-        self, alarm_id: str, user: str | None = None
-    ) -> None:
+    async def async_reset(self, alarm_id: str, user: str | None = None) -> None:
         """Reset a latched alarm."""
         runtime = self._runtime_states.get(alarm_id)
         alarm = self._alarms.get(alarm_id)
@@ -549,9 +525,7 @@ class AlarmManager:
 
     # --- External trigger/clear ---
 
-    async def async_trigger_external(
-        self, alarm_id: str, message: str | None = None, user: str | None = None
-    ) -> None:
+    async def async_trigger_external(self, alarm_id: str, message: str | None = None, user: str | None = None) -> None:
         """Externally trigger an alarm (for external trigger type)."""
         runtime = self._runtime_states.get(alarm_id)
         alarm = self._alarms.get(alarm_id)
@@ -562,9 +536,7 @@ class AlarmManager:
         new_runtime, events = sm.condition_met(runtime, alarm, value)
         await self._async_apply_transition(alarm_id, new_runtime, events)
 
-    async def async_clear_external(
-        self, alarm_id: str, user: str | None = None
-    ) -> None:
+    async def async_clear_external(self, alarm_id: str, user: str | None = None) -> None:
         """Externally clear an alarm (for external trigger type)."""
         runtime = self._runtime_states.get(alarm_id)
         alarm = self._alarms.get(alarm_id)
@@ -587,9 +559,7 @@ class AlarmManager:
     def get_unacked_count(self) -> int:
         """Count unacknowledged alarms."""
         return sum(
-            1
-            for r in self._runtime_states.values()
-            if r.state in (AlarmState.ACTIVE_UNACKED, AlarmState.RTN_UNACKED)
+            1 for r in self._runtime_states.values() if r.state in (AlarmState.ACTIVE_UNACKED, AlarmState.RTN_UNACKED)
         )
 
     def get_highest_severity(self) -> AlarmPriority | None:
@@ -662,17 +632,11 @@ class AlarmManager:
             # acknowledged or back to normal, every notification it raised is cleared.
             cleared_states = (AlarmState.NORMAL, AlarmState.ACTIVE_ACKED)
             if new_runtime.state == AlarmState.ACTIVE_UNACKED and old_runtime.state != AlarmState.ACTIVE_UNACKED:
-                await self._notification_router.async_send_alarm_notification(
-                    alarm, new_runtime
-                )
+                await self._notification_router.async_send_alarm_notification(alarm, new_runtime)
             elif new_runtime.state in cleared_states and old_runtime.state not in cleared_states:
-                await self._notification_router.async_dismiss_alarm_notification(
-                    alarm
-                )
+                await self._notification_router.async_dismiss_alarm_notification(alarm)
 
-    async def _async_evaluate_alarm(
-        self, alarm: AlarmDefinition, entity_state: State | None
-    ) -> None:
+    async def _async_evaluate_alarm(self, alarm: AlarmDefinition, entity_state: State | None) -> None:
         """Evaluate an alarm against current entity state."""
         runtime = self._runtime_states.get(alarm.id)
         if runtime is None or runtime.state == AlarmState.DISABLED:
@@ -682,54 +646,49 @@ class AlarmManager:
         # — the entity may just be temporarily offline during startup.
         # Exception (B9): if a condition_template gate is configured and now evaluates
         # false, the alarm is suppressed and must clear even while the source is offline.
-        if entity_state is None or entity_state.state in ("unavailable", "unknown"):
-            if runtime.state != AlarmState.NORMAL:
-                # Only trust a "gate closed" verdict when the gate does NOT reference the
-                # offline source entity — otherwise the gate reads false merely because the
-                # source is unavailable, which would wrongly clear on a transient dropout.
-                gate_entities = (
-                    self._trigger_evaluator.extract_condition_template_entities(self.hass, alarm)
-                    if alarm.condition_template
-                    else set()
-                )
-                gate_independent = alarm.source_entity_id not in gate_entities
-                gate_closed = (
-                    bool(alarm.condition_template)
-                    and gate_independent
-                    and not self._trigger_evaluator.evaluate_condition_template(self.hass, alarm)
-                )
-                if not gate_closed:
-                    return  # Keep current state — gate open/absent, or can't be trusted while source is offline
-                # Gate deliberately closed → clear now (bypasses clear-delay; a gate close
-                # should suppress immediately).
-                self._cancel_pending_delay(alarm.id)
-                new_runtime, events = sm.condition_cleared(runtime, alarm, runtime.last_value)
-                await self._async_apply_transition(alarm.id, new_runtime, events)
-                return
+        if (
+            entity_state is None or entity_state.state in ("unavailable", "unknown")
+        ) and runtime.state != AlarmState.NORMAL:
+            # Only trust a "gate closed" verdict when the gate does NOT reference the
+            # offline source entity — otherwise the gate reads false merely because the
+            # source is unavailable, which would wrongly clear on a transient dropout.
+            gate_entities = (
+                self._trigger_evaluator.extract_condition_template_entities(self.hass, alarm)
+                if alarm.condition_template
+                else set()
+            )
+            gate_independent = alarm.source_entity_id not in gate_entities
+            gate_closed = (
+                bool(alarm.condition_template)
+                and gate_independent
+                and not self._trigger_evaluator.evaluate_condition_template(self.hass, alarm)
+            )
+            if not gate_closed:
+                return  # Keep current state — gate open/absent, or can't be trusted while source is offline
+            # Gate deliberately closed → clear now (bypasses clear-delay; a gate close
+            # should suppress immediately).
+            self._cancel_pending_delay(alarm.id)
+            new_runtime, events = sm.condition_cleared(runtime, alarm, runtime.last_value)
+            await self._async_apply_transition(alarm.id, new_runtime, events)
+            return
 
         # Escalation suppression (F19): a more severe active alarm on the same sensor
         # forces this one to NORMAL immediately (bypasses delays, ack and latching).
         suppressor = self.get_suppressor(alarm.id)
         if suppressor is not None:
             self._cancel_pending_delay(alarm.id)
-            new_runtime, events = sm.suppress(
-                runtime, alarm, suppressor, entity_state.state if entity_state else None
-            )
+            new_runtime, events = sm.suppress(runtime, alarm, suppressor, entity_state.state if entity_state else None)
             await self._async_apply_transition(alarm.id, new_runtime, events)
             return
 
-        is_active = runtime.state in (
-            AlarmState.ACTIVE_UNACKED, AlarmState.ACTIVE_ACKED, AlarmState.RTN_UNACKED
-        )
+        is_active = runtime.state in (AlarmState.ACTIVE_UNACKED, AlarmState.ACTIVE_ACKED, AlarmState.RTN_UNACKED)
         trigger_active = self._trigger_evaluator.evaluate(alarm, entity_state, is_active=is_active)
         value = entity_state.state if entity_state else None
 
         # Check optional condition_template (e.g. "car must be home")
         condition_met = trigger_active
         if trigger_active and alarm.condition_template:
-            condition_met = self._trigger_evaluator.evaluate_condition_template(
-                self.hass, alarm
-            )
+            condition_met = self._trigger_evaluator.evaluate_condition_template(self.hass, alarm)
 
         # Debounce: gate the transition behind a configurable delay.
         #   - on-delay  (trigger_delay): condition must hold for N s before activating
@@ -794,16 +753,12 @@ class AlarmManager:
         if entity_state is None or entity_state.state in ("unavailable", "unknown"):
             return
 
-        is_active = runtime.state in (
-            AlarmState.ACTIVE_UNACKED, AlarmState.ACTIVE_ACKED, AlarmState.RTN_UNACKED
-        )
+        is_active = runtime.state in (AlarmState.ACTIVE_UNACKED, AlarmState.ACTIVE_ACKED, AlarmState.RTN_UNACKED)
         trigger_active = self._trigger_evaluator.evaluate(alarm, entity_state, is_active=is_active)
         value = entity_state.state
         condition_met = trigger_active
         if trigger_active and alarm.condition_template:
-            condition_met = self._trigger_evaluator.evaluate_condition_template(
-                self.hass, alarm
-            )
+            condition_met = self._trigger_evaluator.evaluate_condition_template(self.hass, alarm)
 
         if kind == "activate" and self.get_suppressor(alarm_id) is not None:
             return  # A more severe alarm took over while the on-delay ran (F19)
@@ -834,9 +789,7 @@ class AlarmManager:
             is_gate = entity_id in self._condition_entities.get(alarm.id, ())
             if is_source or is_gate:
                 source_state = new_state if is_source else self.hass.states.get(alarm.source_entity_id)
-                self.hass.async_create_task(
-                    self._async_evaluate_alarm(alarm, source_state)
-                )
+                self.hass.async_create_task(self._async_evaluate_alarm(alarm, source_state))
 
     def _setup_entity_listeners(self) -> None:
         """Set up state change listeners for all watched entities.
@@ -852,9 +805,7 @@ class AlarmManager:
             if alarm.trigger_type != TriggerType.EXTERNAL:
                 entity_ids.add(alarm.source_entity_id)
             if alarm.condition_template:
-                gate_entities = self._trigger_evaluator.extract_condition_template_entities(
-                    self.hass, alarm
-                )
+                gate_entities = self._trigger_evaluator.extract_condition_template_entities(self.hass, alarm)
                 if gate_entities:
                     self._condition_entities[alarm.id] = gate_entities
                     entity_ids |= gate_entities
@@ -900,14 +851,17 @@ class AlarmManager:
 
                 # If alarm has a persisted non-normal state and entity isn't
                 # available yet, skip — don't clear it based on missing data
-                if runtime and runtime.state != AlarmState.NORMAL:
-                    if entity_state is None or entity_state.state in ("unavailable", "unknown"):
-                        _LOGGER.debug(
-                            "Skipping initial eval for %s (state=%s, entity not ready)",
-                            alarm.name,
-                            runtime.state.value,
-                        )
-                        continue
+                if (
+                    runtime
+                    and runtime.state != AlarmState.NORMAL
+                    and (entity_state is None or entity_state.state in ("unavailable", "unknown"))
+                ):
+                    _LOGGER.debug(
+                        "Skipping initial eval for %s (state=%s, entity not ready)",
+                        alarm.name,
+                        runtime.state.value,
+                    )
+                    continue
 
                 await self._async_evaluate_alarm(alarm, entity_state)
         self._suppress_notifications = False
@@ -924,15 +878,11 @@ class AlarmManager:
 
     async def _async_periodic_check(self, now: datetime) -> None:
         """Periodic check for shelve expirations and notification repeats."""
-        utc_now = datetime.now(timezone.utc)
+        utc_now = datetime.now(UTC)
 
         # Check shelve expirations
         for alarm_id, runtime in list(self._runtime_states.items()):
-            if (
-                runtime.state == AlarmState.SHELVED
-                and runtime.shelved_until
-                and utc_now >= runtime.shelved_until
-            ):
+            if runtime.state == AlarmState.SHELVED and runtime.shelved_until and utc_now >= runtime.shelved_until:
                 _LOGGER.info("Shelve expired for alarm %s", alarm_id)
                 await self.async_unshelve(alarm_id, user="system")
 
@@ -963,9 +913,7 @@ class AlarmManager:
                 # The alarm's own remind interval takes precedence over the
                 # channel's repeat cadence; both are expressed in seconds.
                 channel = self._channels.get(alarm.channel_id) if alarm.channel_id else None
-                repeat_cadence = (
-                    channel.repeat_cadence if channel and channel.repeat_cadence else None
-                )
+                repeat_cadence = channel.repeat_cadence if channel and channel.repeat_cadence else None
                 interval = alarm.repeat_interval or repeat_cadence
                 if not interval:
                     continue
@@ -979,9 +927,7 @@ class AlarmManager:
 
                 elapsed = (utc_now - baseline).total_seconds()
                 if elapsed >= interval:
-                    await self._notification_router.async_send_alarm_notification(
-                        alarm, runtime, is_repeat=True
-                    )
+                    await self._notification_router.async_send_alarm_notification(alarm, runtime, is_repeat=True)
                     updated = AlarmRuntimeState(
                         alarm_id=runtime.alarm_id,
                         state=runtime.state,

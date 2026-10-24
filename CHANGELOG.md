@@ -15,6 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The New/Edit channel form is now built on HA's own `ha-form`, like the alarm editor, in sections: **General** (name, minimum priority as a dropdown), **Notification targets** (the existing target picker with per-target minimum priority) and **Delivery** (persistent notifications, mobile push and critical alerts as switches with help text).
   - The form opens as its own page in the Channels tab instead of above the channel table, and saving without a name now says so instead of doing nothing. If HA's form components cannot be loaded, the form says so and asks for a reload.
 
+## [0.27.1] - 2026-10-24
+
+### Fixed
+
+- **`services.yaml` is valid YAML again.** The `action_target` description of `create_alarm` contained an unquoted `{entity_id: ...}` example, so the file failed to parse and hassfest rejected it. The description is now quoted; the text is unchanged.
+- **CI is green for lint.** Fixed all ruff findings in the integration (type-only imports moved under `TYPE_CHECKING`, `datetime.UTC`, collapsed nested `if`s, `contextlib.suppress` in database migrations, unused imports) and applied `ruff format`. No behaviour change.
+
+### Changed
+
+- **Ruff is pinned to 0.15.15** in CI and the `dev` extras, so a new ruff release can no longer break CI. The old `pip install ruff>=0.8.0` line was also unquoted, which the shell read as a redirect and installed the latest ruff. The rule set now uses `TC` (the current name of `TCH`).
+
 ## [0.27.0] - 2026-10-24
 
 Includes the Home Assistant design update (released as part of this version; it was merged as 0.26.0 but never tagged).

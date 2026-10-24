@@ -6,20 +6,22 @@ One binary sensor entity per alarm definition.
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.util import slugify
 
-from .alarm_manager import AlarmManager
 from .const import DOMAIN, AlarmState
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+    from .alarm_manager import AlarmManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,7 +35,7 @@ async def async_setup_entry(
     manager: AlarmManager = hass.data[DOMAIN][entry.entry_id]["manager"]
 
     entities: list[ScadaAlarmBinarySensor] = []
-    for alarm_id, alarm_def in manager.alarms.items():
+    for alarm_id in manager.alarms:
         entities.append(ScadaAlarmBinarySensor(manager, alarm_id, entry.entry_id))
 
     async_add_entities(entities)

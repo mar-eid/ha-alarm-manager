@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 import aiosqlite
 
 from .const import AlarmEventType, AlarmPriority, AlarmState, TriggerType
-from .models import AlarmChannel, AlarmDefinition, AlarmEvent
+from .models import AlarmChannel, AlarmDefinition, AlarmEvent, AlarmRuntimeState
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -145,15 +146,11 @@ class AlarmDatabase:
         if current < 2:
             # v2: add condition_template column
             try:
-                await self._db.execute(
-                    "ALTER TABLE alarm_definitions ADD COLUMN condition_template TEXT"
-                )
+                await self._db.execute("ALTER TABLE alarm_definitions ADD COLUMN condition_template TEXT")
                 _LOGGER.info("Migrated database to schema v2: added condition_template")
             except Exception:
                 pass  # Column already exists (fresh install)
-            await self._db.execute(
-                "UPDATE schema_version SET version = ?", (2,)
-            )
+            await self._db.execute("UPDATE schema_version SET version = ?", (2,))
             current = 2
 
         if current < 3:
@@ -171,34 +168,22 @@ class AlarmDatabase:
                     last_value TEXT
                 )
             """)
-            await self._db.execute(
-                "UPDATE schema_version SET version = ?", (3,)
-            )
+            await self._db.execute("UPDATE schema_version SET version = ?", (3,))
             _LOGGER.info("Migrated database to schema v3: added alarm_runtime_states table")
             current = 3
 
         if current < 4:
             # v4: notification template columns
             for col in ("notification_title_template", "notification_text_template"):
-                try:
-                    await self._db.execute(
-                        f"ALTER TABLE alarm_definitions ADD COLUMN {col} TEXT"
-                    )
-                except Exception:
-                    pass
-            await self._db.execute(
-                "UPDATE schema_version SET version = ?", (4,)
-            )
+                with contextlib.suppress(Exception):
+                    await self._db.execute(f"ALTER TABLE alarm_definitions ADD COLUMN {col} TEXT")
+            await self._db.execute("UPDATE schema_version SET version = ?", (4,))
             _LOGGER.info("Migrated database to schema v4: added notification template columns")
             current = 4
 
         if current < 5:
-            try:
-                await self._db.execute(
-                    "ALTER TABLE alarm_definitions ADD COLUMN hysteresis REAL"
-                )
-            except Exception:
-                pass
+            with contextlib.suppress(Exception):
+                await self._db.execute("ALTER TABLE alarm_definitions ADD COLUMN hysteresis REAL")
             await self._db.execute("UPDATE schema_version SET version = ?", (5,))
             _LOGGER.info("Migrated database to schema v5: added hysteresis column")
             current = 5
@@ -206,16 +191,10 @@ class AlarmDatabase:
         if current < 6:
             # v6: trigger on-delay / clear-delay columns (debounce)
             for col in ("trigger_delay", "clear_delay"):
-                try:
-                    await self._db.execute(
-                        f"ALTER TABLE alarm_definitions ADD COLUMN {col} INTEGER"
-                    )
-                except Exception:
-                    pass
+                with contextlib.suppress(Exception):
+                    await self._db.execute(f"ALTER TABLE alarm_definitions ADD COLUMN {col} INTEGER")
             await self._db.execute("UPDATE schema_version SET version = ?", (6,))
-            _LOGGER.info(
-                "Migrated database to schema v6: added trigger_delay/clear_delay columns"
-            )
+            _LOGGER.info("Migrated database to schema v6: added trigger_delay/clear_delay columns")
             current = 6
 
         if current < 7:
@@ -226,41 +205,27 @@ class AlarmDatabase:
                 "action_entity",
                 "link_page_path",
             ):
-                try:
-                    await self._db.execute(
-                        f"ALTER TABLE alarm_definitions ADD COLUMN {col} TEXT"
-                    )
-                except Exception:
-                    pass
+                with contextlib.suppress(Exception):
+                    await self._db.execute(f"ALTER TABLE alarm_definitions ADD COLUMN {col} TEXT")
             await self._db.execute("UPDATE schema_version SET version = ?", (7,))
-            _LOGGER.info(
-                "Migrated database to schema v7: added notification action + page link columns"
-            )
+            _LOGGER.info("Migrated database to schema v7: added notification action + page link columns")
             current = 7
 
         if current < 8:
             # v8: action target (F15) + dashboard view link (F13) columns
             for col in ("action_target", "link_view_path"):
-                try:
-                    await self._db.execute(
-                        f"ALTER TABLE alarm_definitions ADD COLUMN {col} TEXT"
-                    )
-                except Exception:
-                    pass
+                with contextlib.suppress(Exception):
+                    await self._db.execute(f"ALTER TABLE alarm_definitions ADD COLUMN {col} TEXT")
             await self._db.execute("UPDATE schema_version SET version = ?", (8,))
-            _LOGGER.info(
-                "Migrated database to schema v8: added action_target/link_view_path columns"
-            )
+            _LOGGER.info("Migrated database to schema v8: added action_target/link_view_path columns")
             current = 8
 
         if current < 9:
             # v9: escalation suppression flag (F19) — defaults on for existing alarms
-            try:
+            with contextlib.suppress(Exception):
                 await self._db.execute(
                     "ALTER TABLE alarm_definitions ADD COLUMN suppress_milder INTEGER NOT NULL DEFAULT 1"
                 )
-            except Exception:
-                pass
             await self._db.execute("UPDATE schema_version SET version = ?", (9,))
             _LOGGER.info("Migrated database to schema v9: added suppress_milder column")
             current = 9
@@ -271,10 +236,8 @@ class AlarmDatabase:
                 ("alarm_definitions", "auto_ack_delay", "INTEGER"),
                 ("alarm_runtime_states", "returned_at", "TEXT"),
             ):
-                try:
+                with contextlib.suppress(Exception):
                     await self._db.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
-                except Exception:
-                    pass
             await self._db.execute("UPDATE schema_version SET version = ?", (10,))
             _LOGGER.info("Migrated database to schema v10: added auto_ack_delay/returned_at columns")
 
@@ -346,7 +309,7 @@ class AlarmDatabase:
 
     async def async_update_alarm(self, alarm: AlarmDefinition) -> None:
         """Update an existing alarm definition."""
-        alarm.updated_at = datetime.now(timezone.utc)
+        alarm.updated_at = datetime.now(UTC)
         await self._conn.execute(
             """UPDATE alarm_definitions SET
             name=?, description=?, priority=?, area=?, equipment=?, tag=?,
@@ -402,9 +365,7 @@ class AlarmDatabase:
 
     async def async_get_alarm(self, alarm_id: str) -> AlarmDefinition | None:
         """Get a single alarm definition by ID."""
-        async with self._conn.execute(
-            "SELECT * FROM alarm_definitions WHERE id=?", (alarm_id,)
-        ) as cursor:
+        async with self._conn.execute("SELECT * FROM alarm_definitions WHERE id=?", (alarm_id,)) as cursor:
             row = await cursor.fetchone()
             if row is None:
                 return None
@@ -412,9 +373,7 @@ class AlarmDatabase:
 
     async def async_list_alarms(self) -> list[AlarmDefinition]:
         """List all alarm definitions."""
-        async with self._conn.execute(
-            "SELECT * FROM alarm_definitions ORDER BY name"
-        ) as cursor:
+        async with self._conn.execute("SELECT * FROM alarm_definitions ORDER BY name") as cursor:
             rows = await cursor.fetchall()
             return [self._row_to_alarm(row) for row in rows]
 
@@ -484,7 +443,7 @@ class AlarmDatabase:
 
     async def async_update_channel(self, channel: AlarmChannel) -> None:
         """Update an existing alarm channel."""
-        channel.updated_at = datetime.now(timezone.utc)
+        channel.updated_at = datetime.now(UTC)
         await self._conn.execute(
             """UPDATE alarm_channels SET
             name=?, notification_targets=?, min_priority=?, persistent_notification=?,
@@ -513,9 +472,7 @@ class AlarmDatabase:
 
     async def async_get_channel(self, channel_id: str) -> AlarmChannel | None:
         """Get a single alarm channel by ID."""
-        async with self._conn.execute(
-            "SELECT * FROM alarm_channels WHERE id=?", (channel_id,)
-        ) as cursor:
+        async with self._conn.execute("SELECT * FROM alarm_channels WHERE id=?", (channel_id,)) as cursor:
             row = await cursor.fetchone()
             if row is None:
                 return None
@@ -523,9 +480,7 @@ class AlarmDatabase:
 
     async def async_list_channels(self) -> list[AlarmChannel]:
         """List all alarm channels."""
-        async with self._conn.execute(
-            "SELECT * FROM alarm_channels ORDER BY name"
-        ) as cursor:
+        async with self._conn.execute("SELECT * FROM alarm_channels ORDER BY name") as cursor:
             rows = await cursor.fetchall()
             return [self._row_to_channel(row) for row in rows]
 
@@ -622,9 +577,7 @@ class AlarmDatabase:
             row = await cursor.fetchone()
             return row[0] if row else 0
 
-    async def async_get_noise_rows(
-        self, start: datetime
-    ) -> list[tuple[str, datetime, str, str | None, str | None]]:
+    async def async_get_noise_rows(self, start: datetime) -> list[tuple[str, datetime, str, str | None, str | None]]:
         """Get lightweight (alarm_id, timestamp, event_type, old_state, new_state) rows since start.
 
         Unlimited and ordered by alarm, then time, for the noise analysis.
@@ -679,10 +632,8 @@ class AlarmDatabase:
 
     # --- Runtime State Persistence ---
 
-    async def async_save_runtime_state(self, runtime: "AlarmRuntimeState") -> None:
+    async def async_save_runtime_state(self, runtime: AlarmRuntimeState) -> None:
         """Save or update a single alarm's runtime state."""
-        from .models import AlarmRuntimeState as _ARS  # noqa: F841
-
         await self._conn.execute(
             """INSERT OR REPLACE INTO alarm_runtime_states
             (alarm_id, state, triggered_at, acked_at, acked_by,
@@ -703,10 +654,8 @@ class AlarmDatabase:
         )
         await self._conn.commit()
 
-    async def async_load_runtime_states(self) -> dict[str, "AlarmRuntimeState"]:
+    async def async_load_runtime_states(self) -> dict[str, AlarmRuntimeState]:
         """Load all persisted runtime states."""
-        from .models import AlarmRuntimeState
-
         result: dict[str, AlarmRuntimeState] = {}
         async with self._conn.execute("SELECT * FROM alarm_runtime_states") as cursor:
             rows = await cursor.fetchall()
@@ -719,17 +668,15 @@ class AlarmDatabase:
                     acked_by=row["acked_by"],
                     shelved_until=datetime.fromisoformat(row["shelved_until"]) if row["shelved_until"] else None,
                     previous_state=AlarmState(row["previous_state"]) if row["previous_state"] else None,
-                    last_notification_at=datetime.fromisoformat(row["last_notification_at"]) if row["last_notification_at"] else None,
+                    last_notification_at=datetime.fromisoformat(row["last_notification_at"])
+                    if row["last_notification_at"]
+                    else None,
                     last_value=row["last_value"],
-                    returned_at=(
-                        datetime.fromisoformat(row["returned_at"]) if row["returned_at"] else None
-                    ),
+                    returned_at=(datetime.fromisoformat(row["returned_at"]) if row["returned_at"] else None),
                 )
         return result
 
     async def async_delete_runtime_state(self, alarm_id: str) -> None:
         """Delete runtime state for an alarm."""
-        await self._conn.execute(
-            "DELETE FROM alarm_runtime_states WHERE alarm_id=?", (alarm_id,)
-        )
+        await self._conn.execute("DELETE FROM alarm_runtime_states WHERE alarm_id=?", (alarm_id,))
         await self._conn.commit()

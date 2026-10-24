@@ -7,7 +7,7 @@ and alarm definition flags, returns the new state and a list of events.
 from __future__ import annotations
 
 from dataclasses import replace
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from .const import AlarmEventType, AlarmState
 from .models import AlarmDefinition, AlarmEvent, AlarmRuntimeState
@@ -18,7 +18,7 @@ class InvalidTransitionError(Exception):
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def condition_met(

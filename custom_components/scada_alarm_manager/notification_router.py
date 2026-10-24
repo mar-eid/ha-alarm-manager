@@ -6,14 +6,12 @@ Routes alarm notifications through channels to the correct targets.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
-from typing import Any
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Any
 
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers.template import Template
 
 from .const import (
-    DOMAIN,
     NOTIFICATION_ACTION_ACK,
     NOTIFICATION_ACTION_CUSTOM,
     NOTIFICATION_ACTION_SHELVE,
@@ -21,7 +19,11 @@ from .const import (
 )
 
 DEFAULT_PAGE_URL = "/scada-alarm-manager"
-from .models import AlarmChannel, AlarmDefinition, AlarmRuntimeState
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
+
+    from .models import AlarmChannel, AlarmDefinition, AlarmRuntimeState
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -100,11 +102,9 @@ class NotificationRouter:
             await self._async_send_mobile(alarm, channel, title, message)
 
         # Update last notification timestamp
-        runtime.last_notification_at = datetime.now(timezone.utc)
+        runtime.last_notification_at = datetime.now(UTC)
 
-    async def async_dismiss_alarm_notification(
-        self, alarm: AlarmDefinition
-    ) -> None:
+    async def async_dismiss_alarm_notification(self, alarm: AlarmDefinition) -> None:
         """Dismiss all notifications for an alarm (persistent + mobile push).
 
         Called whenever an alarm is acknowledged or returns to normal, so any
@@ -142,9 +142,7 @@ class NotificationRouter:
                     alarm.name,
                 )
 
-    async def async_send_test_notification(
-        self, channel: AlarmChannel
-    ) -> None:
+    async def async_send_test_notification(self, channel: AlarmChannel) -> None:
         """Send a test notification through a channel."""
         title = "[Test] SCADA Alarm Manager"
         message = f"Test notification through channel: {channel.name}"
@@ -209,9 +207,7 @@ class NotificationRouter:
             return base
         return DEFAULT_PAGE_URL
 
-    def _get_template_context(
-        self, alarm: AlarmDefinition, runtime: AlarmRuntimeState
-    ) -> dict[str, Any]:
+    def _get_template_context(self, alarm: AlarmDefinition, runtime: AlarmRuntimeState) -> dict[str, Any]:
         """Build template context for Jinja2 rendering."""
         entity_state = self._hass.states.get(alarm.source_entity_id)
         return {
@@ -225,7 +221,9 @@ class NotificationRouter:
             "value": runtime.last_value or "",
             "state_name": entity_state.state if entity_state else "",
             "unit": entity_state.attributes.get("unit_of_measurement", "") if entity_state else "",
-            "friendly_name": entity_state.attributes.get("friendly_name", alarm.source_entity_id) if entity_state else alarm.source_entity_id,
+            "friendly_name": entity_state.attributes.get("friendly_name", alarm.source_entity_id)
+            if entity_state
+            else alarm.source_entity_id,
             "trigger_type": alarm.trigger_type.value,
             "threshold": alarm.trigger_config.get("threshold", ""),
             "operator": alarm.trigger_config.get("operator", ""),
@@ -241,9 +239,7 @@ class NotificationRouter:
             _LOGGER.warning("Failed to render template: %s", template_str)
             return template_str
 
-    def _render_title(
-        self, alarm: AlarmDefinition, runtime: AlarmRuntimeState
-    ) -> str:
+    def _render_title(self, alarm: AlarmDefinition, runtime: AlarmRuntimeState) -> str:
         """Render notification title."""
         if alarm.notification_title_template:
             ctx = self._get_template_context(alarm, runtime)
@@ -251,9 +247,7 @@ class NotificationRouter:
         icon = _PRIORITY_ICONS.get(alarm.priority, "")
         return f"{icon} {alarm.name}"
 
-    def _render_message(
-        self, alarm: AlarmDefinition, runtime: AlarmRuntimeState
-    ) -> str:
+    def _render_message(self, alarm: AlarmDefinition, runtime: AlarmRuntimeState) -> str:
         """Render notification message body."""
         if alarm.notification_text_template:
             ctx = self._get_template_context(alarm, runtime)
@@ -273,9 +267,7 @@ class NotificationRouter:
             parts.append(f"Equipment: {alarm.equipment}")
         return "\n".join(parts)
 
-    async def _async_send_persistent(
-        self, alarm: AlarmDefinition, title: str, message: str
-    ) -> None:
+    async def _async_send_persistent(self, alarm: AlarmDefinition, title: str, message: str) -> None:
         """Send a persistent notification."""
         notification_id = f"scada_alarm_{alarm.id}"
         # Append an in-app link (F10); persistent notifications render markdown.
@@ -328,9 +320,7 @@ class NotificationRouter:
         # Critical notification handling
         if channel.critical_notification and alarm.priority == AlarmPriority.CRITICAL:
             # iOS critical notification
-            action_data["push"] = {
-                "sound": {"critical": 1, "volume": 1.0, "name": "default"}
-            }
+            action_data["push"] = {"sound": {"critical": 1, "volume": 1.0, "name": "default"}}
             # Android high priority
             action_data["priority"] = "high"
             action_data["ttl"] = 0
