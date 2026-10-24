@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import voluptuous as vol
-
 from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.loader import async_get_integration
 
-from .alarm_manager import AlarmManager
 from .const import (
     DOMAIN,
     EVENT_ALARM_STATE_CHANGED,
@@ -23,6 +21,9 @@ from .const import (
 )
 from .models import AlarmChannel, AlarmDefinition
 from .noise_report import compute_noise_report
+
+if TYPE_CHECKING:
+    from .alarm_manager import AlarmManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -79,9 +80,7 @@ async def ws_alarm_trigger_action(
     connection.send_result(msg["id"], {})
 
 
-@websocket_api.websocket_command(
-    {vol.Required("type"): "scada_alarm_manager/version"}
-)
+@websocket_api.websocket_command({vol.Required("type"): "scada_alarm_manager/version"})
 @websocket_api.async_response
 async def ws_version(
     hass: HomeAssistant,
@@ -109,9 +108,7 @@ def _alarm_with_state(manager: AlarmManager, alarm_id: str) -> dict[str, Any] | 
 # --- Alarm CRUD ---
 
 
-@websocket_api.websocket_command(
-    {vol.Required("type"): "scada_alarm_manager/alarm/list"}
-)
+@websocket_api.websocket_command({vol.Required("type"): "scada_alarm_manager/alarm/list"})
 @websocket_api.async_response
 async def ws_alarm_list(
     hass: HomeAssistant,
@@ -120,10 +117,7 @@ async def ws_alarm_list(
 ) -> None:
     """List all alarms with runtime state."""
     manager = _get_manager(hass)
-    alarms = [
-        _alarm_with_state(manager, alarm_id)
-        for alarm_id in manager.alarms
-    ]
+    alarms = [_alarm_with_state(manager, alarm_id) for alarm_id in manager.alarms]
     connection.send_result(msg["id"], {"alarms": [a for a in alarms if a]})
 
 
@@ -278,14 +272,33 @@ async def ws_alarm_update(
 
     # Apply updates
     for field in (
-        "name", "description", "source_entity_id", "area",
-        "equipment", "tag", "channel_id", "enabled", "latching",
-        "ack_required", "auto_clear", "condition_template",
-        "notification_title_template", "notification_text_template",
-        "hysteresis", "repeat_interval", "escalation_delay",
-        "trigger_delay", "clear_delay",
-        "action_label", "action_service", "action_entity", "action_target",
-        "link_page_path", "link_view_path", "suppress_milder", "auto_ack_delay",
+        "name",
+        "description",
+        "source_entity_id",
+        "area",
+        "equipment",
+        "tag",
+        "channel_id",
+        "enabled",
+        "latching",
+        "ack_required",
+        "auto_clear",
+        "condition_template",
+        "notification_title_template",
+        "notification_text_template",
+        "hysteresis",
+        "repeat_interval",
+        "escalation_delay",
+        "trigger_delay",
+        "clear_delay",
+        "action_label",
+        "action_service",
+        "action_entity",
+        "action_target",
+        "link_page_path",
+        "link_view_path",
+        "suppress_milder",
+        "auto_ack_delay",
     ):
         if field in msg:
             setattr(alarm, field, msg[field])
@@ -479,9 +492,7 @@ async def ws_alarm_clear(
 # --- Channel CRUD ---
 
 
-@websocket_api.websocket_command(
-    {vol.Required("type"): "scada_alarm_manager/channel/list"}
-)
+@websocket_api.websocket_command({vol.Required("type"): "scada_alarm_manager/channel/list"})
 @websocket_api.async_response
 async def ws_channel_list(
     hass: HomeAssistant,
@@ -578,8 +589,12 @@ async def ws_channel_update(
         return
 
     for field in (
-        "name", "notification_targets", "persistent_notification",
-        "mobile_push", "critical_notification", "repeat_cadence",
+        "name",
+        "notification_targets",
+        "persistent_notification",
+        "mobile_push",
+        "critical_notification",
+        "repeat_cadence",
         "escalation_target",
     ):
         if field in msg:
@@ -699,9 +714,7 @@ async def ws_noise_report(
 # --- Subscription ---
 
 
-@websocket_api.websocket_command(
-    {vol.Required("type"): "scada_alarm_manager/subscribe"}
-)
+@websocket_api.websocket_command({vol.Required("type"): "scada_alarm_manager/subscribe"})
 @websocket_api.async_response
 async def ws_subscribe(
     hass: HomeAssistant,
@@ -713,9 +726,7 @@ async def ws_subscribe(
     @callback
     def forward_event(event: Any) -> None:
         """Forward alarm state change events to WS client."""
-        connection.send_message(
-            websocket_api.event_message(msg["id"], event.data)
-        )
+        connection.send_message(websocket_api.event_message(msg["id"], event.data))
 
     unsub = hass.bus.async_listen(EVENT_ALARM_STATE_CHANGED, forward_event)
     connection.subscriptions[msg["id"]] = unsub

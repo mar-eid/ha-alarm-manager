@@ -4,13 +4,16 @@ from __future__ import annotations
 
 import logging
 import operator
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers.template import Template
 
 from .const import TriggerType
-from .models import AlarmDefinition
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant, State
+
+    from .models import AlarmDefinition
 
 _LOGGER = logging.getLogger(__name__)
 

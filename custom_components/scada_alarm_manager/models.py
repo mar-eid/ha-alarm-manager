@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
@@ -11,7 +11,7 @@ from .const import AlarmEventType, AlarmPriority, AlarmState, TriggerType
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def _new_id() -> str:
@@ -129,8 +129,12 @@ class AlarmDefinition:
             source_entity_id=data["source_entity_id"],
             trigger_type=TriggerType(data["trigger_type"]),
             trigger_config=data["trigger_config"],
-            created_at=datetime.fromisoformat(data["created_at"]) if isinstance(data.get("created_at"), str) else data.get("created_at", _now()),
-            updated_at=datetime.fromisoformat(data["updated_at"]) if isinstance(data.get("updated_at"), str) else data.get("updated_at", _now()),
+            created_at=datetime.fromisoformat(data["created_at"])
+            if isinstance(data.get("created_at"), str)
+            else data.get("created_at", _now()),
+            updated_at=datetime.fromisoformat(data["updated_at"])
+            if isinstance(data.get("updated_at"), str)
+            else data.get("updated_at", _now()),
         )
 
 
@@ -179,8 +183,12 @@ class AlarmChannel:
             critical_notification=data.get("critical_notification", False),
             repeat_cadence=data.get("repeat_cadence"),
             escalation_target=data.get("escalation_target"),
-            created_at=datetime.fromisoformat(data["created_at"]) if isinstance(data.get("created_at"), str) else data.get("created_at", _now()),
-            updated_at=datetime.fromisoformat(data["updated_at"]) if isinstance(data.get("updated_at"), str) else data.get("updated_at", _now()),
+            created_at=datetime.fromisoformat(data["created_at"])
+            if isinstance(data.get("created_at"), str)
+            else data.get("created_at", _now()),
+            updated_at=datetime.fromisoformat(data["updated_at"])
+            if isinstance(data.get("updated_at"), str)
+            else data.get("updated_at", _now()),
         )
 
 

@@ -6,16 +6,19 @@ Summary sensors: active count, unacked count, highest severity.
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING
 
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .alarm_manager import AlarmManager
 from .const import DOMAIN
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+    from .alarm_manager import AlarmManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -28,11 +31,13 @@ async def async_setup_entry(
     """Set up sensor entities from a config entry."""
     manager: AlarmManager = hass.data[DOMAIN][entry.entry_id]["manager"]
 
-    async_add_entities([
-        ScadaActiveCountSensor(manager, entry.entry_id),
-        ScadaUnackedCountSensor(manager, entry.entry_id),
-        ScadaHighestSeveritySensor(manager, entry.entry_id),
-    ])
+    async_add_entities(
+        [
+            ScadaActiveCountSensor(manager, entry.entry_id),
+            ScadaUnackedCountSensor(manager, entry.entry_id),
+            ScadaHighestSeveritySensor(manager, entry.entry_id),
+        ]
+    )
 
 
 class ScadaBaseSensor(SensorEntity):

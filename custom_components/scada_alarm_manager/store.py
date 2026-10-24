@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers.storage import Store
 
 from .const import DOMAIN
 from .models import AlarmChannel, AlarmDefinition
+
+if TYPE_CHECKING:
+    from homeassistant.core import HomeAssistant
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -21,9 +23,7 @@ class AlarmStore:
     """Manages .storage backup of alarm definitions and channels."""
 
     def __init__(self, hass: HomeAssistant) -> None:
-        self._store: Store[dict[str, Any]] = Store(
-            hass, STORAGE_VERSION, STORAGE_KEY
-        )
+        self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
 
     async def async_load(
         self,
@@ -33,12 +33,8 @@ class AlarmStore:
         if data is None:
             return [], []
 
-        alarms = [
-            AlarmDefinition.from_dict(a) for a in data.get("alarms", [])
-        ]
-        channels = [
-            AlarmChannel.from_dict(c) for c in data.get("channels", [])
-        ]
+        alarms = [AlarmDefinition.from_dict(a) for a in data.get("alarms", [])]
+        channels = [AlarmChannel.from_dict(c) for c in data.get("channels", [])]
         return alarms, channels
 
     async def async_save(
