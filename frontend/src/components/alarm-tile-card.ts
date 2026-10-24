@@ -1,48 +1,23 @@
 /**
- * Alarm tile card — one active alarm as a card (the "Cards" layout tile from the
- * prototype). Severity accent bar, live value, state badge, inline ACK / Shelve.
- * Reuses the existing <severity-badge>. Emits `ack-alarm` ({ id }),
- * `shelve-alarm` ({ alarm }) and `open-alarm` ({ alarm }).
- *
- * Place at: frontend/src/components/alarm-tile-card.ts
- *
- * Cards grid (drop into active-alarms-view.ts as an alternative to the table):
- *   import "../components/alarm-tile-card";
- *   html`
- *     <div class="cards-grid">
- *       ${filtered.map((a) => html`
- *         <alarm-tile-card
- *           .alarm=${a}
- *           @ack-alarm=${(e) => this._ack(e.detail.id)}
- *           @shelve-alarm=${(e) => this._shelve(e.detail.alarm)}
- *           @open-alarm=${(e) => (this._detailAlarm = e.detail.alarm)}>
- *         </alarm-tile-card>`)}
- *     </div>`
- *   // .cards-grid { display:grid; gap:14px;
- *   //   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+ * Alarm tile card: one active alarm as a card (the "Cards" layout of the Active tab).
+ * Severity accent bar, current value, state chip, inline ACK / Shelve.
+ * Emits `ack-alarm` ({ id }), `shelve-alarm` ({ alarm }) and `open-alarm` ({ alarm }).
  */
 
 import { LitElement, html, css } from "lit";
 import { customElement, property } from "lit/decorators.js";
-import { sharedStyles, getPriorityColor, getStateColor } from "../styles/shared-styles";
-import { STATE_LABELS, type AlarmWithState } from "../types";
+import { sharedStyles, getPriorityColor } from "../styles/shared-styles";
+import type { AlarmWithState, HomeAssistant } from "../types";
+import { areaName, formatAlarmValue } from "../utils/format";
+import { onActivateKey, renderStateChip } from "../utils/render";
 import "./severity-badge";
+import "./rel-time";
 
 const UNACKED_STATES = ["active_unacknowledged", "returned_to_normal_unacknowledged"];
 
-function timeAgo(iso: string | null): string {
-  if (!iso) return "—";
-  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return "just now";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
-}
-
 @customElement("alarm-tile-card")
 export class AlarmTileCard extends LitElement {
+  @property({ attribute: false }) hass?: HomeAssistant;
   @property({ attribute: false }) alarm!: AlarmWithState;
 
   static styles = [
@@ -65,7 +40,11 @@ export class AlarmTileCard extends LitElement {
         transition: box-shadow 0.15s;
       }
       .card:hover {
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+      }
+      .card:focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: 2px;
       }
       .accent {
         position: absolute;
@@ -101,11 +80,16 @@ export class AlarmTileCard extends LitElement {
         align-items: flex-end;
         gap: 10px;
       }
-      .value {
+      .big-value {
         font-size: 22px;
-        font-weight: 600;
-        line-height: 1;
+        font-weight: 500;
+        line-height: 1.1;
         font-variant-numeric: tabular-nums;
+        color: var(--primary-text-color, #212121);
+        overflow-wrap: anywhere;
+      }
+      .mid .value-text {
+        max-width: none;
       }
       .entity {
         font-size: 11px;
@@ -116,21 +100,6 @@ export class AlarmTileCard extends LitElement {
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .state-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        padding: 3px 9px;
-        border-radius: 9999px;
-        font-size: 11.5px;
-        font-weight: 600;
-        white-space: nowrap;
-      }
-      .state-badge .dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-      }
       .foot {
         border-top: 1px solid var(--divider-color, #e0e0e0);
         padding-top: 10px;
@@ -138,17 +107,13 @@ export class AlarmTileCard extends LitElement {
         justify-content: flex-end;
         gap: 6px;
       }
-      .btn-shelve {
-        background: color-mix(in srgb, #9c27b0 14%, transparent);
-        color: #9c27b0;
-      }
       /* critical + unacked draws attention */
       :host([flashing]) .card {
         animation: flash 1.1s infinite alternate;
       }
       @keyframes flash {
         from {
-          box-shadow: 0 0 0 1px #f44336;
+          box-shadow: 0 0 0 2px var(--error-color, #db4437);
         }
         to {
           box-shadow: 0 0 0 1px transparent;
@@ -177,35 +142,38 @@ export class AlarmTileCard extends LitElement {
     const a = this.alarm;
     if (!a) return html``;
     const color = getPriorityColor(a.priority);
-    const stateColor = getStateColor(a.runtime.state);
     const isUnacked = UNACKED_STATES.includes(a.runtime.state);
+    const value = formatAlarmValue(this.hass, a);
+    const open = () => this._emit("open-alarm", { alarm: a });
 
     return html`
-      <div class="card" @click=${() => this._emit("open-alarm", { alarm: a })}>
+      <div
+        class="card"
+        tabindex="0"
+        aria-label=${`${a.name}, open details`}
+        @click=${open}
+        @keydown=${onActivateKey(open)}
+      >
         <span class="accent" style=${`background:${color}`}></span>
 
         <div class="top">
           <severity-badge .priority=${a.priority}></severity-badge>
-          <span class="ago">${timeAgo(a.runtime.triggered_at)}</span>
+          <span class="ago"><rel-time .hass=${this.hass} .datetime=${a.runtime.triggered_at}></rel-time></span>
         </div>
 
         <div>
           <div class="name">${a.name}</div>
-          <div class="sub">${a.area}${a.equipment ? ` · ${a.equipment}` : ""}</div>
+          <div class="sub">${[areaName(this.hass, a.area), a.equipment].filter(Boolean).join(" · ")}</div>
         </div>
 
         <div class="mid">
           <div style="flex:1; min-width:0;">
-            <div class="value" style=${`color:${color}`}>${a.runtime.last_value ?? "—"}</div>
+            ${value.long
+              ? html`<div class="value-text" title=${value.text}>${value.text}</div>`
+              : html`<div class="big-value">${value.text}</div>`}
             <div class="entity">${a.source_entity_id}</div>
           </div>
-          <span
-            class="state-badge"
-            style=${`background:color-mix(in srgb, ${stateColor} 15%, transparent); color:${stateColor}`}
-          >
-            <span class="dot" style=${`background:${stateColor}`}></span>
-            ${STATE_LABELS[a.runtime.state] ?? a.runtime.state}
-          </span>
+          ${renderStateChip(a.runtime.state)}
         </div>
 
         <div class="foot">

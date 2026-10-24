@@ -8,6 +8,8 @@ import { customElement, property, state } from "lit/decorators.js";
 import { sharedStyles } from "../styles/shared-styles";
 import { fetchNoiseReport } from "../data/websocket";
 import "../components/severity-badge";
+import { formatDateTime } from "../utils/format";
+import { renderLoading } from "../utils/render";
 import {
   STATE_LABELS,
   type HomeAssistant,
@@ -73,7 +75,7 @@ export class NoiseView extends LitElement {
       }
       .kpi .value { font-size: 1.6em; font-weight: 500; color: var(--primary-text-color, #212121); }
       .kpi .name { font-size: 0.8em; color: var(--secondary-text-color, #727272); margin-top: 2px; }
-      .kpi.warn .value { color: var(--warning-color, #ff9800); }
+      .kpi.warn .value { color: color-mix(in srgb, var(--warning-color, #ffa600) 75%, var(--primary-text-color, #212121)); }
       section {
         background: var(--card-background-color, #fff);
         border: 1px solid var(--divider-color, #e0e0e0);
@@ -88,7 +90,7 @@ export class NoiseView extends LitElement {
       .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
       .sub { font-size: 0.8em; color: var(--secondary-text-color, #727272); }
       .advice { font-size: 0.85em; color: var(--secondary-text-color, #727272); min-width: 180px; }
-      .stale { color: var(--error-color, #f44336); font-weight: 600; }
+      .stale { color: var(--error-color, #db4437); font-weight: 600; }
       .bar {
         height: 6px; border-radius: 3px; background: var(--primary-color, #03a9f4); margin-top: 4px; opacity: 0.6;
       }
@@ -236,13 +238,13 @@ export class NoiseView extends LitElement {
     const toolbar = html`<div class="toolbar">
       <span class="label">Period:</span>
       ${PERIODS.map(
-        (p) => html`<button class="chip ${p.hours === this._hours ? "active" : ""}" @click=${() => this._setPeriod(p.hours)}>
+        (p) => html`<button class="chip ${p.hours === this._hours ? "active" : ""}" aria-pressed=${p.hours === this._hours ? "true" : "false"} @click=${() => this._setPeriod(p.hours)}>
           ${p.label}
         </button>`
       )}
     </div>`;
 
-    if (this._loading && !this._report) return html`${toolbar}<div class="empty-state">Loading...</div>`;
+    if (this._loading && !this._report) return html`${toolbar}${renderLoading()}`;
     if (this._error) return html`${toolbar}<div class="empty-state">Could not load the noise report: ${this._error}</div>`;
     const r = this._report;
     if (!r) return toolbar;
@@ -330,7 +332,7 @@ export class NoiseView extends LitElement {
           ${this._priorityCell(row)}
           <td>
             ${row.kind === "shelved" ? "Shelved" : "Disabled"}
-            ${row.until ? html`<div class="sub">until ${new Date(row.until).toLocaleString()}</div>` : nothing}
+            ${row.until ? html`<div class="sub">until ${formatDateTime(this.hass, row.until)}</div>` : nothing}
           </td>
           <td class="num">${sinceNow(row.since)}</td>
           <td class="advice">
@@ -344,7 +346,7 @@ export class NoiseView extends LitElement {
       )}
 
       <div class="footnote">
-        Period: ${new Date(r.start).toLocaleString()} – ${new Date(r.end).toLocaleString()}.
+        Period: ${formatDateTime(this.hass, r.start)} – ${formatDateTime(this.hass, r.end)}.
         Suppressed activations (a stricter alarm on the same sensor was active) are not counted as noise.
         Thresholds follow ISA-18.2 / EEMUA 191 defaults.
       </div>

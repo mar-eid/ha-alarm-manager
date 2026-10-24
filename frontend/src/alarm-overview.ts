@@ -9,7 +9,7 @@
  * YAML:
  *   type: custom:scada-alarm-overview
  *   title: Alarm Center        # optional, shown in header
- *   default_tab: active        # optional: active|all|history|noise|channels|create-edit|settings
+ *   default_tab: active        # optional: active|all|history|noise|channels|create-edit|statistics
  */
 
 import { LitElement, html, css, nothing, type PropertyValues } from "lit";
@@ -19,16 +19,16 @@ import {
   mdiBellRing,
   mdiFormatListChecks,
   mdiHistory,
-  mdiChartBar,
   mdiBroadcast,
   mdiPlusBox,
-  mdiCog,
+  mdiChartBar,
+  mdiChartBox,
   mdiAlert,
   mdiAlertDecagram,
   mdiCheckCircle,
   mdiHelpCircleOutline,
 } from "@mdi/js";
-import { sharedStyles } from "./styles/shared-styles";
+import { sharedStyles, getPriorityColor } from "./styles/shared-styles";
 import { fetchAlarms, fetchVersion, subscribeAlarmChanges } from "./data/websocket";
 import type { HomeAssistant, AlarmWithState } from "./types";
 
@@ -40,9 +40,9 @@ import "./views/history-view";
 import "./views/noise-view";
 import "./views/channels-view";
 import "./views/create-edit-view";
-import "./views/settings-view";
+import "./views/statistics-view";
 
-type TabId = "active" | "all" | "history" | "noise" | "channels" | "create-edit" | "settings";
+type TabId = "active" | "all" | "history" | "noise" | "channels" | "create-edit" | "statistics";
 
 interface OverviewConfig {
   type: string;
@@ -59,7 +59,7 @@ const TABS: { id: TabId; label: string; icon: string }[] = [
   { id: "noise", label: "Noise", icon: mdiChartBar },
   { id: "channels", label: "Channels", icon: mdiBroadcast },
   { id: "create-edit", label: "Create / Edit", icon: mdiPlusBox },
-  { id: "settings", label: "Settings", icon: mdiCog },
+  { id: "statistics", label: "Statistics", icon: mdiChartBox },
 ];
 
 const ACTIVE_STATES = [
@@ -84,7 +84,9 @@ export class ScadaAlarmOverview extends LitElement {
 
   setConfig(config: OverviewConfig) {
     this._config = config;
-    if (config.default_tab) this._activeTab = config.default_tab;
+    // "settings" was the old name of the Statistics tab; keep existing YAML working.
+    const tab = (config.default_tab as string) === "settings" ? "statistics" : config.default_tab;
+    if (tab) this._activeTab = tab;
   }
 
   getCardSize() {
@@ -127,6 +129,9 @@ export class ScadaAlarmOverview extends LitElement {
         color: var(--primary-text-color, #212121);
       }
       .status {
+        --c: var(--success-color, #43a047);
+        background: color-mix(in srgb, var(--c) 16%, transparent);
+        color: color-mix(in srgb, var(--c) 70%, var(--primary-text-color, #212121));
         display: inline-flex;
         align-items: center;
         gap: 6px;
@@ -136,55 +141,13 @@ export class ScadaAlarmOverview extends LitElement {
         font-weight: 600;
         --mdc-icon-size: 15px;
       }
-      .tabs {
-        display: flex;
-        align-items: center;
-        background: var(--card-background-color, #fff);
-        border-bottom: 1px solid var(--divider-color, #e0e0e0);
-        padding: 0 8px;
-        overflow-x: auto;
-        flex: none;
-      }
-      .tab {
-        position: relative;
-        height: 48px;
-        padding: 0 18px;
-        border: none;
-        background: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font: inherit;
-        font-size: 14px;
-        font-weight: 500;
-        color: var(--secondary-text-color, #727272);
-        white-space: nowrap;
-        --mdc-icon-size: 19px;
-      }
-      .tab:hover {
-        color: var(--primary-text-color, #212121);
-      }
-      .tab.active {
-        color: var(--primary-color, #009ac7);
-      }
-      .tab.active::after {
-        content: "";
-        position: absolute;
-        left: 10px;
-        right: 10px;
-        bottom: 0;
-        height: 3px;
-        border-radius: 3px 3px 0 0;
-        background: var(--primary-color, #009ac7);
-      }
       .tab .count {
         min-width: 18px;
         height: 18px;
         padding: 0 5px;
         border-radius: 9999px;
-        background: var(--ha-color-neutral-60, #989898);
-        color: #fff;
+        background: var(--secondary-text-color, #727272);
+        color: var(--card-background-color, #fff);
         font-size: 11px;
         font-weight: 700;
         display: flex;
@@ -192,7 +155,8 @@ export class ScadaAlarmOverview extends LitElement {
         justify-content: center;
       }
       .tab.active .count {
-        background: var(--primary-color, #009ac7);
+        background: var(--primary-color, #03a9f4);
+        color: var(--text-primary-color, #fff);
       }
       .content {
         flex: 1;
@@ -200,19 +164,6 @@ export class ScadaAlarmOverview extends LitElement {
       }
       .help-btn {
         margin-left: auto;
-        border: none;
-        background: none;
-        cursor: pointer;
-        padding: 4px 8px;
-        border-radius: 4px;
-        color: var(--secondary-text-color, #727272);
-        --mdc-icon-size: 20px;
-        display: flex;
-        align-items: center;
-      }
-      .help-btn:hover {
-        color: var(--primary-color, #009ac7);
-        background: var(--secondary-background-color, #f5f5f5);
       }
     `,
   ];
@@ -284,23 +235,20 @@ export class ScadaAlarmOverview extends LitElement {
     const active = this._activeCount;
     let color: string, icon: string, text: string;
     if (crit > 0) {
-      color = "#f44336";
+      color = getPriorityColor(3);
       icon = mdiAlertDecagram;
       text = `${crit} critical`;
     } else if (active > 0) {
-      color = "#ff9800";
+      color = getPriorityColor(1);
       icon = mdiAlert;
       text = `${active} active`;
     } else {
-      color = "#4caf50";
+      color = "var(--success-color, #43a047)";
       icon = mdiCheckCircle;
       text = "All normal";
     }
     return html`
-      <div
-        class="status"
-        style=${`background:color-mix(in srgb, ${color} 14%, transparent); color:${color}`}
-      >
+      <div class="status" role="status" style=${`--c:${color}`}>
         <ha-svg-icon .path=${icon}></ha-svg-icon>${text}
       </div>
     `;
@@ -323,11 +271,13 @@ export class ScadaAlarmOverview extends LitElement {
         </div>
       ` : nothing}
 
-      <div class="tabs">
+      <div class="tabs" role="tablist">
         ${TABS.map(
           (tab) => html`
             <button
               class="tab ${this._activeTab === tab.id ? "active" : ""}"
+              role="tab"
+              aria-selected=${this._activeTab === tab.id ? "true" : "false"}
               @click=${() => this._setTab(tab.id)}
             >
               <ha-svg-icon .path=${tab.icon}></ha-svg-icon>
@@ -338,20 +288,28 @@ export class ScadaAlarmOverview extends LitElement {
             </button>
           `
         )}
-        <button class="help-btn" title="Quick start guide" @click=${() => (this._showHelp = true)}>
+        <button
+          class="icon-btn help-btn"
+          title="Quick start guide"
+          aria-label="Quick start guide"
+          @click=${() => (this._showHelp = true)}
+        >
           <ha-svg-icon .path=${mdiHelpCircleOutline}></ha-svg-icon>
         </button>
       </div>
 
-      <div class="content">
+      <div
+        class="content"
+        @priority-filter=${(e: CustomEvent) => {
+          // One shared priority filter for the KPI strip and the column filters of the
+          // Active and All tabs. It never switches tab.
+          this._priorityFilter = e.detail.priority ?? "";
+        }}
+      >
         ${showKpis
           ? html`<alarm-kpi-strip
               .alarms=${this._alarms}
               .filterPriority=${this._priorityFilter}
-              @priority-filter=${(e: CustomEvent) => {
-                this._priorityFilter = e.detail.priority;
-                if (this._priorityFilter && this._activeTab !== "active") this._setTab("active");
-              }}
             ></alarm-kpi-strip>`
           : nothing}
         ${this._renderView()}
@@ -384,8 +342,8 @@ export class ScadaAlarmOverview extends LitElement {
           .hass=${this.hass}
           .alarmId=${this._editAlarmId ?? ""}
         ></create-edit-view>`;
-      case "settings":
-        return html`<settings-view .hass=${this.hass}></settings-view>`;
+      case "statistics":
+        return html`<statistics-view .hass=${this.hass}></statistics-view>`;
       default:
         return html`<active-alarms-view .hass=${this.hass}></active-alarms-view>`;
     }

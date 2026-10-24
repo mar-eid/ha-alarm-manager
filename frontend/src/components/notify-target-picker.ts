@@ -1,26 +1,7 @@
 /**
- * Notification-target multi-select — removable chips + an "Add target" dropdown.
- * A self-contained alternative to <ha-selector>; emits `value-changed` ({ value: string[] })
- * to match HA picker conventions.
- *
- * Place at: frontend/src/components/notify-target-picker.ts
- *
- * Use in channels-view.ts (form state `_formTargets: string[]`):
- *   <notify-target-picker
- *     .value=${this._formTargets}
- *     @value-changed=${(e: CustomEvent) => (this._formTargets = e.detail.value)}>
- *   </notify-target-picker>
- *
- * ── Idiomatic alternative (no custom component) ───────────────────────────────
- * HA ships <ha-selector>. For a multi-select of notify services you can instead do:
- *   <ha-selector
- *     .hass=${this.hass}
- *     .selector=${{ select: { multiple: true, custom_value: true, options: NOTIFY_OPTIONS } }}
- *     .value=${this._formTargets}
- *     @value-changed=${(e) => (this._formTargets = e.detail.value)}>
- *   </ha-selector>
- * …where NOTIFY_OPTIONS = [{ value: "notify.mobile_app_x", label: "Marius — phone" }, …].
- * Use this picker when you want the chip styling shown in the prototype.
+ * Notification-target multi-select: removable chips + an "Add target" dropdown, each
+ * target with its own minimum priority. Emits `value-changed` ({ value }) to match HA
+ * picker conventions. Used by the Channels form.
  */
 
 import { LitElement, html, css, nothing } from "lit";
@@ -161,7 +142,7 @@ export class NotifyTargetPicker extends LitElement {
         color: var(--secondary-text-color, #727272);
       }
       .opt:hover {
-        background: rgba(127, 127, 127, 0.08);
+        background: color-mix(in srgb, var(--primary-text-color, #212121) 6%, transparent);
       }
       .opt .lbl {
         flex: 1;

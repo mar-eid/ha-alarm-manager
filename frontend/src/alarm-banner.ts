@@ -1,15 +1,11 @@
 /**
- * SCADA Alarm Banner — compact Lovelace monitoring card (redesigned).
- * Drop-in replacement for your current frontend/src/alarm-banner.ts.
+ * SCADA Alarm Banner: compact Lovelace monitoring card.
  *
  *   • Header with bell icon, title, active/unacked summary, count pill
  *   • Severity bar (proportion of active by priority)
  *   • Optional interactive AREA filter (config: selectable_area: true) plus the
  *     static config filters filter_area / filter_priority / filter_channel
  *   • List of active alarms with inline ACK / Shelve
- *
- * Place at: frontend/src/alarm-banner.ts (replaces the current file).
- * Keep your alarm-card-editor.ts; add the new config keys to it as needed.
  *
  * YAML:
  *   type: custom:scada-alarm-banner
@@ -38,6 +34,9 @@ import {
 import { sharedStyles, getPriorityColor } from "./styles/shared-styles";
 import { fetchAlarms, subscribeAlarmChanges, acknowledgeAlarm, shelveAlarm } from "./data/websocket";
 import { type HomeAssistant, type AlarmWithState } from "./types";
+import { areaName, errorMessage, notify } from "./utils/format";
+import { renderValue } from "./utils/render";
+import "./components/rel-time";
 
 interface AlarmBannerConfig {
   type: string;
@@ -61,17 +60,6 @@ const ACTIVE_STATES = [
 ];
 const UNACKED_STATES = ["active_unacknowledged", "returned_to_normal_unacknowledged"];
 const ORDER = [3, 2, 1, 0];
-
-function timeAgo(iso: string | null): string {
-  if (!iso) return "—";
-  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return "just now";
-  const m = Math.floor(s / 60);
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
-}
 
 @customElement("scada-alarm-banner")
 export class ScadaAlarmBanner extends LitElement {
@@ -212,24 +200,32 @@ export class ScadaAlarmBanner extends LitElement {
         color: var(--secondary-text-color, #727272);
       }
       .row .val {
+        flex: none;
+        max-width: 40%;
         font-size: 13.5px;
-        font-weight: 600;
-        font-variant-numeric: tabular-nums;
-        white-space: nowrap;
+        text-align: right;
+      }
+      .row .val .value-text {
+        max-width: none;
+        font-size: 12.5px;
       }
       .btn {
         height: 30px;
         --mdc-icon-size: 16px;
-      }
-      .btn-shelve {
-        background: color-mix(in srgb, #9c27b0 14%, transparent);
-        color: #9c27b0;
       }
       .empty {
         text-align: center;
         padding: 20px 16px 28px;
         color: var(--secondary-text-color, #727272);
         --mdc-icon-size: 40px;
+      }
+      .empty ha-svg-icon {
+        color: var(--success-color, #43a047);
+      }
+      .head .ic,
+      .pill {
+        background: color-mix(in srgb, var(--c) 16%, transparent);
+        color: color-mix(in srgb, var(--c) 75%, var(--primary-text-color, #212121));
       }
       .empty .lbl {
         font-size: 14px;
@@ -292,13 +288,19 @@ export class ScadaAlarmBanner extends LitElement {
     this._unsub = await subscribeAlarmChanges(this.hass, () => this._load());
   }
 
-  private async _ack(id: string) {
-    if (this.hass) await acknowledgeAlarm(this.hass, id);
+  private async _run(action: () => Promise<unknown>) {
+    try {
+      await action();
+    } catch (err) {
+      notify(this, `Failed: ${errorMessage(err)}`);
+    }
     this._load();
   }
-  private async _shelve(id: string) {
-    if (this.hass) await shelveAlarm(this.hass, id, this._config.default_shelve_minutes ?? 15);
-    this._load();
+  private _ack(id: string) {
+    if (this.hass) this._run(() => acknowledgeAlarm(this.hass!, id));
+  }
+  private _shelve(id: string) {
+    if (this.hass) this._run(() => shelveAlarm(this.hass!, id, this._config.default_shelve_minutes ?? 15));
   }
 
   private get _active(): AlarmWithState[] {
@@ -306,7 +308,7 @@ export class ScadaAlarmBanner extends LitElement {
     const showStates = c.filter_states ?? ACTIVE_STATES;
     return this._alarms
       .filter((a) => showStates.includes(a.runtime.state))
-      .filter((a) => !this._areaFilter || a.area === this._areaFilter)
+      .filter((a) => !this._areaFilter || a.area === this._areaFilter || areaName(this.hass, a.area) === this._areaFilter)
       .filter((a) => c.filter_priority == null || String(a.priority) === String(c.filter_priority))
       .filter((a) => !c.filter_channel || a.channel_id === c.filter_channel)
       .sort(
@@ -324,13 +326,13 @@ export class ScadaAlarmBanner extends LitElement {
     const total = active.length;
     const crit = active.filter((a) => a.priority === 3).length;
     const unacked = active.filter((a) => UNACKED_STATES.includes(a.runtime.state)).length;
-    const accent = crit > 0 ? "#f44336" : total ? "#ff9800" : "#4caf50";
+    const accent = crit > 0 ? getPriorityColor(3) : total ? getPriorityColor(1) : "var(--success-color, #43a047)";
     const segs = ORDER.map((p) => ({ p, n: active.filter((a) => a.priority === p).length })).filter(
       (s) => s.n > 0
     );
     const areaOptions = [
       ...new Set(
-        this._alarms.filter((a) => ACTIVE_STATES.includes(a.runtime.state)).map((a) => a.area)
+        this._alarms.filter((a) => ACTIVE_STATES.includes(a.runtime.state)).map((a) => areaName(this.hass, a.area))
       ),
     ]
       .filter(Boolean)
@@ -343,7 +345,7 @@ export class ScadaAlarmBanner extends LitElement {
       <ha-card>
         ${showHeader ? html`
           <div class="head">
-            <div class="ic" style=${`background:color-mix(in srgb, ${accent} 16%, transparent); color:${accent}`}>
+            <div class="ic" style=${`--c:${accent}`}>
               <ha-svg-icon .path=${mdiBellRing}></ha-svg-icon>
             </div>
             <div class="t">
@@ -354,10 +356,7 @@ export class ScadaAlarmBanner extends LitElement {
               </div>
             </div>
             ${total > 0
-            ? html`<span
-                class="pill"
-                style=${`background:color-mix(in srgb, ${accent} 15%, transparent); color:${accent}`}
-              >
+            ? html`<span class="pill" style=${`--c:${accent}`}>
                 <ha-svg-icon .path=${crit > 0 ? mdiAlertDecagram : mdiAlert}></ha-svg-icon>${total}
               </span>`
             : nothing}
@@ -378,6 +377,7 @@ export class ScadaAlarmBanner extends LitElement {
               <ha-svg-icon .path=${mdiFilterVariant}></ha-svg-icon>
               <div class="wrap">
                 <select
+                  aria-label="Filter by area"
                   .value=${this._areaFilter}
                   @change=${(e: Event) => (this._areaFilter = (e.target as HTMLSelectElement).value)}
                 >
@@ -396,7 +396,7 @@ export class ScadaAlarmBanner extends LitElement {
 
         ${total === 0
           ? html`<div class="empty">
-              <ha-svg-icon .path=${mdiCheckCircleOutline} style="color:#4caf50"></ha-svg-icon>
+              <ha-svg-icon .path=${mdiCheckCircleOutline}></ha-svg-icon>
               <div class="lbl">No active alarms</div>
             </div>`
           : html`
@@ -408,13 +408,15 @@ export class ScadaAlarmBanner extends LitElement {
                     <span class="dot" style=${`background:${color}`}></span>
                     <div class="info">
                       <div class="nm">${a.name}</div>
-                      <div class="meta">${a.area} · ${timeAgo(a.runtime.triggered_at)}</div>
+                      <div class="meta">
+                        ${a.area ? html`${areaName(this.hass, a.area)} · ` : nothing}<rel-time .hass=${this.hass} .datetime=${a.runtime.triggered_at}></rel-time>
+                      </div>
                     </div>
-                    <span class="val" style=${`color:${color}`}>${a.runtime.last_value ?? "—"}</span>
+                    <span class="val">${renderValue(this.hass, a)}</span>
                     ${c.show_ack_button !== false && isUnacked
-                      ? html`<button class="btn btn-primary" @click=${() => this._ack(a.id)}>ACK</button>`
+                      ? html`<button class="btn btn-primary btn-small" @click=${() => this._ack(a.id)}>ACK</button>`
                       : c.show_shelve_button !== false
-                      ? html`<button class="btn btn-shelve" @click=${() => this._shelve(a.id)} title="Shelve">
+                      ? html`<button class="btn btn-shelve btn-small" @click=${() => this._shelve(a.id)} title="Shelve" aria-label=${`Shelve ${a.name}`}>
                           <ha-svg-icon .path=${mdiBellSleep}></ha-svg-icon>
                         </button>`
                       : nothing}

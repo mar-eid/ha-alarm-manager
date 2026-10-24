@@ -2,12 +2,13 @@ import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { sharedStyles, getPriorityColor } from "../styles/shared-styles";
 import { fetchAlarms, fetchChannels, fetchEvents } from "../data/websocket";
+import { renderLoading } from "../utils/render";
 import { PRIORITY_LABELS, type HomeAssistant, type AlarmWithState, type AlarmEvent, type AlarmPriority } from "../types";
 
 const ACTIVE_STATES = ["active_unacknowledged", "active_acknowledged", "returned_to_normal_unacknowledged"];
 
-@customElement("settings-view")
-export class SettingsView extends LitElement {
+@customElement("statistics-view")
+export class StatisticsView extends LitElement {
   @property({ attribute: false }) hass?: HomeAssistant;
   @state() private _alarms: AlarmWithState[] = [];
   @state() private _channelCount = 0;
@@ -107,7 +108,7 @@ export class SettingsView extends LitElement {
   }
 
   render() {
-    if (this._loading) return html`<div class="empty-state">Loading...</div>`;
+    if (this._loading) return renderLoading();
 
     const active = this._alarms.filter((a) => ACTIVE_STATES.includes(a.runtime.state)).length;
     const shelved = this._alarms.filter((a) => a.runtime.state === "shelved").length;
@@ -116,7 +117,7 @@ export class SettingsView extends LitElement {
     const maxCount = freq.length > 0 ? freq[0].count : 1;
 
     return html`
-      <h2>System Overview</h2>
+      <h2>Statistics</h2>
       <div class="stats-grid">
         <div class="stat-card">
           <div class="stat-value">${this._alarms.length}</div>

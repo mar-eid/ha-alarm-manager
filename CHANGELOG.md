@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.26.0] - 2026-10-24
+
+### Changed
+
+- **Alarm Center follows Home Assistant's design.** Frontend only; no backend or storage changes.
+  - **Theme colors:** all colors now come from HA theme variables (`--error-color`, `--warning-color`, `--success-color`, `--info-color`, `--deep-orange-color`, `--purple-color`, …), so the panel follows light/dark mode and custom themes. High (deep orange) and Critical (red) are clearly apart, and Critical uses a solid badge. State badges are toned chips with readable text instead of white text on orange.
+  - **Alarm editor** rebuilt on HA's own `ha-form` with selectors, grouped in sections (General, Trigger, Location, Behavior, Condition, Notification text, Link and action): switches for flags, numbers with the sensor's unit, duration pickers for on-delay, clear delay, reminder and auto-acknowledge (all stored in seconds as before), template editors for the condition and notification templates, a state picker for target/expected states and chips for match values. The saved format is unchanged.
+  - **Dialogs** (alarm details, shelve, quick start guide, delete confirmations) use HA's `ha-dialog` when available and a native modal dialog otherwise. They close with Escape, keep focus inside and go full screen on phones. Deleting a channel now asks in a dialog instead of the browser's `confirm()`.
+  - **All Alarms:** row actions are in a three-dot menu instead of up to five colored buttons; click a column header to sort; **Group by area** with collapsible groups; tables scroll sideways on narrow screens.
+  - **Values** show with unit and HA's own state formatting (`hass.formatEntityState`), falling back to the last recorded value. Long external alarm messages are clamped to two lines with the full text as tooltip.
+  - **Times** are relative ("5 minutes ago") with the exact time as tooltip, in the user's HA language and time format, everywhere (including the new Noise tab).
+  - **Feedback:** loading shows HA's spinner, confirmations and errors use HA's own toast (`hass-notification`), and "No active alarms" has an icon.
+  - **Alarm details** show the channel name and a readable trigger sentence (e.g. "Below 20%, hysteresis 3%") instead of raw JSON, plus delays, reminder and auto-acknowledge.
+  - **KPI strip:** the priority filter is one shared filter with the Priority column filter on the Active and All tabs, shows as a removable chip, and no longer jumps to the Active tab.
+  - The **Settings** tab is renamed **Statistics** (it only showed statistics). `default_tab: settings` still works.
+  - **Accessibility:** rows, cards and menus work with the keyboard; the search clear control is a real button; tabs and toggles expose their state.
+
+### Fixed
+
+- Saving an alarm now checks required fields and shows an error when saving fails, instead of failing silently (#6).
+- The alarm action picker used a `service` selector that current Home Assistant no longer has (it rendered blank). It is now a searchable list of all actions that also accepts a typed value.
+- Editing an external alarm no longer wipes its trigger configuration on save.
+
 ## [0.25.0] - 2026-10-24
 
 ### Added

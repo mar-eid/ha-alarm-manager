@@ -1,6 +1,9 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { sharedStyles } from "../styles/shared-styles";
+import { errorMessage, notify } from "../utils/format";
+import { renderLoading } from "../utils/render";
+import "../components/scada-dialog";
 import { fetchChannels, createChannel, updateChannel, deleteChannel } from "../data/websocket";
 import { PRIORITY_LABELS, type HomeAssistant, type AlarmChannel, type AlarmPriority } from "../types";
 import "../components/notify-target-picker";
@@ -31,6 +34,8 @@ export class ChannelsView extends LitElement {
   @state() private _formMobile = true;
   @state() private _formCritical = false;
 
+  @state() private _deleteTarget?: AlarmChannel;
+
   // Column filter
   @state() private _filterName = "";
 
@@ -47,12 +52,9 @@ export class ChannelsView extends LitElement {
       .form-row > * { flex: 1; min-width: 200px; }
       .checkbox-group { display: flex; gap: 16px; align-items: center; margin: 8px 0; }
       .checkbox-group label { display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 0.9em; }
-      .filter-row input {
-        width: 100%; padding: 4px 6px; font-size: 0.8em;
-        border: 1px solid var(--divider-color, #ccc); border-radius: 4px;
-        background: var(--card-background-color, white);
-        color: var(--primary-text-color, #333);
-      }
+      .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+      td.row-actions { white-space: nowrap; }
+      .confirm-text { margin: 0; line-height: 1.5; }
     `,
   ];
 
@@ -103,30 +105,43 @@ export class ChannelsView extends LitElement {
       critical_notification: this._formCritical,
     };
 
-    if (this._editing?.id) {
-      await updateChannel(this.hass, this._editing.id, data);
-    } else {
-      await createChannel(this.hass, data);
+    try {
+      if (this._editing?.id) {
+        await updateChannel(this.hass, this._editing.id, data);
+      } else {
+        await createChannel(this.hass, data);
+      }
+    } catch (err) {
+      notify(this, `Saving channel failed: ${errorMessage(err)}`);
+      return;
     }
     this._editing = null;
     this._loadChannels();
   }
 
-  private async _delete(channelId: string) {
-    if (!this.hass || !confirm("Delete this channel?")) return;
-    await deleteChannel(this.hass, channelId);
+  private async _doDelete() {
+    if (!this.hass || !this._deleteTarget) return;
+    const { id, name } = this._deleteTarget;
+    this._deleteTarget = undefined;
+    try {
+      await deleteChannel(this.hass, id);
+      notify(this, `Deleted channel: ${name}`);
+    } catch (err) {
+      notify(this, `Deleting channel failed: ${errorMessage(err)}`);
+    }
     this._loadChannels();
   }
 
   render() {
-    if (this._loading) return html`<div class="empty-state">Loading...</div>`;
+    if (this._loading) return renderLoading();
 
     return html`
       ${this._editing !== null ? this._renderForm() : ""}
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div class="toolbar">
         <span>${this._channels.length} channel${this._channels.length !== 1 ? "s" : ""}</span>
-        <button class="btn btn-primary" @click=${this._startCreate}>+ New Channel</button>
+        <button class="btn btn-primary" @click=${this._startCreate}>+ New channel</button>
       </div>
+      <div class="table-wrap">
       <table>
         <thead>
           <tr>
@@ -139,7 +154,7 @@ export class ChannelsView extends LitElement {
             <th>Actions</th>
           </tr>
           <tr class="filter-row">
-            <th><input type="text" placeholder="Filter..." .value=${this._filterName} @input=${(e: Event) => this._filterName = (e.target as HTMLInputElement).value} /></th>
+            <th><input type="text" placeholder="Filter..." aria-label="Filter by name" .value=${this._filterName} @input=${(e: Event) => this._filterName = (e.target as HTMLInputElement).value} /></th>
             <th></th><th></th><th></th><th></th><th></th><th></th>
           </tr>
         </thead>
@@ -153,15 +168,30 @@ export class ChannelsView extends LitElement {
                 <td>${ch.persistent_notification ? "Yes" : "No"}</td>
                 <td>${ch.mobile_push ? "Yes" : "No"}</td>
                 <td>${ch.critical_notification ? "Yes" : "No"}</td>
-                <td class="actions">
-                  <button class="btn btn-small btn-primary" @click=${() => this._startEdit(ch)}>Edit</button>
-                  <button class="btn btn-small btn-danger" @click=${() => this._delete(ch.id)}>Delete</button>
+                <td class="row-actions">
+                  <button class="btn btn-small btn-plain" @click=${() => this._startEdit(ch)}>Edit</button>
+                  <button class="btn btn-small btn-plain danger" @click=${() => (this._deleteTarget = ch)}>Delete</button>
                 </td>
               </tr>
             `
           )}
         </tbody>
       </table>
+      </div>
+
+      <scada-dialog
+        .open=${!!this._deleteTarget}
+        heading="Delete channel?"
+        width="small"
+        @dialog-closed=${() => (this._deleteTarget = undefined)}
+      >
+        <p class="confirm-text">
+          Delete the channel <strong>${this._deleteTarget?.name ?? ""}</strong>? Alarms using it will no longer send
+          notifications until you assign another channel.
+        </p>
+        <button slot="footer" class="btn btn-plain" @click=${() => (this._deleteTarget = undefined)}>Cancel</button>
+        <button slot="footer" class="btn btn-danger" @click=${this._doDelete}>Delete</button>
+      </scada-dialog>
     `;
   }
 
@@ -201,7 +231,7 @@ export class ChannelsView extends LitElement {
         </div>
         <div class="actions">
           <button class="btn btn-primary" @click=${this._save}>Save</button>
-          <button class="btn" style="background: var(--secondary-background-color)" @click=${() => (this._editing = null)}>Cancel</button>
+          <button class="btn btn-plain" @click=${() => (this._editing = null)}>Cancel</button>
         </div>
       </div>
     `;

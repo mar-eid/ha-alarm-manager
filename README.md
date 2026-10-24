@@ -7,7 +7,7 @@
 <p align="center">
   Industrial-style alarm management for Home Assistant
   <br>
-  <strong>v0.13.2</strong>
+  <strong>v0.26.0</strong>
 </p>
 
 <p align="center">
@@ -93,7 +93,7 @@ title: Alarm Center
 default_tab: active
 ```
 
-**Card options:** `title`, `default_tab` (active, all, history, noise, channels, create-edit, settings)
+**Card options:** `title`, `default_tab` (active, all, history, noise, channels, create-edit, statistics; the old value `settings` still works)
 
 ### SCADA Alarm Banner
 

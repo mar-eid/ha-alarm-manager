@@ -1,114 +1,48 @@
 /**
- * Shelve dialog — replaces the window.prompt() shelve flow with a real modal.
- * Preset durations + a fine slider. Emits `shelve-confirm` ({ alarmId, minutes })
- * and `dialog-closed`.
- *
- * Place at: frontend/src/components/shelve-dialog.ts
- *
- * Use in active-alarms-view.ts / all-alarms-view.ts:
- *   // replace the prompt()-based _shelve() with:
- *   private _shelve(alarm: AlarmWithState) { this._shelveTarget = alarm; }
- *
- *   <shelve-dialog
- *     .open=${!!this._shelveTarget}
- *     .alarmId=${this._shelveTarget?.id ?? ""}
- *     .alarmName=${this._shelveTarget?.name ?? ""}
- *     @dialog-closed=${() => (this._shelveTarget = undefined)}
- *     @shelve-confirm=${async (e: CustomEvent) => {
- *       await shelveAlarm(this.hass!, e.detail.alarmId, e.detail.minutes);
- *       this._shelveTarget = undefined;
- *       this._load();
- *     }}>
- *   </shelve-dialog>
+ * Shelve dialog: preset durations plus a slider. Emits `shelve-confirm`
+ * ({ alarmId, minutes }) and `dialog-closed`.
  */
 
-import { LitElement, html, css, unsafeCSS } from "lit";
+import { LitElement, html, css, type PropertyValues } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { mdiBellSleep, mdiClose } from "@mdi/js";
 import { sharedStyles } from "../styles/shared-styles";
+import { formatDuration } from "../utils/format";
+import "./scada-dialog";
 
-const SHELVE_COLOR = unsafeCSS("#9c27b0");
+const DEFAULT_MINUTES = 15;
 const PRESETS = [15, 30, 60, 240, 480, 1440, 2880, 7200, 20160, 43200];
+/** Slider stops (minutes). Roughly logarithmic and covering every preset, so the
+ *  slider position always matches the selected duration from 5 min up to 30 days. */
+const STEPS = [
+  5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360, 480, 720, 1440, 2160, 2880, 4320, 7200, 10080, 14400, 20160,
+  30240, 43200,
+];
 
 @customElement("shelve-dialog")
 export class ShelveDialog extends LitElement {
   @property({ type: Boolean }) open = false;
   @property() alarmId = "";
   @property() alarmName = "";
-  @state() private _minutes = 15;
+  @state() private _minutes = DEFAULT_MINUTES;
 
   static styles = [
     sharedStyles,
     css`
-      .overlay {
-        position: fixed;
-        inset: 0;
-        z-index: 1000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(0, 0, 0, 0.45);
-        backdrop-filter: blur(2px);
-        padding: 20px;
-      }
-      .dialog {
-        width: min(440px, 94vw);
-        background: var(--card-background-color, #fff);
-        border-radius: 16px;
-        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.32);
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
-      }
-      .head {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 16px 12px 16px 20px;
-        border-bottom: 1px solid var(--divider-color, #e0e0e0);
-        --mdc-icon-size: 22px;
-        color: var(--alarm-shelved, ${SHELVE_COLOR});
-      }
-      .title {
-        flex: 1;
-        font-size: 17px;
-        font-weight: 500;
-        color: var(--primary-text-color, #212121);
-      }
-      .icon-btn {
-        border: none;
-        background: none;
-        cursor: pointer;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--secondary-text-color, #727272);
-        --mdc-icon-size: 22px;
-      }
-      .icon-btn:hover {
-        background: var(--secondary-background-color, #f0f0f0);
-      }
-      .body {
-        padding: 20px;
-      }
-      .body p {
+      p {
         margin: 0 0 16px;
         font-size: 14px;
         line-height: 1.55;
-        color: var(--primary-text-color, #212121);
       }
       .presets {
         display: flex;
         gap: 8px;
         flex-wrap: wrap;
-        margin-bottom: 16px;
+        margin-bottom: 20px;
       }
       .chip {
-        padding: 8px 14px;
-        border-radius: 9999px;
+        height: 32px;
+        padding: 0 14px;
+        border-radius: 8px;
         cursor: pointer;
         font: inherit;
         font-size: 13px;
@@ -117,10 +51,14 @@ export class ShelveDialog extends LitElement {
         background: transparent;
         color: var(--primary-text-color, #212121);
       }
-      .chip.sel {
-        border-color: ${SHELVE_COLOR};
-        background: color-mix(in srgb, ${SHELVE_COLOR} 14%, transparent);
-        color: ${SHELVE_COLOR};
+      .chip[aria-pressed="true"] {
+        border-color: var(--scada-shelved-color);
+        background: color-mix(in srgb, var(--scada-shelved-color) 16%, transparent);
+        color: color-mix(in srgb, var(--scada-shelved-color) 75%, var(--primary-text-color, #212121));
+      }
+      .chip:focus-visible {
+        outline: 2px solid var(--primary-color, #03a9f4);
+        outline-offset: 2px;
       }
       .slider {
         display: flex;
@@ -129,32 +67,36 @@ export class ShelveDialog extends LitElement {
       }
       .slider input {
         flex: 1;
-        accent-color: ${SHELVE_COLOR};
+        accent-color: var(--scada-shelved-color);
       }
-      .slider span {
+      .slider output {
         font-size: 14px;
-        font-weight: 600;
-        min-width: 64px;
+        font-weight: 500;
+        min-width: 80px;
         text-align: right;
         font-variant-numeric: tabular-nums;
       }
-      .foot {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        padding: 0 20px 20px;
-      }
-      .btn-shelve {
-        background: ${SHELVE_COLOR};
-        color: #fff;
+      .btn-confirm {
+        background: var(--scada-shelved-color);
+        color: var(--text-primary-color, #fff);
       }
     `,
   ];
 
+  willUpdate(changed: PropertyValues) {
+    // Start from the default every time the dialog opens.
+    if (changed.has("open") && this.open) this._minutes = DEFAULT_MINUTES;
+  }
+
   private _fmt(m: number) {
-    if (m < 60) return `${m} min`;
-    if (m < 1440) return `${m / 60} h`;
-    return `${m / 1440} d`;
+    return formatDuration(m * 60);
+  }
+
+  private get _stepIndex(): number {
+    const exact = STEPS.indexOf(this._minutes);
+    if (exact >= 0) return exact;
+    // Nearest stop for values not on the scale.
+    return STEPS.reduce((best, s, i) => (Math.abs(s - this._minutes) < Math.abs(STEPS[best] - this._minutes) ? i : best), 0);
   }
 
   private _close() {
@@ -170,58 +112,37 @@ export class ShelveDialog extends LitElement {
   }
 
   render() {
-    if (!this.open) return html``;
     return html`
-      <div class="overlay" @click=${this._close}>
-        <div class="dialog" @click=${(e: Event) => e.stopPropagation()}>
-          <div class="head">
-            <ha-svg-icon .path=${mdiBellSleep}></ha-svg-icon>
-            <span class="title">Shelve alarm</span>
-            <button class="icon-btn" @click=${this._close}>
-              <ha-svg-icon .path=${mdiClose}></ha-svg-icon>
-            </button>
-          </div>
-          <div class="body">
-            <p>
-              Temporarily suppress <strong>${this.alarmName}</strong>. It won't notify or appear as
-              active until the timer expires, then it returns to normal evaluation.
-            </p>
-            <div class="presets">
-              ${PRESETS.map(
-                (m) => html`
-                  <button class="chip ${this._minutes === m ? "sel" : ""}" @click=${() => (this._minutes = m)}>
-                    ${this._fmt(m)}
-                  </button>
-                `
-              )}
-            </div>
-            <div class="slider">
-              <input
-                type="range"
-                min="5"
-                max="480"
-                step="5"
-                .value=${String(this._minutes)}
-                @input=${(e: Event) => (this._minutes = Number((e.target as HTMLInputElement).value))}
-              />
-              <span>${this._fmt(this._minutes)}</span>
-            </div>
-          </div>
-          <div class="foot">
-            <button class="btn" @click=${this._close}>Cancel</button>
-            <button class="btn btn-shelve" @click=${this._confirm}>
-              Shelve for ${this._fmt(this._minutes)}
-            </button>
-          </div>
+      <scada-dialog .open=${this.open} heading="Shelve alarm" width="small" @dialog-closed=${this._close}>
+        <p>
+          Temporarily suppress <strong>${this.alarmName}</strong>. It won't notify or appear as active until the timer
+          expires, then it returns to normal evaluation.
+        </p>
+        <div class="presets" role="group" aria-label="Duration presets">
+          ${PRESETS.map(
+            (m) => html`
+              <button class="chip" aria-pressed=${this._minutes === m ? "true" : "false"} @click=${() => (this._minutes = m)}>
+                ${this._fmt(m)}
+              </button>
+            `
+          )}
         </div>
-      </div>
+        <div class="slider">
+          <input
+            type="range"
+            min="0"
+            max=${STEPS.length - 1}
+            step="1"
+            aria-label="Shelve duration"
+            aria-valuetext=${this._fmt(this._minutes)}
+            .value=${String(this._stepIndex)}
+            @input=${(e: Event) => (this._minutes = STEPS[Number((e.target as HTMLInputElement).value)])}
+          />
+          <output>${this._fmt(this._minutes)}</output>
+        </div>
+        <button slot="footer" class="btn btn-plain" @click=${this._close}>Cancel</button>
+        <button slot="footer" class="btn btn-confirm" @click=${this._confirm}>Shelve for ${this._fmt(this._minutes)}</button>
+      </scada-dialog>
     `;
-  }
-}
-
-declare global {
-  interface HTMLElementTagNameMap {
-    "shelve-dialog": ShelveDialog;
-    "ha-svg-icon": any;
   }
 }

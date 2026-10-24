@@ -35,12 +35,13 @@ export class SeverityBadge extends LitElement {
   render() {
     const color = getPriorityColor(this.priority);
     const label = PRIORITY_LABELS[this.priority] ?? "Unknown";
+    // Critical is solid so it reads differently from High at a glance, not just by hue.
+    const style =
+      this.priority >= 3
+        ? `background: ${color}; color: var(--text-primary-color, #fff)`
+        : `background: color-mix(in srgb, ${color} 18%, transparent); color: ${color}`;
     return html`
-      <span
-        class="badge"
-        style="background: color-mix(in srgb, ${color} 18%, transparent); color: ${color}"
-        title=${label}
-      >
+      <span class="badge" style=${style} title=${label} role="img" aria-label=${label}>
         <ha-svg-icon .path=${PRIORITY_ICON[this.priority]}></ha-svg-icon>
       </span>
     `;
