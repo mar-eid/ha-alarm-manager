@@ -46,7 +46,7 @@ A SCADA-inspired alarm system for Home Assistant. Define alarm rules on any enti
 | **HA-native selectors** | Entity picker, area picker in create/edit forms |
 | **Column filtering** | Filter tables by priority, name, state, entity, channel |
 | **Alarm detail dialog** | Click any alarm row for full details |
-| **Noise analysis** | Noise tab with top 10 most frequent, standing, chattering, fleeting and shelved/disabled alarms, with suggested fixes (ISA-18.2 / EEMUA 191) |
+| **Noise analysis** | Noise tab with top 10 most frequent, most time in alarm, standing, chattering, fleeting, alarm floods, priority distribution, not-triggered and shelved/disabled alarms, with suggested fixes (ISA-18.2 / EEMUA 191) |
 | **External triggers** | `trigger` and `clear` services for hybrid automation/blueprint integration |
 | **Priority notifications** | Persistent, mobile push, and critical alerts based on priority level |
 | **Actionable notifications** | ACK or shelve directly from Companion App push notifications |

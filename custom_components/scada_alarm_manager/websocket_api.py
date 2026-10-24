@@ -681,6 +681,7 @@ async def ws_noise_report(
     rows = await database.async_get_noise_rows(now - timedelta(hours=hours))
     disabled_since = await database.async_get_latest_event_times(AlarmEventType.DISABLED)
     shelved_since = await database.async_get_latest_event_times(AlarmEventType.SHELVED)
+    last_triggered = await database.async_get_latest_event_times(AlarmEventType.TRIGGERED)
 
     report = compute_noise_report(
         rows,
@@ -690,6 +691,7 @@ async def ws_noise_report(
         shelved_since,
         now,
         hours,
+        last_triggered,
     )
     connection.send_result(msg["id"], report)
 

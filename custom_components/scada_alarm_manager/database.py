@@ -622,19 +622,27 @@ class AlarmDatabase:
             row = await cursor.fetchone()
             return row[0] if row else 0
 
-    async def async_get_noise_rows(self, start: datetime) -> list[tuple[str, datetime, str, str | None]]:
-        """Get lightweight (alarm_id, timestamp, event_type, new_state) rows since start.
+    async def async_get_noise_rows(
+        self, start: datetime
+    ) -> list[tuple[str, datetime, str, str | None, str | None]]:
+        """Get lightweight (alarm_id, timestamp, event_type, old_state, new_state) rows since start.
 
         Unlimited and ordered by alarm, then time, for the noise analysis.
         """
         async with self._conn.execute(
-            """SELECT alarm_id, timestamp, event_type, new_state FROM alarm_events
+            """SELECT alarm_id, timestamp, event_type, old_state, new_state FROM alarm_events
             WHERE timestamp >= ? ORDER BY alarm_id, timestamp, id""",
             (start.isoformat(),),
         ) as cursor:
             rows = await cursor.fetchall()
             return [
-                (row["alarm_id"], datetime.fromisoformat(row["timestamp"]), row["event_type"], row["new_state"])
+                (
+                    row["alarm_id"],
+                    datetime.fromisoformat(row["timestamp"]),
+                    row["event_type"],
+                    row["old_state"],
+                    row["new_state"],
+                )
                 for row in rows
             ]
 

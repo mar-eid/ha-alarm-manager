@@ -181,6 +181,9 @@ export interface NoiseReport {
     chatter_window: number;
     fleeting_seconds: number;
     stale_hours: number;
+    flood_count: number;
+    flood_window: number;
+    never_days: number;
   };
   kpis: {
     activations: number;
@@ -193,10 +196,36 @@ export interface NoiseReport {
     chattering: number;
     fleeting: number;
     hidden: number;
+    floods: number;
+    flood_share: number;
+    never: number;
   };
   top: (NoiseAlarmInfo & { count: number; share: number; suppressed: number; last: string })[];
+  time_in_alarm: (NoiseAlarmInfo & { seconds: number; share: number; periods: number; ongoing: boolean })[];
   standing: (NoiseAlarmInfo & { state: AlarmState; since: string; duration: number; stale: boolean })[];
   chattering: (NoiseAlarmInfo & { bursts: number; max_burst: number; count: number })[];
   fleeting: (NoiseAlarmInfo & { fleeting: number; activations: number; shortest: number })[];
   hidden: (NoiseAlarmInfo & { kind: "shelved" | "disabled"; since: string | null; until: string | null })[];
+  floods: {
+    start: string;
+    end: string;
+    duration: number;
+    count: number;
+    alarms: number;
+    initiator: NoiseAlarmInfo;
+    top: (NoiseAlarmInfo & { count: number })[];
+  }[];
+  priority: {
+    configured: NoisePrioritySplit;
+    activations: NoisePrioritySplit;
+    by_priority: Record<AlarmPriority, number>;
+  };
+  never: (NoiseAlarmInfo & { last_triggered: string | null; created_at: string })[];
+}
+
+export type NoiseBand = "low" | "medium" | "high";
+
+export interface NoisePrioritySplit {
+  total: number;
+  bands: Record<NoiseBand, { count: number; share: number; target: number }>;
 }

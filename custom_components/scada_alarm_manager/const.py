@@ -70,6 +70,11 @@ NOISE_CHATTER_COUNT = 3  # activations ...
 NOISE_CHATTER_WINDOW = 60  # ... within this many seconds = chattering
 NOISE_FLEETING_SECONDS = 10  # active for less than this = fleeting
 NOISE_STALE_HOURS = 24  # active for longer than this = stale (standing)
+NOISE_FLOOD_COUNT = 10  # more than this many activations ...
+NOISE_FLOOD_WINDOW = 600  # ... within this many seconds = alarm flood
+NOISE_NEVER_DAYS = 90  # no activation for this many days = never triggered
+# Recommended share of alarms per priority band (EEMUA 191): low / medium / high
+NOISE_PRIORITY_TARGETS = {"low": 80, "medium": 15, "high": 5}
 
 # Event names
 EVENT_ALARM_STATE_CHANGED = f"{DOMAIN}_state_changed"
