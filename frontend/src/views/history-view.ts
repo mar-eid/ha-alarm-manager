@@ -115,7 +115,7 @@ export class HistoryView extends LitElement {
               <tr>
                 <td>${new Date(event.timestamp).toLocaleString()}</td>
                 <td><strong>${event.alarm_name}</strong></td>
-                <td><span class="event-type">${event.event_type}</span></td>
+                <td><span class="event-type">${event.event_type}</span>${event.event_type === "suppressed" && event.details?.suppressed_by_name ? html`<br><span style="font-size: 0.75em; color: var(--secondary-text-color);">by ${event.details.suppressed_by_name}</span>` : ""}</td>
                 <td>${event.old_state ? html`<span class="badge" style="background: ${getStateColor(event.old_state)}">${STATE_LABELS[event.old_state] ?? event.old_state}</span>` : "-"}</td>
                 <td>${event.new_state ? html`<span class="badge" style="background: ${getStateColor(event.new_state)}">${STATE_LABELS[event.new_state] ?? event.new_state}</span>` : "-"}</td>
                 <td>${event.user ?? "-"}</td>

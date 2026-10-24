@@ -91,6 +91,7 @@ export interface AlarmDefinition {
   action_target: Record<string, unknown> | null;
   link_page_path: string | null;
   link_view_path: string | null;
+  suppress_milder: boolean;
   source_entity_id: string;
   trigger_type: TriggerType;
   trigger_config: Record<string, any>;
@@ -112,6 +113,8 @@ export interface AlarmRuntimeState {
 
 export interface AlarmWithState extends AlarmDefinition {
   runtime: AlarmRuntimeState;
+  /** More severe active alarm on the same sensor currently suppressing this one (F19). */
+  suppressed_by?: { id: string; name: string } | null;
 }
 
 export interface AlarmChannel {

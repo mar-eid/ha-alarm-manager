@@ -15,7 +15,7 @@ from .models import AlarmChannel, AlarmDefinition, AlarmEvent
 
 _LOGGER = logging.getLogger(__name__)
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 
 CREATE_TABLES_SQL = """
 CREATE TABLE IF NOT EXISTS schema_version (
@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS alarm_definitions (
     action_target TEXT,
     link_page_path TEXT,
     link_view_path TEXT,
+    suppress_milder INTEGER NOT NULL DEFAULT 1,
     source_entity_id TEXT NOT NULL,
     trigger_type TEXT NOT NULL,
     trigger_config TEXT NOT NULL DEFAULT '{}',
@@ -248,6 +249,18 @@ class AlarmDatabase:
             _LOGGER.info(
                 "Migrated database to schema v8: added action_target/link_view_path columns"
             )
+            current = 8
+
+        if current < 9:
+            # v9: escalation suppression flag (F19) — defaults on for existing alarms
+            try:
+                await self._db.execute(
+                    "ALTER TABLE alarm_definitions ADD COLUMN suppress_milder INTEGER NOT NULL DEFAULT 1"
+                )
+            except Exception:
+                pass
+            await self._db.execute("UPDATE schema_version SET version = ?", (9,))
+            _LOGGER.info("Migrated database to schema v9: added suppress_milder column")
 
     async def async_close(self) -> None:
         """Close database connection."""
@@ -272,10 +285,10 @@ class AlarmDatabase:
              notification_title_template, notification_text_template,
              hysteresis, repeat_interval, escalation_delay, trigger_delay, clear_delay,
              action_label, action_service, action_entity, action_target,
-             link_page_path, link_view_path,
+             link_page_path, link_view_path, suppress_milder,
              source_entity_id,
              trigger_type, trigger_config, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 alarm.id,
                 alarm.name,
@@ -303,6 +316,7 @@ class AlarmDatabase:
                 json.dumps(alarm.action_target) if alarm.action_target else None,
                 alarm.link_page_path,
                 alarm.link_view_path,
+                int(alarm.suppress_milder),
                 alarm.source_entity_id,
                 alarm.trigger_type.value,
                 json.dumps(alarm.trigger_config),
@@ -323,7 +337,7 @@ class AlarmDatabase:
             notification_text_template=?, hysteresis=?,
             repeat_interval=?, escalation_delay=?, trigger_delay=?, clear_delay=?,
             action_label=?, action_service=?, action_entity=?, action_target=?,
-            link_page_path=?, link_view_path=?,
+            link_page_path=?, link_view_path=?, suppress_milder=?,
             source_entity_id=?, trigger_type=?, trigger_config=?, updated_at=?
             WHERE id=?""",
             (
@@ -352,6 +366,7 @@ class AlarmDatabase:
                 json.dumps(alarm.action_target) if alarm.action_target else None,
                 alarm.link_page_path,
                 alarm.link_view_path,
+                int(alarm.suppress_milder),
                 alarm.source_entity_id,
                 alarm.trigger_type.value,
                 json.dumps(alarm.trigger_config),
@@ -413,6 +428,7 @@ class AlarmDatabase:
             action_target=json.loads(row["action_target"]) if row["action_target"] else None,
             link_page_path=row["link_page_path"],
             link_view_path=row["link_view_path"],
+            suppress_milder=bool(row["suppress_milder"]),
             source_entity_id=row["source_entity_id"],
             trigger_type=TriggerType(row["trigger_type"]),
             trigger_config=json.loads(row["trigger_config"]),

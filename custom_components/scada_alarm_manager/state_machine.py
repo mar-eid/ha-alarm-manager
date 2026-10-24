@@ -161,6 +161,48 @@ def condition_cleared(
     return runtime, events
 
 
+def suppress(
+    runtime: AlarmRuntimeState,
+    alarm_def: AlarmDefinition,
+    suppressor: AlarmDefinition,
+    value: str | None = None,
+    *,
+    now: datetime | None = None,
+) -> tuple[AlarmRuntimeState, list[AlarmEvent]]:
+    """Handle a more severe alarm on the same sensor suppressing this one (F19).
+
+    Designed suppression (ISA-18.2): the milder alarm goes straight to NORMAL with no
+    acknowledgement owed — the escalated alarm carries the information. Latching and
+    ack_required are deliberately bypassed. It re-triggers normally once the
+    suppressor is no longer active.
+    """
+    ts = now or _now()
+    events: list[AlarmEvent] = []
+
+    if runtime.state not in (AlarmState.ACTIVE_UNACKED, AlarmState.ACTIVE_ACKED, AlarmState.RTN_UNACKED):
+        return replace(runtime, last_value=value), events
+
+    new_runtime = replace(
+        runtime,
+        state=AlarmState.NORMAL,
+        triggered_at=None,
+        acked_at=None,
+        acked_by=None,
+        last_value=value,
+    )
+    events.append(
+        AlarmEvent(
+            alarm_id=runtime.alarm_id,
+            event_type=AlarmEventType.SUPPRESSED,
+            timestamp=ts,
+            old_state=runtime.state,
+            new_state=AlarmState.NORMAL,
+            details={"suppressed_by": suppressor.id, "suppressed_by_name": suppressor.name},
+        )
+    )
+    return new_runtime, events
+
+
 def acknowledge(
     runtime: AlarmRuntimeState,
     user: str | None = None,

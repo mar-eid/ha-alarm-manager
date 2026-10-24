@@ -233,6 +233,9 @@ export class AllAlarmsView extends LitElement {
                   ${alarm.runtime.state === "shelved" && alarm.runtime.shelved_until
                     ? html`<br><span style="font-size: 0.75em; color: var(--secondary-text-color);">Until ${new Date(alarm.runtime.shelved_until).toLocaleString()}</span>`
                     : ""}
+                  ${alarm.suppressed_by
+                    ? html`<br><span style="font-size: 0.75em; color: var(--secondary-text-color);" title="Escalated: a more severe alarm on the same sensor is active">↳ Suppressed by ${alarm.suppressed_by.name}</span>`
+                    : ""}
                 </td>
                 <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${getStateColor(alarm.runtime.state)}" title="${STATE_LABELS[alarm.runtime.state] ?? alarm.runtime.state}"></span></td>
                 <td>${alarm.source_entity_id}</td>

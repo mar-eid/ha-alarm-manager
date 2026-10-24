@@ -50,6 +50,7 @@ class AlarmDefinition:
     action_target: dict[str, Any] | None = None
     link_page_path: str | None = None
     link_view_path: str | None = None
+    suppress_milder: bool = True
     id: str = field(default_factory=_new_id)
     created_at: datetime = field(default_factory=_now)
     updated_at: datetime = field(default_factory=_now)
@@ -83,6 +84,7 @@ class AlarmDefinition:
             "action_target": self.action_target,
             "link_page_path": self.link_page_path,
             "link_view_path": self.link_view_path,
+            "suppress_milder": self.suppress_milder,
             "source_entity_id": self.source_entity_id,
             "trigger_type": self.trigger_type.value,
             "trigger_config": self.trigger_config,
@@ -120,6 +122,7 @@ class AlarmDefinition:
             action_target=data.get("action_target"),
             link_page_path=data.get("link_page_path"),
             link_view_path=data.get("link_view_path"),
+            suppress_milder=data.get("suppress_milder", True),
             source_entity_id=data["source_entity_id"],
             trigger_type=TriggerType(data["trigger_type"]),
             trigger_config=data["trigger_config"],

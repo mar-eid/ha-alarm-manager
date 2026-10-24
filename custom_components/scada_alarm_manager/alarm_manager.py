@@ -29,6 +29,48 @@ if TYPE_CHECKING:
 
 _LOGGER = logging.getLogger(__name__)
 
+# Runtime states in which an alarm suppresses milder alarms on the same sensor (F19).
+# RTN_UNACKED is excluded on purpose: once the value is back, the milder alarm returns.
+_SUPPRESSING_STATES = (AlarmState.ACTIVE_UNACKED, AlarmState.ACTIVE_ACKED)
+
+
+def _analog_limit(alarm: AlarmDefinition) -> tuple[str, float] | None:
+    """Return (direction, threshold) for an analog threshold alarm, else None.
+
+    Direction is "low" for < / <= and "high" for > / >=.
+    """
+    if alarm.trigger_type != TriggerType.ANALOG:
+        return None
+    op = alarm.trigger_config.get("operator", ">")
+    if op in ("<", "<="):
+        direction = "low"
+    elif op in (">", ">="):
+        direction = "high"
+    else:
+        return None
+    try:
+        return direction, float(alarm.trigger_config["threshold"])
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def _is_more_severe(candidate: AlarmDefinition, alarm: AlarmDefinition) -> bool:
+    """Return True if candidate is a stricter limit than alarm on the same sensor (F19)."""
+    if candidate.id == alarm.id or candidate.source_entity_id != alarm.source_entity_id:
+        return False
+    c, a = _analog_limit(candidate), _analog_limit(alarm)
+    if c is None or a is None or c[0] != a[0]:
+        return False
+    return c[1] < a[1] if c[0] == "low" else c[1] > a[1]
+
+
+def _severity_sort_key(alarm: AlarmDefinition) -> float:
+    """Sort key placing the most extreme limit first, so escalated alarms evaluate first."""
+    limit = _analog_limit(alarm)
+    if limit is None:
+        return 0.0
+    return limit[1] if limit[0] == "low" else -limit[1]
+
 
 class AlarmManager:
     """Central runtime engine for alarm management."""
@@ -82,6 +124,24 @@ class AlarmManager:
     def runtime_states(self) -> dict[str, AlarmRuntimeState]:
         """Return all runtime states."""
         return self._runtime_states
+
+    def get_suppressor(self, alarm_id: str) -> AlarmDefinition | None:
+        """Return the most severe active alarm currently suppressing this one, if any (F19)."""
+        alarm = self._alarms.get(alarm_id)
+        if alarm is None:
+            return None
+        suppressors = [
+            other
+            for other in self._alarms.values()
+            if other.enabled
+            and other.suppress_milder
+            and _is_more_severe(other, alarm)
+            and (rt := self._runtime_states.get(other.id)) is not None
+            and rt.state in _SUPPRESSING_STATES
+        ]
+        if not suppressors:
+            return None
+        return min(suppressors, key=_severity_sort_key)
 
     def set_notification_router(self, router: Any) -> None:
         """Set the notification router instance."""
@@ -231,6 +291,11 @@ class AlarmManager:
             entity_state = self.hass.states.get(alarm.source_entity_id)
             await self._async_evaluate_alarm(alarm, entity_state)
 
+        # Limits or suppress_milder may have changed — refresh escalation siblings (F19)
+        await self._async_reevaluate_milder(alarm)
+        if old_alarm:
+            await self._async_reevaluate_milder(old_alarm)
+
         # Sync store
         await self._store.async_save(
             list(self._alarms.values()), list(self._channels.values())
@@ -264,6 +329,9 @@ class AlarmManager:
 
         await self._database.async_delete_alarm(alarm_id)
         await self._database.async_delete_runtime_state(alarm_id)
+
+        # Milder alarms it was suppressing may need to come back (F19)
+        await self._async_reevaluate_milder(alarm)
 
         # Sync store
         await self._store.async_save(
@@ -583,6 +651,11 @@ class AlarmManager:
         # Notify entity platforms
         self._notify_entity_updates()
 
+        # Escalation suppression (F19): when this alarm starts or stops suppressing,
+        # re-evaluate the milder alarms on the same sensor so they clear / come back.
+        if alarm and (old_runtime.state in _SUPPRESSING_STATES) != (new_runtime.state in _SUPPRESSING_STATES):
+            await self._async_reevaluate_milder(alarm)
+
         # Handle notifications (suppressed during initial evaluation on startup)
         if self._notification_router and alarm and not self._suppress_notifications:
             # States in which an alarm carries no outstanding notification — once
@@ -634,6 +707,17 @@ class AlarmManager:
                 await self._async_apply_transition(alarm.id, new_runtime, events)
                 return
 
+        # Escalation suppression (F19): a more severe active alarm on the same sensor
+        # forces this one to NORMAL immediately (bypasses delays, ack and latching).
+        suppressor = self.get_suppressor(alarm.id)
+        if suppressor is not None:
+            self._cancel_pending_delay(alarm.id)
+            new_runtime, events = sm.suppress(
+                runtime, alarm, suppressor, entity_state.state if entity_state else None
+            )
+            await self._async_apply_transition(alarm.id, new_runtime, events)
+            return
+
         is_active = runtime.state in (
             AlarmState.ACTIVE_UNACKED, AlarmState.ACTIVE_ACKED, AlarmState.RTN_UNACKED
         )
@@ -672,6 +756,13 @@ class AlarmManager:
             new_runtime, events = sm.condition_cleared(runtime, alarm, value)
 
         await self._async_apply_transition(alarm.id, new_runtime, events)
+
+    async def _async_reevaluate_milder(self, alarm: AlarmDefinition) -> None:
+        """Re-evaluate the enabled alarms that this alarm can suppress (F19)."""
+        entity_state = self.hass.states.get(alarm.source_entity_id)
+        for other in list(self._alarms.values()):
+            if other.enabled and _is_more_severe(alarm, other):
+                await self._async_evaluate_alarm(other, entity_state)
 
     def _start_pending_delay(self, alarm_id: str, kind: str, delay_s: int) -> None:
         """Start (replacing any existing) a debounce timer for an alarm."""
@@ -714,6 +805,8 @@ class AlarmManager:
                 self.hass, alarm
             )
 
+        if kind == "activate" and self.get_suppressor(alarm_id) is not None:
+            return  # A more severe alarm took over while the on-delay ran (F19)
         if kind == "activate" and condition_met and not is_active:
             new_runtime, events = sm.condition_met(runtime, alarm, value)
             await self._async_apply_transition(alarm_id, new_runtime, events)
@@ -732,7 +825,9 @@ class AlarmManager:
         entity_id = event.data["entity_id"]
         new_state = event.data.get("new_state")
 
-        for alarm in self._alarms.values():
+        # Most extreme limits first, so an escalated alarm is active before its milder
+        # siblings evaluate and they never fire only to be suppressed a moment later (F19).
+        for alarm in sorted(self._alarms.values(), key=_severity_sort_key):
             if not alarm.enabled:
                 continue
             is_source = alarm.source_entity_id == entity_id
@@ -798,7 +893,7 @@ class AlarmManager:
         during startup when entities haven't loaded.
         """
         self._suppress_notifications = True
-        for alarm in self._alarms.values():
+        for alarm in sorted(self._alarms.values(), key=_severity_sort_key):
             if alarm.enabled and alarm.trigger_type != TriggerType.EXTERNAL:
                 entity_state = self.hass.states.get(alarm.source_entity_id)
                 runtime = self._runtime_states.get(alarm.id)

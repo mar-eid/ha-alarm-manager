@@ -36,6 +36,7 @@ export class CreateEditView extends LitElement {
   @state() private _latching = false;
   @state() private _ackRequired = true;
   @state() private _autoClear = true;
+  @state() private _suppressMilder = true;
   @state() private _conditionTemplate = "";
   @state() private _conditionMode: "none" | "simple" | "template" = "none";
   @state() private _conditionEntity = "";
@@ -131,6 +132,7 @@ export class CreateEditView extends LitElement {
         this._latching = alarm.latching;
         this._ackRequired = alarm.ack_required;
         this._autoClear = alarm.auto_clear;
+        this._suppressMilder = alarm.suppress_milder ?? true;
         this._conditionTemplate = alarm.condition_template || "";
         // Parse simple condition: {{ is_state('entity', 'state') }}
         const simpleMatch = (alarm.condition_template || "").match(
@@ -196,6 +198,7 @@ export class CreateEditView extends LitElement {
     this._latching = false;
     this._ackRequired = true;
     this._autoClear = true;
+    this._suppressMilder = true;
     this._conditionTemplate = "";
     this._conditionMode = "none";
     this._conditionEntity = "";
@@ -277,6 +280,7 @@ export class CreateEditView extends LitElement {
         latching: this._latching,
         ack_required: this._ackRequired,
         auto_clear: this._autoClear,
+        suppress_milder: this._suppressMilder,
         condition_template: this._conditionMode === "simple" && this._conditionEntity
           ? `{{ is_state('${this._conditionEntity}', '${this._conditionState}') }}`
           : this._conditionMode === "template" ? (this._conditionTemplate || null)
@@ -463,6 +467,7 @@ export class CreateEditView extends LitElement {
             <label title="Latching alarms stay active until manually reset, even if condition clears"><input type="checkbox" .checked=${this._latching} @change=${(e: Event) => (this._latching = (e.target as HTMLInputElement).checked)} /> Latching</label>
             <label title="Require user to acknowledge alarm before it can return to normal"><input type="checkbox" .checked=${this._ackRequired} @change=${(e: Event) => (this._ackRequired = (e.target as HTMLInputElement).checked)} /> Acknowledge Required</label>
             <label title="Automatically clear alarm when the trigger condition is no longer met"><input type="checkbox" .checked=${this._autoClear} @change=${(e: Event) => (this._autoClear = (e.target as HTMLInputElement).checked)} /> Auto Clear</label>
+            ${this._triggerType === "analog" ? html`<label title="While this alarm is active, milder alarms on the same sensor in the same direction are suppressed (e.g. Very Low suppresses Low). They come back when this alarm clears."><input type="checkbox" .checked=${this._suppressMilder} @change=${(e: Event) => (this._suppressMilder = (e.target as HTMLInputElement).checked)} /> Suppress Milder Alarms</label>` : ""}
           </div>
           <div class="form-group">
             <label>Remind interval (minutes)</label>

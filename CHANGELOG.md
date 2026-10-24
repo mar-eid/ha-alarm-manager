@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.23.0] - 2026-10-24
+
+### Added
+
+- **F19 — escalation suppression (Low / Very Low, High / Very High).** While a stricter alarm on the same sensor is active, milder alarms in the same direction are suppressed: they go straight to Normal with no acknowledgement owed and their notification is dismissed. Example: battery `< 10` (Very Low) suppresses battery `< 20` (Low). When the stricter alarm clears and the value is still in the milder band, the milder alarm comes back on and notifies again, so you can see the de-escalation.
+  - New per-alarm setting **Suppress Milder Alarms** (`suppress_milder`), **on by default**. Turn it off on an alarm to let both levels alarm side by side.
+  - Applies only to analog threshold alarms on the same `source_entity_id` with the same direction (`<`/`<=` or `>`/`>=`) and a strictly more extreme threshold. Digital, custom and external alarms never take part, and neither do equal thresholds.
+  - Only an *active* stricter alarm (unacked or acked) suppresses. A shelved, disabled or returned-to-normal one does not.
+  - A new `suppressed` history event records which alarm took over. The alarm list and detail dialog show "Suppressed by …".
+
+### Database
+
+- Schema migrated to **v9**: adds `suppress_milder` (default on) to `alarm_definitions`. Existing alarms get the setting turned on.
+
+### Notes
+
+- Suppression overrides latching, acknowledge-required and clear-delay on the milder alarm. The escalated alarm carries the information.
+
 ## [0.22.0] - 2026-06-29
 
 ### Added

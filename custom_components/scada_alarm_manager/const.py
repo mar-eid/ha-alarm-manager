@@ -52,6 +52,7 @@ class AlarmEventType(StrEnum):
     CREATED = "created"
     UPDATED = "updated"
     DELETED = "deleted"
+    SUPPRESSED = "suppressed"
 
 
 # Default configuration values

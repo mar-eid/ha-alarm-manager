@@ -116,6 +116,7 @@ SCHEMA_CREATE_ALARM = vol.Schema(
         vol.Optional("action_target"): vol.Any(dict, None),
         vol.Optional("link_page_path"): vol.Any(cv.string, None),
         vol.Optional("link_view_path"): vol.Any(cv.string, None),
+        vol.Optional("suppress_milder", default=True): cv.boolean,
     }
 )
 
@@ -150,6 +151,7 @@ SCHEMA_UPDATE_ALARM = vol.Schema(
         vol.Optional("action_target"): vol.Any(dict, None),
         vol.Optional("link_page_path"): vol.Any(cv.string, None),
         vol.Optional("link_view_path"): vol.Any(cv.string, None),
+        vol.Optional("suppress_milder"): cv.boolean,
     }
 )
 
@@ -208,6 +210,8 @@ def _alarm_with_state(manager: AlarmManager, alarm_id: str) -> dict[str, Any] | 
         return None
     result = alarm.to_dict()
     result["runtime"] = runtime.to_dict()
+    suppressor = manager.get_suppressor(alarm_id)
+    result["suppressed_by"] = {"id": suppressor.id, "name": suppressor.name} if suppressor else None
     return result
 
 
@@ -335,6 +339,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
             action_target=call.data.get("action_target"),
             link_page_path=call.data.get("link_page_path"),
             link_view_path=call.data.get("link_view_path"),
+            suppress_milder=call.data.get("suppress_milder", True),
         )
         alarm = await manager.async_create_alarm(alarm)
         return _alarm_with_state(manager, alarm.id)
@@ -372,6 +377,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
             "action_target",
             "link_page_path",
             "link_view_path",
+            "suppress_milder",
         ):
             if field in call.data:
                 setattr(alarm, field, call.data[field])
@@ -522,6 +528,7 @@ async def async_register_services(hass: HomeAssistant) -> None:
                 action_target=d.get("action_target"),
                 link_page_path=d.get("link_page_path"),
                 link_view_path=d.get("link_view_path"),
+                suppress_milder=d.get("suppress_milder", True),
             )
             await manager.async_create_alarm(alarm)
             created += 1

@@ -92,6 +92,8 @@ def _alarm_with_state(manager: AlarmManager, alarm_id: str) -> dict[str, Any] | 
         return None
     result = alarm.to_dict()
     result["runtime"] = runtime.to_dict()
+    suppressor = manager.get_suppressor(alarm_id)
+    result["suppressed_by"] = {"id": suppressor.id, "name": suppressor.name} if suppressor else None
     return result
 
 
@@ -168,6 +170,7 @@ async def ws_alarm_get(
         vol.Optional("action_target"): vol.Any(dict, None),
         vol.Optional("link_page_path"): vol.Any(str, None),
         vol.Optional("link_view_path"): vol.Any(str, None),
+        vol.Optional("suppress_milder", default=True): bool,
     }
 )
 @websocket_api.async_response
@@ -207,6 +210,7 @@ async def ws_alarm_create(
         action_target=msg.get("action_target"),
         link_page_path=msg.get("link_page_path"),
         link_view_path=msg.get("link_view_path"),
+        suppress_milder=msg.get("suppress_milder", True),
     )
     alarm = await manager.async_create_alarm(alarm)
     connection.send_result(msg["id"], _alarm_with_state(manager, alarm.id))
@@ -244,6 +248,7 @@ async def ws_alarm_create(
         vol.Optional("action_target"): vol.Any(dict, None),
         vol.Optional("link_page_path"): vol.Any(str, None),
         vol.Optional("link_view_path"): vol.Any(str, None),
+        vol.Optional("suppress_milder"): bool,
     }
 )
 @websocket_api.async_response
@@ -268,7 +273,7 @@ async def ws_alarm_update(
         "hysteresis", "repeat_interval", "escalation_delay",
         "trigger_delay", "clear_delay",
         "action_label", "action_service", "action_entity", "action_target",
-        "link_page_path", "link_view_path",
+        "link_page_path", "link_view_path", "suppress_milder",
     ):
         if field in msg:
             setattr(alarm, field, msg[field])
